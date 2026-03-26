@@ -90,7 +90,7 @@ def resetdb():
         sys.exit(1)
 
 
-def runserver(host="0.0.0.0", port=8002, reload=True):
+def runserver(host="0.0.0.0", port=8003, reload=True):
     """Run the FastAPI development server (equivalent to Django runserver)"""
     try:
         print(f"🚀 Starting FastAPI server at http://{host}:{port}")
@@ -195,8 +195,8 @@ Examples:
     runserver_parser.add_argument(
         '--port',
         type=int,
-        default=8002,
-        help='Port to bind to (default: 8002)'
+        default=8003,
+        help='Port to bind to (default: 8003)'
     )
     runserver_parser.add_argument(
         '--no-reload',
