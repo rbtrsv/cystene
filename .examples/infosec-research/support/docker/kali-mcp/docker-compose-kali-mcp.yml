@@ -1,0 +1,26 @@
+services:
+  kali-mcp:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: kali-mcp
+    stdin_open: true
+    tty: true
+    ports:
+      - "5002:5000"
+    environment:
+      - DEBIAN_FRONTEND=noninteractive
+    volumes:
+      - kali-data:/root
+      - ./shared:/shared
+    networks:
+      - kali-network
+    restart: unless-stopped
+
+volumes:
+  kali-data:
+    driver: local
+
+networks:
+  kali-network:
+    driver: bridge

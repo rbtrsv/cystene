@@ -1,0 +1,15 @@
+{
+  "mcpServers": {
+    "kali": {
+      "command": "docker",
+      "args": [
+        "exec",
+        "-i",
+        "kali-mcp",
+        "mcp-server",
+        "--server",
+        "http://localhost:5000"
+      ]
+    }
+  }
+}

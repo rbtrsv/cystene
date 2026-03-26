@@ -1,0 +1,15 @@
+name: vulnerable-dvwa
+
+services:
+  dvwa:
+    image: vulnerables/web-dvwa:latest
+    container_name: dvwa-target
+    platform: linux/amd64
+    ports:
+      - "8081:80"
+    networks:
+      - vulnerable-network
+
+networks:
+  vulnerable-network:
+    driver: bridge

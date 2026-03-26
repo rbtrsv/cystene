@@ -1,0 +1,19 @@
+# Docker
+docker compose -f docker-compose-dvwa.yml up -d
+docker compose -f docker-compose-dvwa.yml down
+
+# Download wordlist for gobuster if not already available
+curl -o wordlists/common.txt https://raw.githubusercontent.com/v0re/dirb/master/wordlists/common.txt
+
+# HTTP brute force attack against DVWA login form
+# -L users.txt: Username wordlist, -P passwords.txt: Password wordlist
+# -s 8081: Target port, http-post-form: POST method attack
+# "/login.php:username=^USER^&password=^PASS^:Login failed": target/params/failure-string
+hydra -L users.txt -P passwords.txt -s 8081 localhost http-post-form "/login.php:username=^USER^&password=^PASS^:Login failed"
+
+
+# Add Kali MCP Official server to MCP CLI
+cd support/docker/kali-mcp
+docker-compose -f docker-compose-kali-mcp.yml up -d --build
+claude mcp add kali -- docker exec -i kali-mcp mcp-server --server http://localhost:5000
+claude mcp remove kali
