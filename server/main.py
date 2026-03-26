@@ -47,4 +47,4 @@ app.include_router(accounts_router)
 app.include_router(ecommerce_router)
 
 if __name__ == "__main__":
-    uvicorn.run("main:app", port=8002, reload=True)
+    uvicorn.run("main:app", port=8003, reload=True)

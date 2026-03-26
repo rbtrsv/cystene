@@ -5,7 +5,7 @@
 /**
  * Base API URL
  */
-export const API_BASE_URL = process.env.NEXT_PUBLIC_SERVER_URL || 'http://127.0.0.1:8002';
+export const API_BASE_URL = process.env.NEXT_PUBLIC_SERVER_URL || 'http://127.0.0.1:8003';
 
 /**
  * API endpoints for authentication
