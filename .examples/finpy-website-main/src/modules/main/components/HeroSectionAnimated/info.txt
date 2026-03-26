@@ -1,0 +1,2 @@
+https://kevinhufnagl.com/verceltext-gradient/.
+https://www.thvu.dev/blog/css-in-real-world-recreate-vercel-develop-preview-ship-with-tailwind-css.

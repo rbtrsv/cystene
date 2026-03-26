@@ -1,0 +1,81 @@
+{
+  "name": "20250505023456_a43ec970eb",
+  "hash": "a43ec970eb",
+  "schema": {
+    "gene": {
+      "name": "string",
+      "ensembl_id": "string",
+      "chromosome": "string",
+      "start_position": "int",
+      "end_position": "int",
+      "species": "string",
+      "gene_type": "string",
+      "created_at": "datetime"
+    },
+    "protein": {
+      "uniprot_id": "string",
+      "name": "string",
+      "sequence": "string",
+      "molecular_weight": "float",
+      "isoelectric_point": "float",
+      "created_at": "datetime"
+    },
+    "peptide": {
+      "sequence": "string",
+      "length": "int",
+      "molecular_weight": "float",
+      "isoelectric_point": "float",
+      "predicted_activities": "array",
+      "synthesis_difficulty": "int",
+      "stability_score": "float",
+      "created_at": "datetime"
+    },
+    "pathway": {
+      "name": "string",
+      "kegg_id": "string",
+      "description": "string",
+      "pathway_type": "string",
+      "created_at": "datetime"
+    },
+    "disease": {
+      "name": "string",
+      "omim_id": "string",
+      "description": "string",
+      "disease_class": "string",
+      "created_at": "datetime"
+    },
+    "bioactivity": {
+      "name": "string",
+      "description": "string",
+      "activity_type": "string"
+    },
+    "proteindomain": {
+      "name": "string",
+      "description": "string",
+      "pfam_id": "string"
+    },
+    "biomarker": {
+      "name": "string",
+      "description": "string",
+      "biomarker_type": "string"
+    },
+    "treatment": {
+      "name": "string",
+      "description": "string",
+      "treatment_type": "string"
+    },
+    "variant": {
+      "name": "string",
+      "rs_id": "string",
+      "chromosome": "string",
+      "position": "int",
+      "reference_allele": "string",
+      "alternate_allele": "string"
+    },
+    "phenotype": {
+      "name": "string",
+      "description": "string"
+    }
+  },
+  "created_at": "2025-05-05T02:34:56.563314"
+}

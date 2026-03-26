@@ -1,0 +1,25 @@
+name: nexotype-surrealdb
+
+services:
+  surrealdb:
+    image: surrealdb/surrealdb:latest
+    container_name: nexotype-surrealdb
+    restart: always
+    user: root
+    command: start --user ${SURREAL_USERNAME:-root} --pass ${SURREAL_PASSWORD:?} rocksdb:/data/database.db
+    ports:
+      - "8001:8000"
+    volumes:
+      - surrealdb_data:/data
+    environment:
+      - SURREAL_LOG=${SURREAL_LOG:-info}
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+volumes:
+  surrealdb_data:
+    driver: local

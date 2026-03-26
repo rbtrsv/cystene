@@ -1,0 +1,54 @@
+name: finpy-n8n
+
+version: '3.8'
+volumes:
+  db_storage:
+  n8n_storage:
+services:
+  postgres:
+    image: postgres:latest
+    restart: always
+    environment:
+      - POSTGRES_USER=rbtrsv_superuser
+      - POSTGRES_PASSWORD=123890pas
+      - POSTGRES_DB=n8n
+      - POSTGRES_NON_ROOT_USER=rbtrsv_user
+      - POSTGRES_NON_ROOT_PASSWORD=123890pas
+    volumes:
+      - db_storage:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -h localhost -U rbtrsv_superuser -d n8n']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    command: |
+      bash -c '
+      docker-entrypoint.sh postgres &
+      pid=$$!
+      sleep 10
+      psql -v ON_ERROR_STOP=1 --username "rbtrsv_superuser" --dbname "n8n" <<-EOSQL
+        CREATE USER rbtrsv_user WITH PASSWORD '"'"'123890pas'"'"';
+        GRANT ALL PRIVILEGES ON DATABASE n8n TO rbtrsv_user;
+        GRANT CREATE ON SCHEMA public TO rbtrsv_user;
+      EOSQL
+      wait $$pid
+      '
+  n8n:
+    image: docker.n8n.io/n8nio/n8n
+    restart: always
+    environment:
+      - DB_TYPE=postgresdb
+      - DB_POSTGRESDB_HOST=postgres
+      - DB_POSTGRESDB_PORT=5432
+      - DB_POSTGRESDB_DATABASE=n8n
+      - DB_POSTGRESDB_USER=rbtrsv_user
+      - DB_POSTGRESDB_PASSWORD=123890pas
+    ports:
+      - 5678:5678
+    links:
+      - postgres
+    volumes:
+      - n8n_storage:/home/node/.n8n
+    depends_on:
+      postgres:
+        condition: service_healthy

@@ -1,0 +1,10 @@
+services:
+  kuzu-explorer:
+    image: kuzudb/explorer:latest
+    ports:
+      - "9000:8000"
+    volumes:
+      - ../../server/apps/nexotype/kuzu:/database
+    environment:
+      - KUZU_FILE=nexotype.kuzu
+    container_name: kuzu-explorer

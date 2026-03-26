@@ -1,0 +1,686 @@
+{
+  "snapshot": {
+    "channel": "trade",
+    "type": "snapshot",
+    "data": [
+      {
+        "symbol": "BTC/EUR",
+        "side": "buy",
+        "price": 106926.1,
+        "qty": 0.02436976,
+        "ord_type": "market",
+        "trade_id": 99065737,
+        "timestamp": "2025-10-06T17:04:02.136393Z"
+      },
+      {
+        "symbol": "BTC/EUR",
+        "side": "buy",
+        "price": 106932.9,
+        "qty": 0.01238969,
+        "ord_type": "market",
+        "trade_id": 99065738,
+        "timestamp": "2025-10-06T17:04:02.136393Z"
+      },
+      {
+        "symbol": "BTC/EUR",
+        "side": "buy",
+        "price": 106926.1,
+        "qty": 0.01833961,
+        "ord_type": "limit",
+        "trade_id": 99065739,
+        "timestamp": "2025-10-06T17:04:02.608546Z"
+      },
+      {
+        "symbol": "BTC/EUR",
+        "side": "buy",
+        "price": 106914.5,
+        "qty": 0.00048131,
+        "ord_type": "market",
+        "trade_id": 99065740,
+        "timestamp": "2025-10-06T17:04:03.067857Z"
+      },
+      {
+        "symbol": "BTC/EUR",
+        "side": "buy",
+        "price": 106926.1,
+        "qty": 0.00124099,
+        "ord_type": "market",
+        "trade_id": 99065741,
+        "timestamp": "2025-10-06T17:04:03.067857Z"
+      },
+      {
+        "symbol": "BTC/EUR",
+        "side": "buy",
+        "price": 106914.5,
+        "qty": 4.563e-05,
+        "ord_type": "limit",
+        "trade_id": 99065742,
+        "timestamp": "2025-10-06T17:04:06.864449Z"
+      },
+      {
+        "symbol": "BTC/EUR",
+        "side": "sell",
+        "price": 106914.4,
+        "qty": 0.00025886,
+        "ord_type": "market",
+        "trade_id": 99065743,
+        "timestamp": "2025-10-06T17:04:08.898993Z"
+      },
+      {
+        "symbol": "BTC/EUR",
+        "side": "sell",
+        "price": 106914.4,
+        "qty": 0.00038349,
+        "ord_type": "limit",
+        "trade_id": 99065744,
+        "timestamp": "2025-10-06T17:04:12.960425Z"
+      },
+      {
+        "symbol": "BTC/EUR",
+        "side": "buy",
+        "price": 106914.5,
+        "qty": 0.00043568,
+        "ord_type": "market",
+        "trade_id": 99065745,
+        "timestamp": "2025-10-06T17:04:15.034650Z"
+      },
+      {
+        "symbol": "BTC/EUR",
+        "side": "buy",
+        "price": 106914.5,
+        "qty": 0.0157036,
+        "ord_type": "market",
+        "trade_id": 99065746,
+        "timestamp": "2025-10-06T17:04:15.034650Z"
+      },
+      {
+        "symbol": "BTC/EUR",
+        "side": "buy",
+        "price": 106929.2,
+        "qty": 0.012252,
+        "ord_type": "market",
+        "trade_id": 99065747,
+        "timestamp": "2025-10-06T17:04:15.034650Z"
+      },
+      {
+        "symbol": "BTC/EUR",
+        "side": "buy",
+        "price": 106935.4,
+        "qty": 0.01056508,
+        "ord_type": "market",
+        "trade_id": 99065748,
+        "timestamp": "2025-10-06T17:04:15.034650Z"
+      },
+      {
+        "symbol": "BTC/EUR",
+        "side": "sell",
+        "price": 106921.6,
+        "qty": 9.556e-05,
+        "ord_type": "market",
+        "trade_id": 99065749,
+        "timestamp": "2025-10-06T17:04:25.078896Z"
+      },
+      {
+        "symbol": "BTC/EUR",
+        "side": "buy",
+        "price": 106921.7,
+        "qty": 0.00047987,
+        "ord_type": "market",
+        "trade_id": 99065750,
+        "timestamp": "2025-10-06T17:04:29.573826Z"
+      },
+      {
+        "symbol": "BTC/EUR",
+        "side": "buy",
+        "price": 106929.6,
+        "qty": 0.000364,
+        "ord_type": "market",
+        "trade_id": 99065751,
+        "timestamp": "2025-10-06T17:04:29.573826Z"
+      },
+      {
+        "symbol": "BTC/EUR",
+        "side": "buy",
+        "price": 106935.6,
+        "qty": 0.06461617,
+        "ord_type": "market",
+        "trade_id": 99065752,
+        "timestamp": "2025-10-06T17:04:29.573826Z"
+      },
+      {
+        "symbol": "BTC/EUR",
+        "side": "buy",
+        "price": 106921.7,
+        "qty": 0.00052149,
+        "ord_type": "market",
+        "trade_id": 99065753,
+        "timestamp": "2025-10-06T17:04:29.852186Z"
+      },
+      {
+        "symbol": "BTC/EUR",
+        "side": "buy",
+        "price": 106935.5,
+        "qty": 0.000621,
+        "ord_type": "market",
+        "trade_id": 99065754,
+        "timestamp": "2025-10-06T17:04:29.852186Z"
+      },
+      {
+        "symbol": "BTC/EUR",
+        "side": "buy",
+        "price": 106935.6,
+        "qty": 0.02270674,
+        "ord_type": "market",
+        "trade_id": 99065755,
+        "timestamp": "2025-10-06T17:04:29.852186Z"
+      },
+      {
+        "symbol": "BTC/EUR",
+        "side": "buy",
+        "price": 106921.7,
+        "qty": 4.562e-05,
+        "ord_type": "limit",
+        "trade_id": 99065756,
+        "timestamp": "2025-10-06T17:04:33.076212Z"
+      },
+      {
+        "symbol": "BTC/EUR",
+        "side": "buy",
+        "price": 106921.7,
+        "qty": 5.61e-05,
+        "ord_type": "limit",
+        "trade_id": 99065757,
+        "timestamp": "2025-10-06T17:04:34.257431Z"
+      },
+      {
+        "symbol": "BTC/EUR",
+        "side": "sell",
+        "price": 106921.6,
+        "qty": 0.00019173,
+        "ord_type": "limit",
+        "trade_id": 99065758,
+        "timestamp": "2025-10-06T17:04:37.147588Z"
+      },
+      {
+        "symbol": "BTC/EUR",
+        "side": "buy",
+        "price": 106921.7,
+        "qty": 8.55e-05,
+        "ord_type": "limit",
+        "trade_id": 99065759,
+        "timestamp": "2025-10-06T17:04:38.403461Z"
+      },
+      {
+        "symbol": "BTC/EUR",
+        "side": "buy",
+        "price": 106921.7,
+        "qty": 0.00052382,
+        "ord_type": "market",
+        "trade_id": 99065760,
+        "timestamp": "2025-10-06T17:04:41.226519Z"
+      },
+      {
+        "symbol": "BTC/EUR",
+        "side": "buy",
+        "price": 106949.2,
+        "qty": 0.00037764,
+        "ord_type": "market",
+        "trade_id": 99065761,
+        "timestamp": "2025-10-06T17:04:41.226519Z"
+      },
+      {
+        "symbol": "BTC/EUR",
+        "side": "sell",
+        "price": 106938.8,
+        "qty": 0.14239405,
+        "ord_type": "limit",
+        "trade_id": 99065762,
+        "timestamp": "2025-10-06T17:04:41.659876Z"
+      },
+      {
+        "symbol": "BTC/EUR",
+        "side": "buy",
+        "price": 106938.9,
+        "qty": 0.00052244,
+        "ord_type": "market",
+        "trade_id": 99065763,
+        "timestamp": "2025-10-06T17:04:46.336878Z"
+      },
+      {
+        "symbol": "BTC/EUR",
+        "side": "buy",
+        "price": 106950.8,
+        "qty": 0.000396,
+        "ord_type": "market",
+        "trade_id": 99065764,
+        "timestamp": "2025-10-06T17:04:46.336878Z"
+      },
+      {
+        "symbol": "BTC/EUR",
+        "side": "buy",
+        "price": 106956.8,
+        "qty": 0.00375645,
+        "ord_type": "market",
+        "trade_id": 99065765,
+        "timestamp": "2025-10-06T17:04:46.336878Z"
+      },
+      {
+        "symbol": "BTC/EUR",
+        "side": "sell",
+        "price": 106938.9,
+        "qty": 0.00766917,
+        "ord_type": "limit",
+        "trade_id": 99065766,
+        "timestamp": "2025-10-06T17:04:51.696233Z"
+      },
+      {
+        "symbol": "BTC/EUR",
+        "side": "buy",
+        "price": 106939.0,
+        "qty": 0.0005217,
+        "ord_type": "market",
+        "trade_id": 99065767,
+        "timestamp": "2025-10-06T17:04:56.762658Z"
+      },
+      {
+        "symbol": "BTC/EUR",
+        "side": "buy",
+        "price": 106939.0,
+        "qty": 0.00135455,
+        "ord_type": "market",
+        "trade_id": 99065768,
+        "timestamp": "2025-10-06T17:04:56.762658Z"
+      },
+      {
+        "symbol": "BTC/EUR",
+        "side": "buy",
+        "price": 106939.0,
+        "qty": 0.00052735,
+        "ord_type": "market",
+        "trade_id": 99065769,
+        "timestamp": "2025-10-06T17:05:02.025323Z"
+      },
+      {
+        "symbol": "BTC/EUR",
+        "side": "buy",
+        "price": 106939.0,
+        "qty": 0.00024429,
+        "ord_type": "market",
+        "trade_id": 99065770,
+        "timestamp": "2025-10-06T17:05:02.025323Z"
+      },
+      {
+        "symbol": "BTC/EUR",
+        "side": "sell",
+        "price": 106938.9,
+        "qty": 0.01233083,
+        "ord_type": "limit",
+        "trade_id": 99065771,
+        "timestamp": "2025-10-06T17:05:11.064087Z"
+      },
+      {
+        "symbol": "BTC/EUR",
+        "side": "sell",
+        "price": 106938.9,
+        "qty": 0.00113688,
+        "ord_type": "limit",
+        "trade_id": 99065772,
+        "timestamp": "2025-10-06T17:05:11.064087Z"
+      },
+      {
+        "symbol": "BTC/EUR",
+        "side": "sell",
+        "price": 106938.9,
+        "qty": 0.00264172,
+        "ord_type": "market",
+        "trade_id": 99065773,
+        "timestamp": "2025-10-06T17:05:14.068962Z"
+      },
+      {
+        "symbol": "BTC/EUR",
+        "side": "buy",
+        "price": 106939.0,
+        "qty": 0.00052553,
+        "ord_type": "market",
+        "trade_id": 99065774,
+        "timestamp": "2025-10-06T17:05:15.689277Z"
+      },
+      {
+        "symbol": "BTC/EUR",
+        "side": "buy",
+        "price": 106939.0,
+        "qty": 0.000399,
+        "ord_type": "market",
+        "trade_id": 99065775,
+        "timestamp": "2025-10-06T17:05:15.689277Z"
+      },
+      {
+        "symbol": "BTC/EUR",
+        "side": "buy",
+        "price": 106939.0,
+        "qty": 0.00088931,
+        "ord_type": "market",
+        "trade_id": 99065776,
+        "timestamp": "2025-10-06T17:05:15.689277Z"
+      },
+      {
+        "symbol": "BTC/EUR",
+        "side": "buy",
+        "price": 106939.0,
+        "qty": 0.00023378,
+        "ord_type": "market",
+        "trade_id": 99065777,
+        "timestamp": "2025-10-06T17:05:21.129119Z"
+      },
+      {
+        "symbol": "BTC/EUR",
+        "side": "sell",
+        "price": 106938.9,
+        "qty": 0.00040257,
+        "ord_type": "limit",
+        "trade_id": 99065778,
+        "timestamp": "2025-10-06T17:05:22.748785Z"
+      },
+      {
+        "symbol": "BTC/EUR",
+        "side": "buy",
+        "price": 106939.0,
+        "qty": 9.35e-06,
+        "ord_type": "market",
+        "trade_id": 99065779,
+        "timestamp": "2025-10-06T17:05:29.692409Z"
+      },
+      {
+        "symbol": "BTC/EUR",
+        "side": "buy",
+        "price": 106939.0,
+        "qty": 0.00016308,
+        "ord_type": "market",
+        "trade_id": 99065780,
+        "timestamp": "2025-10-06T17:05:31.825305Z"
+      },
+      {
+        "symbol": "BTC/EUR",
+        "side": "sell",
+        "price": 106938.9,
+        "qty": 0.01074234,
+        "ord_type": "market",
+        "trade_id": 99065781,
+        "timestamp": "2025-10-06T17:05:33.639006Z"
+      },
+      {
+        "symbol": "BTC/EUR",
+        "side": "sell",
+        "price": 106938.9,
+        "qty": 9.585e-05,
+        "ord_type": "limit",
+        "trade_id": 99065782,
+        "timestamp": "2025-10-06T17:05:37.349128Z"
+      },
+      {
+        "symbol": "BTC/EUR",
+        "side": "buy",
+        "price": 106939.0,
+        "qty": 0.00022266,
+        "ord_type": "market",
+        "trade_id": 99065783,
+        "timestamp": "2025-10-06T17:05:39.249107Z"
+      },
+      {
+        "symbol": "BTC/EUR",
+        "side": "buy",
+        "price": 106939.0,
+        "qty": 0.00022426,
+        "ord_type": "market",
+        "trade_id": 99065784,
+        "timestamp": "2025-10-06T17:05:43.471048Z"
+      },
+      {
+        "symbol": "BTC/EUR",
+        "side": "buy",
+        "price": 106939.0,
+        "qty": 0.00187004,
+        "ord_type": "limit",
+        "trade_id": 99065785,
+        "timestamp": "2025-10-06T17:05:45.853109Z"
+      },
+      {
+        "symbol": "BTC/EUR",
+        "side": "buy",
+        "price": 106939.0,
+        "qty": 0.00090131,
+        "ord_type": "limit",
+        "trade_id": 99065786,
+        "timestamp": "2025-10-06T17:05:53.802759Z"
+      }
+    ]
+  },
+  "updates": [
+    {
+      "channel": "trade",
+      "type": "update",
+      "data": [
+        {
+          "symbol": "BTC/EUR",
+          "side": "buy",
+          "price": 106939.0,
+          "qty": 4.562e-05,
+          "ord_type": "limit",
+          "trade_id": 99065787,
+          "timestamp": "2025-10-06T17:06:02.171199Z"
+        }
+      ]
+    },
+    {
+      "channel": "trade",
+      "type": "update",
+      "data": [
+        {
+          "symbol": "BTC/EUR",
+          "side": "buy",
+          "price": 106939.0,
+          "qty": 0.00048974,
+          "ord_type": "limit",
+          "trade_id": 99065788,
+          "timestamp": "2025-10-06T17:06:04.962741Z"
+        },
+        {
+          "symbol": "BTC/EUR",
+          "side": "buy",
+          "price": 106943.0,
+          "qty": 0.0003,
+          "ord_type": "limit",
+          "trade_id": 99065789,
+          "timestamp": "2025-10-06T17:06:04.962741Z"
+        },
+        {
+          "symbol": "BTC/EUR",
+          "side": "buy",
+          "price": 106957.2,
+          "qty": 0.00053792,
+          "ord_type": "limit",
+          "trade_id": 99065790,
+          "timestamp": "2025-10-06T17:06:04.962741Z"
+        }
+      ]
+    },
+    {
+      "channel": "trade",
+      "type": "update",
+      "data": [
+        {
+          "symbol": "BTC/EUR",
+          "side": "buy",
+          "price": 106944.2,
+          "qty": 0.00053787,
+          "ord_type": "market",
+          "trade_id": 99065791,
+          "timestamp": "2025-10-06T17:06:06.031669Z"
+        },
+        {
+          "symbol": "BTC/EUR",
+          "side": "buy",
+          "price": 106957.2,
+          "qty": 9.508e-05,
+          "ord_type": "market",
+          "trade_id": 99065792,
+          "timestamp": "2025-10-06T17:06:06.031669Z"
+        },
+        {
+          "symbol": "BTC/EUR",
+          "side": "buy",
+          "price": 106969.8,
+          "qty": 0.00017616,
+          "ord_type": "market",
+          "trade_id": 99065793,
+          "timestamp": "2025-10-06T17:06:06.031669Z"
+        }
+      ]
+    },
+    {
+      "channel": "trade",
+      "type": "update",
+      "data": [
+        {
+          "symbol": "BTC/EUR",
+          "side": "sell",
+          "price": 106944.1,
+          "qty": 9.35e-05,
+          "ord_type": "market",
+          "trade_id": 99065794,
+          "timestamp": "2025-10-06T17:06:07.133890Z"
+        }
+      ]
+    },
+    {
+      "channel": "trade",
+      "type": "update",
+      "data": [
+        {
+          "symbol": "BTC/EUR",
+          "side": "buy",
+          "price": 106944.2,
+          "qty": 9.351e-05,
+          "ord_type": "market",
+          "trade_id": 99065795,
+          "timestamp": "2025-10-06T17:06:12.211997Z"
+        }
+      ]
+    },
+    {
+      "channel": "trade",
+      "type": "update",
+      "data": [
+        {
+          "symbol": "BTC/EUR",
+          "side": "buy",
+          "price": 106944.2,
+          "qty": 9.351e-05,
+          "ord_type": "market",
+          "trade_id": 99065796,
+          "timestamp": "2025-10-06T17:06:17.230379Z"
+        }
+      ]
+    },
+    {
+      "channel": "trade",
+      "type": "update",
+      "data": [
+        {
+          "symbol": "BTC/EUR",
+          "side": "sell",
+          "price": 106944.1,
+          "qty": 0.2,
+          "ord_type": "market",
+          "trade_id": 99065797,
+          "timestamp": "2025-10-06T17:06:19.269967Z"
+        }
+      ]
+    },
+    {
+      "channel": "trade",
+      "type": "update",
+      "data": [
+        {
+          "symbol": "BTC/EUR",
+          "side": "buy",
+          "price": 106944.2,
+          "qty": 0.00054531,
+          "ord_type": "market",
+          "trade_id": 99065798,
+          "timestamp": "2025-10-06T17:06:19.987307Z"
+        },
+        {
+          "symbol": "BTC/EUR",
+          "side": "buy",
+          "price": 106955.0,
+          "qty": 0.00031727,
+          "ord_type": "market",
+          "trade_id": 99065799,
+          "timestamp": "2025-10-06T17:06:19.987307Z"
+        }
+      ]
+    },
+    {
+      "channel": "trade",
+      "type": "update",
+      "data": [
+        {
+          "symbol": "BTC/EUR",
+          "side": "sell",
+          "price": 106945.3,
+          "qty": 0.00302409,
+          "ord_type": "limit",
+          "trade_id": 99065800,
+          "timestamp": "2025-10-06T17:06:21.672618Z"
+        }
+      ]
+    },
+    {
+      "channel": "trade",
+      "type": "update",
+      "data": [
+        {
+          "symbol": "BTC/EUR",
+          "side": "sell",
+          "price": 106945.3,
+          "qty": 9.35e-05,
+          "ord_type": "market",
+          "trade_id": 99065801,
+          "timestamp": "2025-10-06T17:06:22.323856Z"
+        }
+      ]
+    },
+    {
+      "channel": "trade",
+      "type": "update",
+      "data": [
+        {
+          "symbol": "BTC/EUR",
+          "side": "sell",
+          "price": 106945.3,
+          "qty": 0.00014894,
+          "ord_type": "limit",
+          "trade_id": 99065802,
+          "timestamp": "2025-10-06T17:06:23.985243Z"
+        }
+      ]
+    },
+    {
+      "channel": "trade",
+      "type": "update",
+      "data": [
+        {
+          "symbol": "BTC/EUR",
+          "side": "sell",
+          "price": 106945.3,
+          "qty": 0.00021471,
+          "ord_type": "market",
+          "trade_id": 99065803,
+          "timestamp": "2025-10-06T17:06:24.813698Z"
+        }
+      ]
+    }
+  ],
+  "total_updates": 12
+}

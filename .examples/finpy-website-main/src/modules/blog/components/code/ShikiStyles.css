@@ -1,0 +1,24 @@
+@reference "../../../main/styles/globals.css";
+
+/* Styles for dark theme */
+html.dark .shiki,
+html.dark .shiki span {
+  color: var(--shiki-dark) !important; /* Text color for dark theme */
+  background-color: #171717 !important; /* Background color for dark theme */
+
+}
+
+/* Styles for light theme */
+html:not(.dark) .shiki,
+html:not(.dark) .shiki span {
+  background-color: #f5f5f5 !important; /* Background color for light theme */
+}
+
+/* Common styles for code blocks */
+.shiki {
+  @apply overflow-x-auto rounded-xl px-5 py-0;
+}
+
+:root {
+  --shiki-dark: #d4d4d4; /* Dark theme text color */
+}

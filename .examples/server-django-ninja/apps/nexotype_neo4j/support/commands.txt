@@ -1,0 +1,8 @@
+# Install Neo4j labels and constraints
+python manage.py install_labels
+
+# Test connection only
+python manage.py install_labels --test
+
+# Check existing constraints and indices
+python manage.py install_labels --check

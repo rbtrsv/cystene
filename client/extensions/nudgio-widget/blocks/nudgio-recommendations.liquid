@@ -1,0 +1,358 @@
+{% comment %}
+  Nudgio Recommendations — Theme App Extension Block
+
+  Renders an iframe pointing to the App Proxy URL which serves
+  recommendation widget HTML (Tailwind-styled product cards).
+
+  The iframe isolates widget styles (Tailwind CDN) from the merchant's
+  theme — same approach as the embedded Components page preview.
+
+  Widget types:
+  - bestsellers: no product context needed
+  - cross-sell, upsell, similar: pass current product.id from Liquid context
+
+  Shopify App Proxy rewrites:
+    https://shop.myshopify.com/apps/nudgio-widget/bestsellers?top=4&...
+    → https://server.nudgio.tech/ecommerce/shopify/app-proxy/bestsellers?top=4&...&shop=...&signature=...
+{% endcomment %}
+
+{% comment %} Build the App Proxy URL with widget settings from Theme Editor {% endcomment %}
+{% assign proxy_base = "/apps/nudgio-widget/" | append: block.settings.widget_type %}
+
+{% comment %} URL-encode color values separately — encoding the full string would encode ? & = too {% endcomment %}
+{% assign widget_bg_color_enc = block.settings.widget_bg_color | url_encode %}
+{% assign title_color_enc = block.settings.title_color | url_encode %}
+{% assign card_bg_color_enc = block.settings.card_bg_color | url_encode %}
+{% assign product_title_color_enc = block.settings.product_title_color | url_encode %}
+{% assign price_color_enc = block.settings.price_color | url_encode %}
+{% assign button_bg_color_enc = block.settings.button_bg_color | url_encode %}
+{% assign button_text_color_enc = block.settings.button_text_color | url_encode %}
+
+{% comment %} Build query string — one param per visual setting (25 interactive settings from Theme Editor) {% endcomment %}
+{% assign params = "?top=" | append: block.settings.product_count %}
+{% comment %} Algorithm settings {% endcomment %}
+{% assign params = params | append: "&lookback_days=" | append: block.settings.lookback_days %}
+{% comment %} Group 1: Widget Container {% endcomment %}
+{% assign params = params | append: "&widget_bg_color=" | append: widget_bg_color_enc %}
+{% assign params = params | append: "&widget_padding=" | append: block.settings.widget_padding %}
+{% comment %} Group 2: Widget Title {% endcomment %}
+{% if block.settings.widget_title != blank %}
+  {% assign widget_title_enc = block.settings.widget_title | url_encode %}
+  {% assign params = params | append: "&widget_title=" | append: widget_title_enc %}
+{% endif %}
+{% assign params = params | append: "&title_color=" | append: title_color_enc %}
+{% comment %} Group 3: Layout {% endcomment %}
+{% assign params = params | append: "&widget_style=" | append: block.settings.widget_style %}
+{% assign params = params | append: "&widget_columns=" | append: block.settings.widget_columns %}
+{% assign params = params | append: "&gap=" | append: block.settings.gap %}
+{% assign params = params | append: "&card_min_width=" | append: block.settings.card_min_width %}
+{% assign params = params | append: "&card_max_width=" | append: block.settings.card_max_width %}
+{% comment %} Group 4: Product Card {% endcomment %}
+{% assign params = params | append: "&card_bg_color=" | append: card_bg_color_enc %}
+{% assign params = params | append: "&card_shadow=" | append: block.settings.card_shadow %}
+{% assign params = params | append: "&card_padding=" | append: block.settings.card_padding %}
+{% comment %} Group 5: Product Image {% endcomment %}
+{% assign params = params | append: "&image_aspect_w=" | append: block.settings.image_aspect_w %}
+{% assign params = params | append: "&image_aspect_h=" | append: block.settings.image_aspect_h %}
+{% assign params = params | append: "&image_fit=" | append: block.settings.image_fit %}
+{% comment %} Group 6: Product Title in Card {% endcomment %}
+{% assign params = params | append: "&product_title_color=" | append: product_title_color_enc %}
+{% comment %} Group 7: Price {% endcomment %}
+{% unless block.settings.show_price %}
+  {% assign params = params | append: "&show_price=false" %}
+{% endunless %}
+{% assign params = params | append: "&price_color=" | append: price_color_enc %}
+{% comment %} Group 8: CTA Button {% endcomment %}
+{% if block.settings.button_text != blank %}
+  {% assign button_text_enc = block.settings.button_text | url_encode %}
+  {% assign params = params | append: "&button_text=" | append: button_text_enc %}
+{% endif %}
+{% assign params = params | append: "&button_bg_color=" | append: button_bg_color_enc %}
+{% assign params = params | append: "&button_text_color=" | append: button_text_color_enc %}
+
+{% comment %} Product ID: use manual value if set, otherwise auto-detect from Liquid product context {% endcomment %}
+{% if block.settings.product_id != blank %}
+  {% assign params = params | append: "&product_id=" | append: block.settings.product_id %}
+{% elsif block.settings.widget_type != "bestsellers" and product %}
+  {% assign params = params | append: "&product_id=" | append: product.id %}
+{% endif %}
+
+{% comment %} Dummy trailing parameter — Shopify Theme Editor appends ?oseid=... to the
+   iframe src, contaminating the last URL parameter's value. This sacrificial
+   param absorbs the editor suffix so real params stay clean. {% endcomment %}
+{% assign params = params | append: "&_=1" %}
+
+{% assign iframe_src = proxy_base | append: params %}
+
+{% comment %} Guard: product-specific widget types require a product page context {% endcomment %}
+{% if block.settings.widget_type != "bestsellers" and product == nil and block.settings.product_id == blank %}
+  <div class="nudgio-recommendations" {{ block.shopify_attributes }}>
+    <p style="padding: 16px; color: #6b7280; font-size: 14px; text-align: center;">
+      This widget type requires a product page. Move this block to a product page template,
+      or switch the widget type to "Bestsellers" for non-product pages.
+    </p>
+  </div>
+{% else %}
+  <div class="nudgio-recommendations" {{ block.shopify_attributes }}>
+    <iframe
+      src="{{ iframe_src }}"
+      style="width: 100%; border: none; min-height: 200px; overflow: hidden;"
+      title="Nudgio Recommendations"
+      loading="lazy"
+      id="nudgio-widget-{{ block.id }}"
+    ></iframe>
+  </div>
+
+  <script src="{{ 'nudgio-widget.js' | asset_url }}" defer></script>
+{% endif %}
+
+{% comment %}
+  SHOPIFY LIMIT: Max 25 interactive settings per block (enforced at deploy by theme-check).
+  Max 6 non-interactive settings (header/paragraph) per block.
+  Error at deploy: "settings: must have a maximum of 25 for interactive settings"
+  Source: https://community.shopify.com/c/shopify-apps/theme-app-extension-limitation-of-block-settings/m-p/2957006
+  Current count: 25 interactive / 6 non-interactive — at the limit.
+  Settings not in Theme Editor (18) are served from DB brand defaults via apply_visual_defaults().
+{% endcomment %}
+{% schema %}
+{
+  "name": "Nudgio Technologies",
+  "target": "section",
+  "settings": [
+    {
+      "type": "select",
+      "id": "widget_type",
+      "label": "Widget Type",
+      "default": "bestsellers",
+      "options": [
+        { "value": "bestsellers", "label": "Bestsellers" },
+        { "value": "cross-sell", "label": "Cross-sell" },
+        { "value": "upsell", "label": "Upsell" },
+        { "value": "similar", "label": "Similar Products" }
+      ],
+      "info": "Cross-sell, upsell, and similar require a product page context."
+    },
+    {
+      "type": "range",
+      "id": "product_count",
+      "label": "Number of Products",
+      "min": 1,
+      "max": 12,
+      "step": 1,
+      "default": 4
+    },
+    {
+      "type": "text",
+      "id": "product_id",
+      "label": "Product ID",
+      "info": "Leave empty to auto-detect on product pages. Set manually to show recommendations for a specific product on any page."
+    },
+    {
+      "type": "range",
+      "id": "lookback_days",
+      "label": "Lookback Days",
+      "min": 7,
+      "max": 90,
+      "step": 1,
+      "default": 30,
+      "info": "Number of days to analyze for recommendations. Used by Bestsellers and Cross-sell."
+    },
+    {
+      "type": "header",
+      "content": "Widget Container"
+    },
+    {
+      "type": "color",
+      "id": "widget_bg_color",
+      "label": "Background Color",
+      "default": "#FFFFFF"
+    },
+    {
+      "type": "range",
+      "id": "widget_padding",
+      "label": "Padding (px)",
+      "min": 0,
+      "max": 48,
+      "step": 2,
+      "default": 16,
+      "unit": "px"
+    },
+    {
+      "type": "text",
+      "id": "widget_title",
+      "label": "Title Text",
+      "info": "Leave empty for auto-default based on widget type (e.g., \"Popular now\", \"Frequently bought together\")."
+    },
+    {
+      "type": "color",
+      "id": "title_color",
+      "label": "Title Color",
+      "default": "#111827"
+    },
+    {
+      "type": "header",
+      "content": "Layout"
+    },
+    {
+      "type": "select",
+      "id": "widget_style",
+      "label": "Layout Style",
+      "default": "grid",
+      "options": [
+        { "value": "grid", "label": "Grid Cards" },
+        { "value": "carousel", "label": "Carousel" }
+      ]
+    },
+    {
+      "type": "range",
+      "id": "widget_columns",
+      "label": "Columns",
+      "min": 1,
+      "max": 6,
+      "step": 1,
+      "default": 4,
+      "info": "Max columns at full width. Responsive: 1 col mobile → 2 col tablet → N col desktop."
+    },
+    {
+      "type": "range",
+      "id": "gap",
+      "label": "Card Gap (px)",
+      "min": 0,
+      "max": 48,
+      "step": 2,
+      "default": 16,
+      "unit": "px"
+    },
+    {
+      "type": "range",
+      "id": "card_min_width",
+      "label": "Card Min Width (px)",
+      "min": 100,
+      "max": 500,
+      "step": 10,
+      "default": 200,
+      "info": "Minimum card width in pixels. Cards won't shrink below this — overflow scrolls instead."
+    },
+    {
+      "type": "range",
+      "id": "card_max_width",
+      "label": "Card Max Width (px)",
+      "min": 0,
+      "max": 800,
+      "step": 10,
+      "default": 0,
+      "info": "Maximum card width in pixels. 0 = no limit (cards fill available space)."
+    },
+    {
+      "type": "header",
+      "content": "Card"
+    },
+    {
+      "type": "color",
+      "id": "card_bg_color",
+      "label": "Card Background",
+      "default": "#FFFFFF"
+    },
+    {
+      "type": "select",
+      "id": "card_shadow",
+      "label": "Card Shadow",
+      "default": "md",
+      "options": [
+        { "value": "none", "label": "None" },
+        { "value": "sm", "label": "Small" },
+        { "value": "md", "label": "Medium" },
+        { "value": "lg", "label": "Large" }
+      ]
+    },
+    {
+      "type": "range",
+      "id": "card_padding",
+      "label": "Card Padding (px)",
+      "min": 0,
+      "max": 48,
+      "step": 2,
+      "default": 16,
+      "unit": "px"
+    },
+    {
+      "type": "header",
+      "content": "Image"
+    },
+    {
+      "type": "range",
+      "id": "image_aspect_w",
+      "label": "Aspect Ratio Width",
+      "min": 1,
+      "max": 20,
+      "step": 1,
+      "default": 1,
+      "info": "Image aspect ratio width (e.g., 1 for square, 16 for widescreen)."
+    },
+    {
+      "type": "range",
+      "id": "image_aspect_h",
+      "label": "Aspect Ratio Height",
+      "min": 1,
+      "max": 20,
+      "step": 1,
+      "default": 1,
+      "info": "Image aspect ratio height (e.g., 1 for square, 9 for widescreen)."
+    },
+    {
+      "type": "select",
+      "id": "image_fit",
+      "label": "Image Fit",
+      "default": "cover",
+      "options": [
+        { "value": "cover", "label": "Cover (crop)" },
+        { "value": "contain", "label": "Contain (fit)" }
+      ]
+    },
+    {
+      "type": "header",
+      "content": "Product Title"
+    },
+    {
+      "type": "color",
+      "id": "product_title_color",
+      "label": "Title Color",
+      "default": "#1F2937"
+    },
+    {
+      "type": "header",
+      "content": "Price & CTA"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_price",
+      "label": "Show Price",
+      "default": true
+    },
+    {
+      "type": "color",
+      "id": "price_color",
+      "label": "Price Color",
+      "default": "#111827"
+    },
+    {
+      "type": "text",
+      "id": "button_text",
+      "label": "Button Text",
+      "default": "View"
+    },
+    {
+      "type": "color",
+      "id": "button_bg_color",
+      "label": "Button Color",
+      "default": "#3B82F6"
+    },
+    {
+      "type": "color",
+      "id": "button_text_color",
+      "label": "Button Text Color",
+      "default": "#FFFFFF"
+    }
+  ]
+}
+{% endschema %}

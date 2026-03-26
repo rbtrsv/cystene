@@ -1,0 +1,13 @@
+{
+  "book_snapshot_received": true,
+  "book_snapshot_size": {
+    "bids": 1000,
+    "asks": 1000
+  },
+  "book_updates_count": 1662,
+  "trade_snapshot_received": true,
+  "trade_snapshot_size": 50,
+  "trade_updates_count": 12,
+  "start_time": "2025-10-06T20:05:55.028961",
+  "end_time": "2025-10-06T20:06:25.036803"
+}

@@ -1,0 +1,872 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>V7 Capital Investment Framework</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        
+        @media print {
+            body { margin: 0; }
+            .page-break { page-break-before: always; }
+            .no-break { page-break-inside: avoid; }
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            line-height: 1.7;
+            color: #1a1a2e;
+            max-width: 210mm;
+            margin: 0 auto;
+            padding: 25mm;
+            background: white;
+            font-weight: 400;
+        }
+        
+        .cover {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: flex-start;
+            padding: 40px;
+            background: linear-gradient(135deg, #0f2027 0%, #203a43 50%, #2c5364 100%);
+            color: white;
+            margin: -25mm;
+            margin-bottom: 0;
+        }
+        
+        .company-name {
+            font-size: 48pt;
+            font-weight: 700;
+            letter-spacing: 8px;
+            margin-bottom: 20px;
+            color: white;
+        }
+        
+        .doc-title {
+            font-size: 24pt;
+            font-weight: 300;
+            letter-spacing: 2px;
+            color: #e0e0e0;
+            margin-bottom: 60px;
+        }
+        
+        .cover-meta {
+            font-size: 11pt;
+            font-weight: 300;
+            color: #b0b0b0;
+            margin-top: auto;
+        }
+        
+        .header {
+            border-bottom: 1px solid #2c5364;
+            padding-bottom: 10px;
+            margin-bottom: 30px;
+            margin-top: 40px;
+        }
+        
+        .header-mini {
+            font-size: 10pt;
+            color: #2c5364;
+            font-weight: 600;
+            letter-spacing: 1px;
+        }
+        
+        h1 {
+            font-size: 22pt;
+            font-weight: 600;
+            margin-top: 35px;
+            margin-bottom: 20px;
+            color: #0f2027;
+            border-bottom: 2px solid #2c5364;
+            padding-bottom: 10px;
+            letter-spacing: -0.5px;
+        }
+        
+        h2 {
+            font-size: 15pt;
+            font-weight: 600;
+            margin-top: 25px;
+            margin-bottom: 15px;
+            color: #203a43;
+            letter-spacing: -0.3px;
+        }
+        
+        h3 {
+            font-size: 12pt;
+            font-weight: 600;
+            margin-top: 18px;
+            margin-bottom: 10px;
+            color: #2c5364;
+        }
+        
+        p {
+            margin-bottom: 12px;
+            font-size: 10.5pt;
+            color: #2a2a2a;
+        }
+        
+        .framework-box {
+            border: 2px solid #2c5364;
+            padding: 25px;
+            margin: 25px 0;
+            background: linear-gradient(to right, #f8f9fa 0%, #ffffff 100%);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+        
+        .checklist {
+            background: white;
+            border: 1px solid #d0d0d0;
+            padding: 18px;
+            margin: 18px 0;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+        }
+        
+        .checklist-item {
+            padding: 10px 0;
+            border-bottom: 1px solid #f0f0f0;
+            font-size: 10pt;
+            color: #2a2a2a;
+            transition: all 0.2s;
+        }
+        
+        .checklist-item:last-child {
+            border-bottom: none;
+        }
+        
+        .checklist-item:before {
+            content: "☐ ";
+            font-size: 13pt;
+            font-weight: 600;
+            margin-right: 10px;
+            color: #2c5364;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 22px 0;
+            font-size: 10pt;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+        }
+        
+        th {
+            background: linear-gradient(135deg, #0f2027 0%, #2c5364 100%);
+            color: white;
+            padding: 12px 15px;
+            text-align: left;
+            font-weight: 600;
+            font-size: 10pt;
+            letter-spacing: 0.5px;
+        }
+        
+        td {
+            padding: 12px 15px;
+            border: 1px solid #e0e0e0;
+            background: white;
+        }
+        
+        tr:nth-child(even) td {
+            background: #f8f9fa;
+        }
+        
+        tr:hover td {
+            background: #f0f4f8;
+        }
+        
+        .formula {
+            background: linear-gradient(to right, #f8f9fa 0%, #ffffff 100%);
+            border-left: 4px solid #2c5364;
+            padding: 18px;
+            margin: 18px 0;
+            font-family: 'Courier New', monospace;
+            font-size: 10pt;
+            color: #1a1a2e;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+        }
+        
+        .rule-box {
+            background: linear-gradient(135deg, #2c5364 0%, #203a43 100%);
+            color: white;
+            padding: 15px 20px;
+            margin: 18px 0;
+            font-size: 10.5pt;
+            font-weight: 500;
+            box-shadow: 0 2px 8px rgba(44, 83, 100, 0.3);
+            letter-spacing: 0.3px;
+        }
+        
+        ul, ol {
+            margin-left: 28px;
+            margin-bottom: 16px;
+        }
+        
+        li {
+            margin-bottom: 8px;
+            font-size: 10pt;
+            color: #2a2a2a;
+            line-height: 1.6;
+        }
+        
+        .memo-box {
+            border: 2px solid #2c5364;
+            padding: 25px;
+            margin: 25px 0;
+            background: white;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        }
+        
+        .memo-section {
+            margin: 15px 0;
+            padding: 15px;
+            background: #f8f9fa;
+            border-left: 4px solid #2c5364;
+        }
+        
+        .footer {
+            text-align: center;
+            margin-top: 50px;
+            padding-top: 20px;
+            border-top: 1px solid #d0d0d0;
+            font-size: 9pt;
+            color: #7a7a7a;
+            font-weight: 300;
+        }
+        
+        .emphasis {
+            font-weight: 600;
+            color: #0f2027;
+        }
+        
+        .section-number {
+            display: inline-block;
+            background: #2c5364;
+            color: white;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            text-align: center;
+            line-height: 28px;
+            font-weight: 600;
+            font-size: 12pt;
+            margin-right: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="cover">
+        <div class="company-name">V7 CAPITAL</div>
+        <div class="doc-title">Investment Framework</div>
+        <div class="cover-meta">
+            Internal Document<br>
+            © 2025 V7 Capital. Confidential.
+        </div>
+    </div>
+
+    <div class="page-break"></div>
+    
+    <div class="header">
+        <div class="header-mini">V7 CAPITAL</div>
+    </div>
+    
+    <div class="framework-box">
+        <h2 style="margin-top: 0; text-align: center; font-size: 18pt; color: #0f2027;">THE FIVE QUESTIONS</h2>
+        <table style="margin-top: 25px;">
+            <tr>
+                <th style="width: 50%;">Question</th>
+                <th style="width: 20%;">Weight</th>
+                <th style="width: 30%;">Action</th>
+            </tr>
+            <tr>
+                <td><span class="emphasis">1.</span> Can the founders execute?</td>
+                <td>50%</td>
+                <td><span class="emphasis">MUST PASS</span></td>
+            </tr>
+            <tr>
+                <td><span class="emphasis">2.</span> Is the timing right?</td>
+                <td>20%</td>
+                <td><span class="emphasis">MUST PASS</span></td>
+            </tr>
+            <tr>
+                <td><span class="emphasis">3.</span> Can they acquire customers cheaply?</td>
+                <td>15%</td>
+                <td><span class="emphasis">MUST PASS</span></td>
+            </tr>
+            <tr>
+                <td><span class="emphasis">4.</span> Will customers stay?</td>
+                <td>10%</td>
+                <td>Adjusts valuation</td>
+            </tr>
+            <tr>
+                <td><span class="emphasis">5.</span> Can they defend their position?</td>
+                <td>5%</td>
+                <td>Adjusts valuation</td>
+            </tr>
+        </table>
+    </div>
+    
+    <div class="rule-box">
+        If any of questions 1-3 fail → REJECT immediately
+    </div>
+
+    <div class="page-break"></div>
+    
+    <div class="header">
+        <div class="header-mini">V7 CAPITAL</div>
+    </div>
+    
+    <h1><span class="section-number">1</span>CAN THE FOUNDERS EXECUTE?</h1>
+    <p style="color: #555; font-style: italic; margin-bottom: 20px;">Weight: 50% | Type: Must Pass</p>
+    
+    <h2>Binary Checklist — Must Pass 7 of 9</h2>
+    
+    <div class="checklist">
+        <div class="checklist-item">Domain expertise: 5+ years in this industry</div>
+        <div class="checklist-item">Technical competence: Can build product themselves (if tech)</div>
+        <div class="checklist-item">Prior startup experience: Founded/C-level at startup before</div>
+        <div class="checklist-item">Resilience signal: Overcame major setback</div>
+        <div class="checklist-item">Speed: Shipped meaningful product in <6 months</div>
+        <div class="checklist-item">Learning rate: Pivoted based on user feedback</div>
+        <div class="checklist-item">Insight: Non-obvious insight about market</div>
+        <div class="checklist-item">Commitment: Full-time, no side projects, vesting</div>
+        <div class="checklist-item">Partnership: Complementary co-founders, 1+ year together</div>
+    </div>
+    
+    <div class="formula">
+SCORE: ___/9
+
+PASS: ≥7 | FAIL: ≤6 → REJECT
+    </div>
+    
+    <h2>Red Flags (Auto-Reject)</h2>
+    <ul>
+        <li>Part-time founders at Seed+</li>
+        <li>Co-founders met <3 months ago</li>
+        <li>Serial wantrepreneur (5+ failed ideas, no learnings)</li>
+        <li>Blames others for past failures</li>
+    </ul>
+
+    <div class="page-break"></div>
+    
+    <div class="header">
+        <div class="header-mini">V7 CAPITAL</div>
+    </div>
+    
+    <h1><span class="section-number">2</span>IS THE TIMING RIGHT?</h1>
+    <p style="color: #555; font-style: italic; margin-bottom: 20px;">Weight: 20% | Type: Must Pass</p>
+    
+    <h2>The "Why Now?" Test</h2>
+    
+    <div class="formula">
+Answer in ONE sentence:
+
+This works NOW because: _________________________________
+    </div>
+    
+    <h2>Pass Criteria (Must Have ONE)</h2>
+    <ul>
+        <li><span class="emphasis">Technology shift:</span> AI models, mobile internet, blockchain</li>
+        <li><span class="emphasis">Regulatory change:</span> Fintech licensing, data privacy</li>
+        <li><span class="emphasis">Behavioral change:</span> Remote work, creator economy</li>
+        <li><span class="emphasis">Cost structure change:</span> Cloud infrastructure, API economy</li>
+        <li><span class="emphasis">Underserved segment:</span> SMB software, emerging markets</li>
+    </ul>
+    
+    <h2>Examples</h2>
+    <table>
+        <tr>
+            <th>Company</th>
+            <th>Why Now</th>
+        </tr>
+        <tr>
+            <td>Stripe (2010)</td>
+            <td>APIs now make payments programmable</td>
+        </tr>
+        <tr>
+            <td>Uber (2009)</td>
+            <td>Smartphones + GPS + payments converge</td>
+        </tr>
+        <tr>
+            <td>Figma (2016)</td>
+            <td>WebGL enables design tools in browser</td>
+        </tr>
+    </table>
+    
+    <div class="rule-box">
+        If you cannot articulate "why now" → REJECT
+    </div>
+
+    <div class="page-break"></div>
+    
+    <div class="header">
+        <div class="header-mini">V7 CAPITAL</div>
+    </div>
+    
+    <h1><span class="section-number">3</span>CAN THEY ACQUIRE CUSTOMERS CHEAPLY?</h1>
+    <p style="color: #555; font-style: italic; margin-bottom: 20px;">Weight: 15% | Type: Must Pass</p>
+    
+    <h2>Capital Efficiency Gates</h2>
+    
+    <h3>Pre-Revenue ($0 ARR)</h3>
+    <div class="checklist">
+        <div class="checklist-item">CAC estimate ≤ $500 (B2C) or ≤ $5K (B2B)</div>
+        <div class="checklist-item">Organic channel exists (SEO, viral, community)</div>
+        <div class="checklist-item">10 design partners committed (will pay at launch)</div>
+    </div>
+    
+    <h3>Post-Revenue ($1M+ ARR)</h3>
+    <table>
+        <tr>
+            <th style="width: 35%;">Metric</th>
+            <th style="width: 25%;">Threshold</th>
+            <th style="width: 25%;">Actual</th>
+            <th style="width: 15%;">Pass/Fail</th>
+        </tr>
+        <tr>
+            <td>LTV/CAC</td>
+            <td>≥ 3.0x</td>
+            <td>____x</td>
+            <td>☐</td>
+        </tr>
+        <tr>
+            <td>CAC Payback</td>
+            <td>≤ 12 months</td>
+            <td>____ mo</td>
+            <td>☐</td>
+        </tr>
+        <tr>
+            <td>Magic Number</td>
+            <td>≥ 0.75</td>
+            <td>____</td>
+            <td>☐</td>
+        </tr>
+        <tr>
+            <td>Burn Multiple</td>
+            <td>≤ 2.0</td>
+            <td>____</td>
+            <td>☐</td>
+        </tr>
+    </table>
+    
+    <div class="formula">
+Magic Number = New ARR ÷ Sales & Marketing Spend
+
+Burn Multiple = Cash Burned ÷ New ARR Added
+    </div>
+    
+    <div class="rule-box">
+        Fail any metric → 50% valuation discount OR reject
+    </div>
+
+    <div class="page-break"></div>
+    
+    <div class="header">
+        <div class="header-mini">V7 CAPITAL</div>
+    </div>
+    
+    <h1><span class="section-number">4</span>WILL CUSTOMERS STAY?</h1>
+    <p style="color: #555; font-style: italic; margin-bottom: 20px;">Weight: 10% | Type: Adjusts Valuation</p>
+    
+    <h2>Retention Quality</h2>
+    
+    <h3>Pre-Revenue</h3>
+    <div class="checklist">
+        <div class="checklist-item">Users return 3+ times per week (consumer)</div>
+        <div class="checklist-item">NPS >50 from beta users</div>
+        <div class="checklist-item">User-initiated referrals happening</div>
+    </div>
+    
+    <h3>Post-Revenue</h3>
+    <table>
+        <tr>
+            <th style="width: 40%;">Metric</th>
+            <th style="width: 25%;">Threshold</th>
+            <th style="width: 20%;">Actual</th>
+            <th style="width: 15%;">Pass/Fail</th>
+        </tr>
+        <tr>
+            <td>Net Retention</td>
+            <td>≥ 100%</td>
+            <td>____%</td>
+            <td>☐</td>
+        </tr>
+        <tr>
+            <td>Gross Retention (Month 12)</td>
+            <td>≥ 85%</td>
+            <td>____%</td>
+            <td>☐</td>
+        </tr>
+        <tr>
+            <td>Cohort Behavior</td>
+            <td>Expanding</td>
+            <td>_____</td>
+            <td>☐</td>
+        </tr>
+    </table>
+    
+    <div class="rule-box">
+        If retention failing → -30% valuation OR reject
+    </div>
+    
+    <h1><span class="section-number">5</span>CAN THEY DEFEND POSITION?</h1>
+    <p style="color: #555; font-style: italic; margin-bottom: 20px;">Weight: 5% | Type: Adjusts Valuation</p>
+    
+    <h2>Moat Assessment</h2>
+    
+    <div class="checklist">
+        <div class="checklist-item">Network effects (value increases with users)</div>
+        <div class="checklist-item">High switching costs (data lock-in, integrations)</div>
+        <div class="checklist-item">Proprietary data/IP (patents, unique dataset)</div>
+        <div class="checklist-item">Brand/trust (regulated industry)</div>
+        <div class="checklist-item">Scale economies (marketplace, infrastructure)</div>
+    </div>
+    
+    <div class="formula">
+Has at least ONE moat: No discount
+ZERO moats: -20% valuation
+
+(Not a rejection criterion)
+    </div>
+
+    <div class="page-break"></div>
+    
+    <div class="header">
+        <div class="header-mini">V7 CAPITAL</div>
+    </div>
+    
+    <h1>VALUATION FORMULAS</h1>
+    
+    <h2>Seed ($0-$1M ARR)</h2>
+    <div class="formula">
+Step 1: Regional median seed valuation
+  Median: $______M
+
+Step 2: Founder adjustment
+  • Passed 9/9 criteria: ×1.5
+  • Passed 7-8/9: ×1.0
+  • Passed 5-6/9: ×0.7
+
+Step 3: Timing adjustment
+  • Clear "why now": ×1.2
+  • Weak "why now": ×1.0
+
+<span class="emphasis">Intrinsic Value = Median × Founder × Timing</span>
+    </div>
+    
+    <h2>Series A/B ($1-$20M ARR)</h2>
+    <div class="formula">
+P/S Multiple = (Growth% × 20) × Quality Multiplier
+
+Quality Multiplier:
+  • Passed all Q3 gates: 1.3x
+  • Passed 3 of 4: 1.0x
+  • Passed 2 of 4: 0.7x
+
+<span class="emphasis">Intrinsic Value = ARR × P/S Multiple</span>
+    </div>
+    
+    <h2>Growth ($20M+ ARR)</h2>
+    <div class="formula">
+Rule of 40 = Growth% + EBITDA%
+
+P/S Multiple:
+  • Score ≥60%: 15x
+  • Score 50-60%: 12x
+  • Score 40-50%: 9x
+  • Score <40%: REJECT
+
+Moat adjustment:
+  • 1+ moats: ×1.0
+  • 0 moats: ×0.8
+
+<span class="emphasis">Intrinsic Value = ARR × P/S × Moat</span>
+    </div>
+    
+    <h2>Buyout (>$100M Revenue)</h2>
+    <div class="formula">
+Target: 2.5-3.0x MOIC, 20-25% IRR over 5 years
+
+Exit EBITDA (Y5) × Exit Multiple (10-12x)
+= Exit Value
+÷ Target MOIC (2.5-3.0x)
+= Max Entry Price
+
+<span class="emphasis">Intrinsic Value = Max Entry Price</span>
+    </div>
+
+    <div class="page-break"></div>
+    
+    <div class="header">
+        <div class="header-mini">V7 CAPITAL</div>
+    </div>
+    
+    <h1>MARGIN OF SAFETY</h1>
+    
+    <div class="framework-box">
+        <div class="formula" style="text-align: center; font-size: 12pt; background: none; border: none; box-shadow: none;">
+Intrinsic Value: $______M
+÷ Pre-Money Ask: $______M
+= Ratio: ______x
+
+<span style="font-size: 14pt;"><span class="emphasis">PASS: ≥1.3x</span> | FAIL: <1.3x → REJECT</span>
+        </div>
+    </div>
+    
+    <div class="rule-box">
+        Same 1.3x threshold across ALL stages (no exceptions)
+    </div>
+    
+    <h1>DECISION TREE</h1>
+    
+    <div class="formula">
+START
+  ↓
+Q1: Founders pass 7/9 criteria?
+  NO → REJECT
+  YES → Continue
+  ↓
+Q2: Clear "why now" answer?
+  NO → REJECT
+  YES → Continue
+  ↓
+Q3: Capital efficiency acceptable?
+  NO → REJECT (or 50% discount)
+  YES → Continue
+  ↓
+Calculate intrinsic value
+  ↓
+Q4: Retention acceptable?
+  NO → 30% discount
+  YES → No discount
+  ↓
+Q5: Has moat?
+  NO → 20% discount
+  YES → No discount
+  ↓
+Apply margin of safety (1.3x)
+  <span class="emphasis">PASS → INVEST</span>
+  FAIL → REJECT
+    </div>
+
+    <div class="page-break"></div>
+    
+    <div class="header">
+        <div class="header-mini">V7 CAPITAL</div>
+    </div>
+    
+    <h1>INVESTMENT MEMO</h1>
+    
+    <div class="memo-box">
+        <table style="margin-bottom: 15px; border: none; box-shadow: none;">
+            <tr style="background: none;">
+                <td style="border: none; padding: 5px; background: none;"><span class="emphasis">COMPANY:</span> _______________</td>
+                <td style="border: none; padding: 5px; background: none;"><span class="emphasis">DATE:</span> _______________</td>
+            </tr>
+        </table>
+        
+        <div style="margin-bottom: 20px; padding: 12px; background: #f8f9fa;">
+            <span class="emphasis">STAGE:</span> ☐ Seed  ☐ Series A  ☐ Series B  ☐ Growth  ☐ Buyout<br>
+            <span class="emphasis">ASK:</span> $___M at $___M pre-money ($___M post-money)
+        </div>
+        
+        <div class="memo-section">
+            <span class="emphasis" style="font-size: 11pt;">Q1: FOUNDERS (PASS 7/9 REQUIRED)</span>
+            <table style="margin-top: 12px; font-size: 9pt; box-shadow: none;">
+                <tr>
+                    <td style="padding: 8px;">☐ Domain expertise</td>
+                    <td style="padding: 8px;">☐ Can build product</td>
+                    <td style="padding: 8px;">☐ Prior startup</td>
+                </tr>
+                <tr>
+                    <td style="padding: 8px;">☐ Resilience signal</td>
+                    <td style="padding: 8px;">☐ Speed (<6mo)</td>
+                    <td style="padding: 8px;">☐ Learning rate</td>
+                </tr>
+                <tr>
+                    <td style="padding: 8px;">☐ Non-obvious insight</td>
+                    <td style="padding: 8px;">☐ Full-time</td>
+                    <td style="padding: 8px;">☐ Complementary team</td>
+                </tr>
+            </table>
+            <div style="margin-top: 12px;">
+                <span class="emphasis">SCORE: ___/9</span> | ☐ PASS (≥7) | ☐ FAIL (≤6)
+            </div>
+        </div>
+        
+        <div class="memo-section">
+            <span class="emphasis" style="font-size: 11pt;">Q2: TIMING</span><br>
+            Why now: ___________________________________________<br>
+            ☐ Clear timing | ☐ Weak timing | ☐ No timing
+        </div>
+        
+        <div class="memo-section">
+            <span class="emphasis" style="font-size: 11pt;">Q3: CAPITAL EFFICIENCY</span>
+            <table style="margin-top: 12px; box-shadow: none;">
+                <tr>
+                    <th>Metric</th>
+                    <th>Threshold</th>
+                    <th>Actual</th>
+                    <th>Pass/Fail</th>
+                </tr>
+                <tr>
+                    <td>LTV/CAC</td>
+                    <td>≥3.0x</td>
+                    <td>____x</td>
+                    <td>☐</td>
+                </tr>
+                <tr>
+                    <td>CAC Payback</td>
+                    <td>≤12mo</td>
+                    <td>____mo</td>
+                    <td>☐</td>
+                </tr>
+                <tr>
+                    <td>Magic Number</td>
+                    <td>≥0.75</td>
+                    <td>____</td>
+                    <td>☐</td>
+                </tr>
+                <tr>
+                    <td>Burn Multiple</td>
+                    <td>≤2.0</td>
+                    <td>____</td>
+                    <td>☐</td>
+                </tr>
+            </table>
+        </div>
+        
+        <div class="memo-section">
+            <span class="emphasis" style="font-size: 11pt;">Q4: RETENTION</span><br>
+            Net Retention: ____% (≥100%) | Gross Retention: ____% (≥85%)<br>
+            ☐ PASS | ☐ DISCOUNT -30%
+        </div>
+        
+        <div class="memo-section">
+            <span class="emphasis" style="font-size: 11pt;">Q5: MOAT</span><br>
+            ☐ Network effects | ☐ Switching costs | ☐ Proprietary data/IP<br>
+            ☐ Brand/trust | ☐ Scale economies<br>
+            HAS MOAT? ☐ Yes | ☐ No (discount -20%)
+        </div>
+        
+        <div class="memo-section">
+            <span class="emphasis" style="font-size: 11pt;">VALUATION</span><br>
+            Method: [Seed comp / P/S / Rule 40 / LBO]<br><br>
+            
+            Base Valuation: $______M<br>
+            Adjustments: ×____ × ____ × ____ × ____ × ____<br><br>
+            
+            <span class="emphasis" style="font-size: 13pt;">INTRINSIC VALUE: $______M</span><br><br>
+            
+            Pre-Money Ask: $______M<br>
+            Ratio: ______x<br><br>
+            
+            MARGIN OF SAFETY: ☐ PASS (≥1.3x) | ☐ FAIL
+        </div>
+        
+        <div style="margin: 15px 0; padding: 15px; background: linear-gradient(135deg, #2c5364 0%, #203a43 100%); color: white; border-left: 4px solid #0f2027;">
+            <span class="emphasis" style="font-size: 12pt; color: white;">DECISION</span><br>
+            ☐ INVEST | ☐ REJECT<br>
+            Reason: _______________________________________
+        </div>
+        
+        <div style="margin-top: 25px; text-align: right; font-size: 10pt;">
+            Partner: _______________ | Date: _______________
+        </div>
+    </div>
+
+    <div class="page-break"></div>
+    
+    <div class="header">
+        <div class="header-mini">V7 CAPITAL</div>
+    </div>
+    
+    <h1>TIME INVESTMENT</h1>
+    
+    <table>
+        <tr>
+            <th style="width: 25%;">Stage</th>
+            <th style="width: 20%;">Time</th>
+            <th style="width: 55%;">Activity</th>
+        </tr>
+        <tr>
+            <td>Pre-screen</td>
+            <td>5 minutes</td>
+            <td>Founder check + "why now"</td>
+        </tr>
+        <tr>
+            <td>Initial meeting</td>
+            <td>1 hour</td>
+            <td>Five questions + valuation</td>
+        </tr>
+        <tr>
+            <td>Deep dive</td>
+            <td>4-6 hours</td>
+            <td>References + customers + model</td>
+        </tr>
+        <tr>
+            <td>Decision</td>
+            <td>2 hours</td>
+            <td>Partner meeting + vote</td>
+        </tr>
+        <tr>
+            <td style="background: linear-gradient(135deg, #2c5364 0%, #203a43 100%); color: white; font-weight: 600;">TOTAL</td>
+            <td style="background: linear-gradient(135deg, #2c5364 0%, #203a43 100%); color: white; font-weight: 600;"><12 hours</td>
+            <td style="background: linear-gradient(135deg, #2c5364 0%, #203a43 100%); color: white; font-weight: 600;">Intro to term sheet</td>
+        </tr>
+    </table>
+    
+    <h1>SUMMARY</h1>
+    
+    <table>
+        <tr>
+            <th style="width: 40%;">Principle</th>
+            <th style="width: 20%;">Weight</th>
+            <th style="width: 40%;">Type</th>
+        </tr>
+        <tr>
+            <td><span class="emphasis">1. Founders</span></td>
+            <td>50%</td>
+            <td>Must pass</td>
+        </tr>
+        <tr>
+            <td><span class="emphasis">2. Timing</span></td>
+            <td>20%</td>
+            <td>Must pass</td>
+        </tr>
+        <tr>
+            <td><span class="emphasis">3. Capital efficiency</span></td>
+            <td>15%</td>
+            <td>Must pass</td>
+        </tr>
+        <tr>
+            <td><span class="emphasis">4. Retention</span></td>
+            <td>10%</td>
+            <td>Adjusts valuation</td>
+        </tr>
+        <tr>
+            <td><span class="emphasis">5. Moat</span></td>
+            <td>5%</td>
+            <td>Adjusts valuation</td>
+        </tr>
+    </table>
+    
+    <div class="framework-box" style="margin-top: 35px; text-align: center;">
+        <p style="font-size: 13pt; margin: 0; font-weight: 600; color: #0f2027;">Decision Process</p>
+        <p style="margin-top: 15px; margin-bottom: 15px; font-size: 10.5pt;">Must pass 1-3 (reject otherwise) • 4-5 adjust valuation only</p>
+        <p style="font-size: 12pt; font-weight: 600; margin: 0; color: #2c5364;">1.3x margin of safety (always)</p>
+    </div>
+    
+    <div class="footer">
+        <p style="font-weight: 500; color: #2c5364;">V7 Capital Investment Framework</p>
+        <p>© 2025 V7 Capital. Internal use only.</p>
+    </div>
+</body>
+</html>

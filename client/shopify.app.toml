@@ -1,0 +1,36 @@
+# Shopify App Configuration
+# Deploy: cd client && shopify app deploy
+# This config + extensions/ are deployed to Shopify's platform (not Coolify).
+# Coolify only builds src/ via nixpacks — it ignores this file and extensions/.
+# Learn more at https://shopify.dev/docs/apps/tools/cli/configuration
+
+client_id = "37b4b12ed793e4127ba69f5e8d5f5922"
+name = "Nudgio"
+application_url = "https://client.nudgio.tech/shopify"
+embedded = true
+
+[webhooks]
+api_version = "2026-01"
+
+  [[webhooks.subscriptions]]
+  topics = [ "app_subscriptions/update", "app/uninstalled" ]
+  uri = "https://server.nudgio.tech/ecommerce/shopify/webhooks"
+  compliance_topics = [ "customers/data_request", "customers/redact", "shop/redact" ]
+
+[access_scopes]
+# Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
+scopes = "read_orders,read_products"
+use_legacy_install_flow = false
+
+[auth]
+redirect_urls = [
+  "https://server.nudgio.tech/ecommerce/shopify/callback"
+]
+
+[app_proxy]
+url = "https://server.nudgio.tech/ecommerce/shopify/app-proxy"
+prefix = "apps"
+subpath = "nudgio-widget"
+
+[build]
+dev = "npm run dev"

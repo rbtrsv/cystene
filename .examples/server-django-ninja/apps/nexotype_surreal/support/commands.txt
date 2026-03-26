@@ -1,0 +1,2 @@
+# Update SurrealDB schema using predefined definitions
+python manage.py update_schema

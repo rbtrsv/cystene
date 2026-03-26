@@ -1,0 +1,5 @@
+[phases.build]
+cmd = "./build.sh"
+
+[start]
+cmd = "gunicorn main:app -k uvicorn.workers.UvicornWorker --forwarded-allow-ips='*' --bind 0.0.0.0:8000"

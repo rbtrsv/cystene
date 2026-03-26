@@ -1,0 +1,8 @@
+# Theme App Extension — storefront widget (Liquid + JS)
+# Deployed to Shopify's CDN via: cd client && shopify app deploy
+# NOT deployed to Coolify — Coolify ignores this entire extensions/ directory.
+# Merchant adds the widget via Online Store → Customize → Add block → "Nudgio Recommendations"
+
+name = "nudgio-widget"
+type = "theme"
+uid = "fc691e16-572a-0158-1c33-dd4f3f43390466a23ce6"

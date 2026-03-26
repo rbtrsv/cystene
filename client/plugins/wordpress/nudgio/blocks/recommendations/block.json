@@ -1,0 +1,202 @@
+{
+    "$schema": "https://schemas.wp.org/trunk/block.json",
+    "apiVersion": 3,
+    "name": "nudgio/recommendations",
+    "version": "1.2.0",
+    "title": "Nudgio Technologies",
+    "category": "woocommerce",
+    "icon": "products",
+    "description": "Display AI-powered product recommendations from Nudgio. Supports bestsellers, cross-sell, upsell, and similar products with 35 visual settings in 8 groups.",
+    "keywords": [ "nudgio", "recommendations", "products", "woocommerce", "upsell", "cross-sell" ],
+    "textdomain": "nudgio",
+    "editorScript": "file:./index.js",
+    "render": "file:./render.php",
+    "supports": {
+        "html": false,
+        "align": [ "wide", "full" ],
+        "multiple": true
+    },
+    "attributes": {
+        "type": {
+            "type": "string",
+            "default": "bestsellers",
+            "enum": [ "bestsellers", "cross-sell", "upsell", "similar" ]
+        },
+        "count": {
+            "type": "number",
+            "default": 4
+        },
+        "product_id": {
+            "type": "string",
+            "default": ""
+        },
+        "lookback_days": {
+            "type": "number",
+            "default": 30
+        },
+        "method": {
+            "type": "string",
+            "default": "volume",
+            "enum": [ "volume", "value", "balanced" ]
+        },
+        "min_price_increase_percent": {
+            "type": "number",
+            "default": 10
+        },
+        "widget_bg_color": {
+            "type": "string",
+            "default": "#FFFFFF"
+        },
+        "widget_padding": {
+            "type": "number",
+            "default": 16
+        },
+        "widget_title": {
+            "type": "string",
+            "default": ""
+        },
+        "title_color": {
+            "type": "string",
+            "default": "#111827"
+        },
+        "title_size": {
+            "type": "number",
+            "default": 24
+        },
+        "title_alignment": {
+            "type": "string",
+            "default": "left",
+            "enum": [ "left", "center" ]
+        },
+        "widget_style": {
+            "type": "string",
+            "default": "grid",
+            "enum": [ "grid", "carousel" ]
+        },
+        "widget_columns": {
+            "type": "number",
+            "default": 4
+        },
+        "gap": {
+            "type": "number",
+            "default": 16
+        },
+        "card_min_width": {
+            "type": "number",
+            "default": 200
+        },
+        "card_max_width": {
+            "type": "number",
+            "default": 0
+        },
+        "card_bg_color": {
+            "type": "string",
+            "default": "#FFFFFF"
+        },
+        "card_border_radius": {
+            "type": "number",
+            "default": 8
+        },
+        "card_border_width": {
+            "type": "number",
+            "default": 0
+        },
+        "card_border_color": {
+            "type": "string",
+            "default": "#E5E7EB"
+        },
+        "card_shadow": {
+            "type": "string",
+            "default": "md",
+            "enum": [ "none", "sm", "md", "lg" ]
+        },
+        "card_padding": {
+            "type": "number",
+            "default": 16
+        },
+        "card_hover": {
+            "type": "string",
+            "default": "lift",
+            "enum": [ "none", "lift", "shadow", "glow" ]
+        },
+        "image_aspect_w": {
+            "type": "number",
+            "default": 1
+        },
+        "image_aspect_h": {
+            "type": "number",
+            "default": 1
+        },
+        "image_fit": {
+            "type": "string",
+            "default": "cover",
+            "enum": [ "cover", "contain" ]
+        },
+        "image_radius": {
+            "type": "number",
+            "default": 8
+        },
+        "product_title_color": {
+            "type": "string",
+            "default": "#1F2937"
+        },
+        "product_title_size": {
+            "type": "number",
+            "default": 14
+        },
+        "product_title_weight": {
+            "type": "number",
+            "default": 600
+        },
+        "product_title_lines": {
+            "type": "number",
+            "default": 2
+        },
+        "product_title_alignment": {
+            "type": "string",
+            "default": "left",
+            "enum": [ "left", "center" ]
+        },
+        "show_price": {
+            "type": "boolean",
+            "default": true
+        },
+        "price_color": {
+            "type": "string",
+            "default": "#111827"
+        },
+        "price_size": {
+            "type": "number",
+            "default": 18
+        },
+        "button_text": {
+            "type": "string",
+            "default": "View"
+        },
+        "button_bg_color": {
+            "type": "string",
+            "default": "#3B82F6"
+        },
+        "button_text_color": {
+            "type": "string",
+            "default": "#FFFFFF"
+        },
+        "button_radius": {
+            "type": "number",
+            "default": 6
+        },
+        "button_size": {
+            "type": "number",
+            "default": 14
+        },
+        "button_variant": {
+            "type": "string",
+            "default": "solid",
+            "enum": [ "solid", "outline", "ghost" ]
+        },
+        "button_full_width": {
+            "type": "boolean",
+            "default": false
+        }
+    }
+}
