@@ -55,10 +55,10 @@ Each project needs the same 4 changes, adapted to its own domain and product des
 
 | Project | Status |
 |---|---|
-| Cystene | ❌ |
-| Nudgio | ❌ |
-| Nexotype | ❌ |
-| FinPy | ❌ |
+| Cystene | ✅ |
+| Nudgio | ✅ |
+| Nexotype | ✅ |
+| FinPy | ✅ |
 
 ---
 
@@ -166,10 +166,10 @@ rules: [
 
 | Project | Status |
 |---|---|
-| Cystene | ✅ Done |
-| Nudgio | ❌ Same fix needed |
-| Nexotype | ❌ Same fix needed |
-| FinPy | ❌ Same fix needed |
+| Cystene | ✅ |
+| Nudgio | ✅ |
+| Nexotype | ✅ |
+| FinPy | ✅ |
 
 ---
 
@@ -177,10 +177,10 @@ rules: [
 
 | Task | Cystene | Nudgio | Nexotype | FinPy |
 |---|---|---|---|---|
-| 1. `/llms.txt` | ✅ | ❌ | ❌ | ❌ |
+| 1. `/llms.txt` | ✅ | ✅ | ✅ | ✅ |
 | 2. `robots.txt` AI bots | ✅ | ❌ | ❌ | ❌ |
 | 3. JSON-LD structured data | ✅ | ❌ | ❌ | ❌ |
-| 4. H1 audit | ✅ | ❌ | ❌ | ❌ |
+| 4. H1 audit | ✅ | ✅ | ✅ | ✅ |
 
 ## References
 
