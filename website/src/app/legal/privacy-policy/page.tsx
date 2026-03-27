@@ -4,17 +4,17 @@ import NavbarDownwards from '@/modules/main/components/NavbarDownwards/NavbarDow
 import Footer from '@/modules/main/components/Footer/Footer';
 
 export const metadata: Metadata = {
-  title: 'Privacy Policy - Nudgio',
-  description: 'Learn how Nudgio collects, uses, and protects your personal information. Our privacy policy explains your rights and our data practices.',
+  title: 'Privacy Policy - Cystene',
+  description: 'Learn how Cystene collects, uses, and protects your personal information. Our privacy policy explains your rights and our data practices.',
   openGraph: {
-    title: 'Privacy Policy - Nudgio',
-    description: 'Learn how Nudgio collects, uses, and protects your personal information.',
+    title: 'Privacy Policy - Cystene',
+    description: 'Learn how Cystene collects, uses, and protects your personal information.',
     type: 'website',
   },
   twitter: {
     card: 'summary',
-    title: 'Privacy Policy - Nudgio',
-    description: 'Learn how Nudgio collects, uses, and protects your personal information.',
+    title: 'Privacy Policy - Cystene',
+    description: 'Learn how Cystene collects, uses, and protects your personal information.',
   },
   robots: {
     index: true,

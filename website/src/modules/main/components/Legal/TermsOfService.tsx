@@ -6,7 +6,7 @@ const TermsOfService: React.FC = () => {
       <header className="mb-12">
         <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-zinc-900 dark:text-zinc-100 tracking-tight text-center mb-8">
           <span className="bg-linear-to-br from-[#3AFF00] to-[#23FFF6] bg-clip-text text-transparent">
-            Nudgio
+            Cystene
           </span>{' '}
           <span className="text-zinc-900 dark:text-zinc-100">
             Terms of Service
@@ -20,7 +20,7 @@ const TermsOfService: React.FC = () => {
         </p>
 
         <p className="font-normal max-sm:text-sm sm:text-base dark:text-white text-black leading-relaxed">
-          These Terms of Service (&quot;Terms&quot;) govern your access to and use of the Nudgio platform, website, APIs, and related services (collectively, the &quot;Service&quot;) operated by Buraro Technologies (&quot;we&quot;, &quot;us&quot;, or &quot;our&quot;). By creating an account or using the Service, you agree to be bound by these Terms.
+          These Terms of Service (&quot;Terms&quot;) govern your access to and use of the Cystene platform, website, APIs, and related services (collectively, the &quot;Service&quot;) operated by Buraro Technologies (&quot;we&quot;, &quot;us&quot;, or &quot;our&quot;). By creating an account or using the Service, you agree to be bound by these Terms.
         </p>
 
         <div className="space-y-6">
@@ -28,7 +28,7 @@ const TermsOfService: React.FC = () => {
             1. Service Description
           </h2>
           <p className="font-normal max-sm:text-sm sm:text-base dark:text-white text-black mb-6">
-            Nudgio is a SaaS ecommerce recommendation engine. The Service connects to your ecommerce store (Shopify, WooCommerce, or Magento) via API or database connection, imports your product and order data, and generates AI-powered product recommendations (bestsellers, cross-sell, upsell, and similar products) that you can embed on your store.
+            Cystene is a SaaS cybersecurity scanning platform. The Service allows you to add infrastructure targets (domains, IP addresses, IP ranges, or URLs), configure and run security scans (port scanning, DNS enumeration, SSL/TLS analysis, and web security checks), and receive prioritized vulnerability findings with remediation guidance. Scan results are stored, tracked over time, and exportable as reports.
           </p>
         </div>
 
@@ -47,7 +47,7 @@ const TermsOfService: React.FC = () => {
 
         <div className="space-y-6">
           <h2 className="text-3xl font-semibold my-3 text-zinc-900 dark:text-zinc-100">
-            3. Store Connections and Data
+            3. Target Ownership and Authorization
           </h2>
 
           <div className="space-y-4">
@@ -55,21 +55,21 @@ const TermsOfService: React.FC = () => {
               3.1 Authorization
             </h3>
             <p className="font-normal max-sm:text-sm sm:text-base dark:text-white text-black mb-6">
-              By connecting your ecommerce store to Nudgio, you represent and warrant that you have the authority to grant us access to your store&apos;s product and order data through the APIs or database credentials you provide. You are solely responsible for ensuring that your use of Nudgio complies with the terms of service of your ecommerce platform (Shopify, WooCommerce, or Magento). For Shopify merchants, your use of Nudgio is also subject to Shopify&apos;s API Terms of Service and Partner Program Agreement.
+              By adding a scan target to Cystene, you represent and warrant that you own or have explicit written authorization to perform security scanning against that target. Unauthorized scanning of systems you do not own or have permission to test is illegal and strictly prohibited. You are solely responsible for ensuring that your use of the Service complies with all applicable laws, regulations, and third-party agreements.
             </p>
 
             <h3 className="text-xl font-medium my-2 text-zinc-900 dark:text-zinc-100">
-              3.2 Credential Security
+              3.2 Target Verification
             </h3>
             <p className="font-normal max-sm:text-sm sm:text-base dark:text-white text-black mb-6">
-              We encrypt all API credentials (access tokens, consumer keys, consumer secrets, and database passwords) at rest. However, you are responsible for safeguarding the credentials you provide and for revoking access through your ecommerce platform if you believe your credentials have been compromised.
+              Cystene requires ownership verification before allowing scans against a target. Verification methods include DNS TXT record, file upload, or meta tag placement. You must complete verification before any scans can be executed. We reserve the right to suspend scanning capabilities if we have reason to believe a target is not owned or authorized by you.
             </p>
 
             <h3 className="text-xl font-medium my-2 text-zinc-900 dark:text-zinc-100">
               3.3 Data Usage
             </h3>
             <p className="font-normal max-sm:text-sm sm:text-base dark:text-white text-black mb-6">
-              We access your store data solely to provide the Service — generating product recommendations and analytics. We do not sell, share, or use your store data for any purpose other than delivering the Service to you. Your product and order data is not shared with other Nudgio users.
+              We store scan results (findings, discovered assets, and reports) solely to provide the Service to you. We do not sell, share, or use your scan data for any purpose other than delivering the Service. Your vulnerability data, infrastructure details, and scan configurations are not shared with other Cystene users.
             </p>
           </div>
         </div>
@@ -84,14 +84,14 @@ const TermsOfService: React.FC = () => {
               4.1 Plans
             </h3>
             <p className="font-normal max-sm:text-sm sm:text-base dark:text-white text-black mb-6">
-              Nudgio offers Free, Pro, and Enterprise subscription tiers. Each tier has defined limits on the number of store connections, monthly API requests, and rate limits. Current pricing and limits are available on our website and dashboard.
+              Cystene offers Free, Pro, and Enterprise subscription tiers. Each tier has defined limits on the number of scan targets, monthly scans, scan types available, and report generation. Current pricing and limits are available on our website and dashboard.
             </p>
 
             <h3 className="text-xl font-medium my-2 text-zinc-900 dark:text-zinc-100">
               4.2 Payment
             </h3>
             <p className="font-normal max-sm:text-sm sm:text-base dark:text-white text-black mb-6">
-              For merchants who install Nudgio from the Shopify App Store, subscription billing is processed through Shopify&apos;s Billing API and charges appear in your Shopify admin. For all other platforms (WooCommerce, Magento), paid subscriptions are billed monthly through Stripe. By subscribing to a paid plan, you authorize us to charge the applicable payment method at the beginning of each billing cycle. All fees are non-refundable except as required by applicable law.
+              Paid subscriptions are billed monthly through Stripe. By subscribing to a paid plan, you authorize us to charge the applicable payment method at the beginning of each billing cycle. All fees are non-refundable except as required by applicable law.
             </p>
 
             <h3 className="text-xl font-medium my-2 text-zinc-900 dark:text-zinc-100">
@@ -116,13 +116,14 @@ const TermsOfService: React.FC = () => {
           </h2>
           <p className="font-normal max-sm:text-sm sm:text-base dark:text-white text-black mb-4">You agree not to:</p>
           <ul className="list-disc pl-6 space-y-2 mb-6 font-normal max-sm:text-sm sm:text-base dark:text-white text-black">
-            <li>Use the Service for any unlawful purpose or in violation of any applicable laws or regulations.</li>
+            <li>Use the Service to scan targets you do not own or have explicit written authorization to test.</li>
+            <li>Use the Service for any unlawful purpose, including unauthorized penetration testing, denial-of-service attacks, or exploitation of discovered vulnerabilities against third-party systems.</li>
             <li>Attempt to gain unauthorized access to the Service, other accounts, or systems connected to the Service.</li>
             <li>Interfere with or disrupt the integrity or performance of the Service.</li>
             <li>Reverse engineer, decompile, or disassemble any part of the Service.</li>
-            <li>Use the Service to process data from stores you do not own or have authorization to manage.</li>
             <li>Exceed the rate limits or usage quotas associated with your subscription tier through automated means.</li>
-            <li>Resell, sublicense, or redistribute the Service or its outputs without our prior written consent.</li>
+            <li>Resell, sublicense, or redistribute the Service, its scan results, or its outputs without our prior written consent.</li>
+            <li>Use the Service to generate false or misleading security reports for third parties.</li>
           </ul>
         </div>
 
@@ -131,16 +132,16 @@ const TermsOfService: React.FC = () => {
             6. Intellectual Property
           </h2>
           <p className="font-normal max-sm:text-sm sm:text-base dark:text-white text-black mb-6">
-            The Service, including its design, code, algorithms, documentation, and branding, is the intellectual property of Buraro Technologies. You retain ownership of your store data. By using the Service, you grant us a limited, non-exclusive license to access and process your store data solely for the purpose of providing the Service.
+            The Service, including its design, code, scanning algorithms, documentation, and branding, is the intellectual property of Buraro Technologies. You retain ownership of your scan data and reports. By using the Service, you grant us a limited, non-exclusive license to process your target data solely for the purpose of providing the Service.
           </p>
         </div>
 
         <div className="space-y-6">
           <h2 className="text-3xl font-semibold my-3 text-zinc-900 dark:text-zinc-100">
-            7. Recommendation Widgets
+            7. Scan Results and Reports
           </h2>
           <p className="font-normal max-sm:text-sm sm:text-base dark:text-white text-black mb-6">
-            Nudgio generates HTML recommendation widgets that you embed on your store. You are responsible for the placement and presentation of these widgets on your store. We do not guarantee any specific revenue increase or conversion rate from the use of our recommendations. Recommendation quality depends on the quantity and quality of your product and order data.
+            Cystene generates security scan results, vulnerability findings, and exportable reports based on automated scanning. Scan results reflect the state of your infrastructure at the time of scanning and are not a guarantee of complete security coverage. We do not guarantee the detection of all vulnerabilities, and the absence of findings does not mean your infrastructure is free of security issues. You are responsible for validating findings and implementing remediation measures.
           </p>
         </div>
 
@@ -158,7 +159,7 @@ const TermsOfService: React.FC = () => {
             9. Limitation of Liability
           </h2>
           <p className="font-normal max-sm:text-sm sm:text-base dark:text-white text-black mb-6">
-            To the maximum extent permitted by applicable law, Buraro Technologies shall not be liable for any indirect, incidental, special, consequential, or punitive damages, including but not limited to loss of profits, revenue, data, or business opportunities, arising out of or related to your use of the Service. Our total aggregate liability for any claims arising from these Terms shall not exceed the amount you paid us in the twelve (12) months preceding the claim.
+            To the maximum extent permitted by applicable law, Buraro Technologies shall not be liable for any indirect, incidental, special, consequential, or punitive damages, including but not limited to loss of profits, revenue, data, or business opportunities, arising out of or related to your use of the Service. We are not liable for any damages resulting from vulnerabilities that the Service failed to detect, or from actions taken based on scan results. Our total aggregate liability for any claims arising from these Terms shall not exceed the amount you paid us in the twelve (12) months preceding the claim.
           </p>
         </div>
 
@@ -167,7 +168,7 @@ const TermsOfService: React.FC = () => {
             10. Disclaimer of Warranties
           </h2>
           <p className="font-normal max-sm:text-sm sm:text-base dark:text-white text-black mb-6">
-            The Service is provided &quot;as is&quot; and &quot;as available&quot; without warranties of any kind, either express or implied, including but not limited to implied warranties of merchantability, fitness for a particular purpose, and non-infringement. We do not warrant that the Service will meet your specific requirements, that recommendations will result in increased sales, or that the Service will be uninterrupted, timely, secure, or error-free.
+            The Service is provided &quot;as is&quot; and &quot;as available&quot; without warranties of any kind, either express or implied, including but not limited to implied warranties of merchantability, fitness for a particular purpose, and non-infringement. We do not warrant that the Service will detect all vulnerabilities in your infrastructure, that scan results will be complete or error-free, or that the Service will be uninterrupted, timely, secure, or error-free.
           </p>
         </div>
 
@@ -178,6 +179,7 @@ const TermsOfService: React.FC = () => {
           <p className="font-normal max-sm:text-sm sm:text-base dark:text-white text-black mb-4">We may suspend or terminate your access to the Service at any time if:</p>
           <ul className="list-disc pl-6 space-y-2 mb-4 font-normal max-sm:text-sm sm:text-base dark:text-white text-black">
             <li>You violate these Terms or our Acceptable Use policy.</li>
+            <li>You scan targets without proper authorization.</li>
             <li>Your account has been inactive for an extended period.</li>
             <li>We are required to do so by law.</li>
             <li>We discontinue the Service (with reasonable notice).</li>
@@ -210,7 +212,7 @@ const TermsOfService: React.FC = () => {
             14. Contact
           </h2>
           <p className="font-normal max-sm:text-sm sm:text-base dark:text-white text-black mb-6">
-            If you have any questions about these Terms, please contact us at contact@nudgio.tech.
+            If you have any questions about these Terms, please contact us at contact@cystene.com.
           </p>
         </div>
 

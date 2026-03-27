@@ -40,10 +40,10 @@ export async function POST(request: NextRequest) {
       from: `"${sanitizedName}" <${process.env.GMAIL_USER}>`,
       to: 'robert.radoslav@protonmail.ch',
       replyTo: user_email,
-      subject: `Nudgio Contact — ${sanitizedName}`,
+      subject: `Cystene Contact — ${sanitizedName}`,
       text: `Name: ${user_name}\nEmail: ${user_email}\n\nMessage:\n${message}`,
       html: `
-        <h3>New Contact Message — Nudgio</h3>
+        <h3>New Contact Message — Cystene</h3>
         <p><strong>Name:</strong> ${sanitizedName}</p>
         <p><strong>Email:</strong> ${sanitizedEmail}</p>
         <p><strong>Message:</strong></p>

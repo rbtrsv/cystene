@@ -4,17 +4,17 @@ import NavbarDownwards from '@/modules/main/components/NavbarDownwards/NavbarDow
 import Footer from '@/modules/main/components/Footer/Footer';
 
 export const metadata: Metadata = {
-  title: 'Terms of Service - Nudgio',
-  description: 'Read the terms and conditions for using the Nudgio ecommerce recommendation platform.',
+  title: 'Terms of Service - Cystene',
+  description: 'Read the terms and conditions for using the Cystene cybersecurity scanning platform.',
   openGraph: {
-    title: 'Terms of Service - Nudgio',
-    description: 'Read the terms and conditions for using the Nudgio ecommerce recommendation platform.',
+    title: 'Terms of Service - Cystene',
+    description: 'Read the terms and conditions for using the Cystene cybersecurity scanning platform.',
     type: 'website',
   },
   twitter: {
     card: 'summary',
-    title: 'Terms of Service - Nudgio',
-    description: 'Read the terms and conditions for using the Nudgio ecommerce recommendation platform.',
+    title: 'Terms of Service - Cystene',
+    description: 'Read the terms and conditions for using the Cystene cybersecurity scanning platform.',
   },
   robots: {
     index: true,

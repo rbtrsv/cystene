@@ -14,7 +14,7 @@ const BlogHeroHeader: React.FC<BlogHeroHeaderProps> = ({
             {/* Title */}
             <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-zinc-900 dark:text-zinc-100 tracking-tight">
               <span className="bg-linear-to-br from-[#3AFF00] to-[#23FFF6] bg-clip-text text-transparent">
-                Nudgio
+                Cystene
               </span>{' '}
               <span className="text-zinc-900 dark:text-zinc-100">
                 Blog
@@ -23,7 +23,7 @@ const BlogHeroHeader: React.FC<BlogHeroHeaderProps> = ({
             
             {/* Subtitle */}
             <p className="text-base sm:text-lg text-zinc-600 dark:text-zinc-400 leading-relaxed">
-              Insights on ecommerce, product recommendations, and growth strategies to help you sell more and scale your online store.
+              Insights on cybersecurity, vulnerability scanning, and infrastructure security to help you protect your systems and stay ahead of threats.
             </p>
             
             {/* Stats or highlights */}

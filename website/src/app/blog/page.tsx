@@ -9,11 +9,11 @@ import BlogSearchBar from '@/modules/blog/components/composed/BlogSearchBar';
 import { generatePageMetadata } from '@/modules/blog/components/composed/PageSEO';
 
 export const metadata: Metadata = generatePageMetadata({
-  title: 'Nudgio Blog',
-  description: 'Insights on e-commerce, product recommendations, and growth strategies to help you increase revenue and customer engagement.',
+  title: 'Cystene Blog',
+  description: 'Insights on cybersecurity, vulnerability scanning, and infrastructure security to help you protect your systems and stay ahead of threats.',
   slug: 'blog',
   type: 'website',
-  keywords: ['e-commerce', 'product recommendations', 'cross-selling', 'upselling', 'Shopify', 'WooCommerce', 'Magento'],
+  keywords: ['cybersecurity', 'vulnerability scanning', 'penetration testing', 'SSL/TLS', 'port scanning', 'DNS enumeration', 'security assessment'],
 });
 
 interface BlogPost {
@@ -27,20 +27,20 @@ interface BlogPost {
 
 const blogPosts: BlogPost[] = [
   {
-    title: "Why Product Recommendations Matter for E-Commerce Revenue",
-    slug: "why-product-recommendations-matter",
-    summary: "Discover how AI-powered product recommendations can increase average order value, boost conversion rates, and create a personalized shopping experience for your customers.",
+    title: "Why Continuous Vulnerability Scanning Matters for Infrastructure Security",
+    slug: "why-vulnerability-scanning-matters",
+    summary: "Discover why regular, automated vulnerability scanning is critical for identifying security gaps, reducing risk, and maintaining a strong security posture across your infrastructure.",
     publishDate: "2026-03-05",
-    categories: ["E-Commerce", "Product Recommendations"],
-    href: "/blog/articles/why-product-recommendations-matter"
+    categories: ["Cybersecurity", "Vulnerability Scanning"],
+    href: "/blog/articles/why-vulnerability-scanning-matters"
   },
   {
-    title: "Building a Cross-Platform E-Commerce Strategy",
-    slug: "cross-platform-ecommerce-strategy",
-    summary: "Learn why selling across Shopify, WooCommerce, and Magento simultaneously gives you a competitive edge — and how to unify your recommendation engine across all platforms.",
+    title: "Understanding Your Attack Surface: DNS, SSL, and Web Security",
+    slug: "understanding-your-attack-surface",
+    summary: "Learn how DNS enumeration, SSL/TLS analysis, and web security scanning work together to map your full attack surface and identify vulnerabilities before attackers do.",
     publishDate: "2026-03-05",
-    categories: ["E-Commerce", "Strategy"],
-    href: "/blog/articles/cross-platform-ecommerce-strategy"
+    categories: ["Cybersecurity", "Attack Surface"],
+    href: "/blog/articles/understanding-your-attack-surface"
   },
 ];
 
@@ -51,7 +51,7 @@ export default async function BlogPage({
 }) {
   const resolvedSearchParams = await searchParams;
   const selectedCategories = resolvedSearchParams.categories ? resolvedSearchParams.categories.split(',') : [];
-  const allCategories = ['E-Commerce', 'Product Recommendations', 'Strategy'];
+  const allCategories = ['Cybersecurity', 'Vulnerability Scanning', 'Attack Surface'];
 
   return (
     <div className="flex flex-col min-h-screen">

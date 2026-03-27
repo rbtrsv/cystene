@@ -2,7 +2,7 @@ import { MetadataRoute } from 'next';
 import fs from 'fs';
 import path from 'path';
 
-const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.nudgio.tech';
+const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.cystene.com';
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const staticUrls = [
