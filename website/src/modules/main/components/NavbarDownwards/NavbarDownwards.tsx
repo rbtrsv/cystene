@@ -80,7 +80,7 @@ const NavbarDownwards: React.FC = () => {
   const [open, setOpen] = useState(false);
   const [theme, setTheme] = useState(isDark ? 'dark' : 'light');
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
+  const [_activeDropdown, _setActiveDropdown] = useState<string | null>(null);
   const [isVisible, setIsVisible] = useState(true);
 
   useEffect(() => {

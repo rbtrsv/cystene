@@ -536,111 +536,82 @@ class ReportFormat(str, Enum):
 
 ---
 
-## 4. Scan Engine Architecture
+## 4. Scanners
 
 ### 4.1 Overview
 
-Hybrid architecture:
-- **Custom Python core:** 4 MVP scan engines implemented in pure Python (socket, ssl, dns.resolver, httpx)
-- **External tool parsers (optional):** Parse output from nmap XML, nuclei JSON — not required for MVP
-- **Rust via PyO3 (future):** Port-intensive operations (port scanning) rewritten in Rust for performance
+Plain async functions — no ABC, no orchestrator, no strategy pattern, no factory.
 
-### 4.2 ScanEngine ABC
+**What was removed (previous version had `engine/` directory):**
+The original plan used a full engine pattern with 5 components: (1) `base.py` — an ABC (`ScanEngine`) forcing all scanners to inherit and implement `scan()` + `engine_type()`, (2) `orchestrator.py` — a `ScanOrchestrator` class that loaded jobs, selected engines, ran them, and wrote results, (3) strategy pattern — each scanner was a subclass of the ABC, swappable at runtime, (4) factory pattern — a function to instantiate the correct engine class based on scan type, (5) `parsers/` directory — parser classes for external tool output (nmap XML, nuclei JSON). All 5 were removed in favor of plain async functions in a flat `scanners/` directory, because 4 scanners we fully control don't justify the abstraction layers. The subrouter calls them directly via a dict mapping.
 
-```python
-# server/apps/cybersecurity/engine/base.py
+**Why no ABC (Abstract Base Class):** An ABC forces subclasses to implement specific methods via a shared interface. Useful when you have multiple implementations that must be swappable at runtime (like ecommerce's `PlatformAdapter` with Shopify/WooCommerce/Magento). We have 4 scanners that we fully control — a dict + for loop achieves the same thing without the abstraction overhead.
 
-from abc import ABC, abstractmethod
-from typing import Any
+**Why no orchestrator:** An orchestrator is a coordinator class that picks which strategies to run, runs them in order, and collects results. With 4 scanners, the `scan_job_subrouter.py` can do this directly in ~10 lines. No need for a separate class.
 
-class ScanEngine(ABC):
-    """
-    Abstract base class for all scan engines.
-    Each engine performs one type of scan and returns findings + assets.
+**Why no strategy pattern:** The strategy pattern swaps algorithms at runtime via a shared interface. Each scanner would be a "strategy" — same interface, different behavior. Overkill when a simple dict mapping does the job.
 
-    Pattern: Strategy pattern — orchestrator selects engines based on template.scan_types.
-    """
+**Why no factory:** A factory decides which implementation to return based on input. Ecommerce needs this because it routes between 3 platforms × 2 connection methods × 1 ingest fallback = real complexity. We have a 1:1 mapping from scan_type string → scanner module.
 
-    @abstractmethod
-    async def scan(self, target: str, params: dict) -> dict:
-        """
-        Execute scan against target with given parameters.
+### 4.2 Scanner Modules (4)
 
-        Args:
-            target: The target value (IP, domain, URL)
-            params: Engine-specific parameters from ScanTemplate
+Each scanner is a single async function in its own file. Same input, same output — just convention, not enforced by inheritance.
 
-        Returns:
-            dict with keys:
-                "findings": list[dict]  — vulnerability/issue dicts (→ Finding rows)
-                "assets": list[dict]    — discovered infrastructure dicts (→ Asset rows)
-                "errors": list[str]     — non-fatal errors encountered
-                "duration_seconds": int — how long this engine took
-        """
-        pass
-
-    @abstractmethod
-    def engine_type(self) -> str:
-        """Returns the ScanType enum value this engine handles."""
-        pass
-```
-
-### 4.3 MVP Scan Engines (4)
-
-| Engine | ScanType | Python Libraries | What It Does |
+| Scanner | ScanType | Python Libraries | What It Does |
 |---|---|---|---|
-| `PortScanEngine` | `port_scan` | `socket`, `asyncio` | TCP connect scan, banner grabbing, service identification |
-| `DNSScanEngine` | `dns_enum` | `dns.resolver` (dnspython) | A/AAAA/MX/NS/TXT/CNAME records, subdomain brute-force, SPF/DKIM/DMARC checks |
-| `SSLScanEngine` | `ssl_check` | `ssl`, `socket`, `cryptography` | Certificate validation, cipher enumeration, protocol version checks, expiry detection |
-| `WebScanEngine` | `web_scan` | `httpx` | Security header checks (CSP, HSTS, X-Frame-Options, X-Content-Type-Options, etc.), redirect analysis, server info disclosure |
+| `port_scan.run()` | `port_scan` | `socket`, `asyncio` | TCP connect scan, banner grabbing, service identification |
+| `dns_scan.run()` | `dns_enum` | `dns.resolver` (dnspython) | A/AAAA/MX/NS/TXT/CNAME records, subdomain brute-force, SPF/DKIM/DMARC checks |
+| `ssl_scan.run()` | `ssl_check` | `ssl`, `socket`, `cryptography` | Certificate validation, cipher enumeration, protocol version checks, expiry detection |
+| `web_scan.run()` | `web_scan` | `httpx` | Security header checks (CSP, HSTS, X-Frame-Options, X-Content-Type-Options, etc.), redirect analysis, server info disclosure |
 
-### 4.4 Orchestrator
+### 4.3 Scanner Function Signature
+
+Every scanner follows the same convention — not enforced by ABC, just consistent by design:
 
 ```python
-# server/apps/cybersecurity/engine/orchestrator.py
+# server/apps/cybersecurity/scanners/port_scan.py
 
-class ScanOrchestrator:
+async def run(target: str, params: dict) -> dict:
     """
-    Coordinates scan execution. Called by the scan_job_subrouter when a user
-    starts a scan or the scheduler triggers one.
+    Execute port scan against target.
 
-    Steps:
-    1. Load ScanJob + ScanTemplate + ScanTarget from DB
-    2. Parse template.scan_types → list of ScanType enums
-    3. Instantiate corresponding ScanEngine for each type
-    4. Run engines sequentially (or concurrently with asyncio.gather)
-    5. Write findings + assets to DB
-    6. Update ScanJob status + summary counts
+    Args:
+        target: The target value (IP, domain, URL)
+        params: Scanner-specific parameters from ScanTemplate
+
+    Returns:
+        dict with keys:
+            "findings": list[dict]  — vulnerability/issue dicts (→ Finding rows)
+            "assets": list[dict]    — discovered infrastructure dicts (→ Asset rows)
+            "errors": list[str]     — non-fatal errors encountered
+            "duration_seconds": int — how long this scanner took
     """
-
-    def __init__(self):
-        self.engines = {
-            "port_scan": PortScanEngine(),
-            "dns_enum": DNSScanEngine(),
-            "ssl_check": SSLScanEngine(),
-            "web_scan": WebScanEngine(),
-        }
-
-    async def execute(self, job_id: int, db: AsyncSession) -> None:
-        """Execute all scan types for a given job."""
-        pass
+    ...
 ```
 
-### 4.5 Engine Directory Structure
+### 4.4 How scan_job_subrouter Calls Scanners
 
-```
-server/apps/cybersecurity/engine/
-├── __init__.py
-├── base.py              → ScanEngine ABC
-├── orchestrator.py      → ScanOrchestrator
-├── port_scan.py         → PortScanEngine
-├── dns_scan.py          → DNSScanEngine
-├── ssl_scan.py          → SSLScanEngine
-├── web_scan.py          → WebScanEngine
-└── parsers/             → External tool output parsers (future)
-    ├── __init__.py
-    ├── nmap_parser.py   → Parse nmap XML output → Finding/Asset dicts
-    └── nuclei_parser.py → Parse nuclei JSON output → Finding/Asset dicts
+No orchestrator class. The subrouter imports scanner modules and calls them directly:
+
+```python
+# server/apps/cybersecurity/subrouters/scan_job_subrouter.py
+
+from cybersecurity.scanners import port_scan, dns_scan, ssl_scan, web_scan
+
+# Simple dict mapping — replaces factory + strategy pattern + orchestrator
+scanner_map = {
+    "port_scan": port_scan.run,
+    "dns_enum": dns_scan.run,
+    "ssl_check": ssl_scan.run,
+    "web_scan": web_scan.run,
+}
+
+# In the "start scan" endpoint:
+for scan_type in template.scan_types.split(","):
+    scanner = scanner_map[scan_type.strip()]
+    result = await scanner(target.target_value, params)
+    # write result["findings"] + result["assets"] to DB
+    # update ScanJob summary counts
 ```
 
 ---
@@ -675,26 +646,25 @@ server/apps/cybersecurity/
 │   ├── scan_target_subrouter.py       → CRUD + verify ownership
 │   ├── scan_template_subrouter.py     → CRUD
 │   ├── scan_schedule_subrouter.py     → CRUD + activate/deactivate
-│   ├── scan_job_subrouter.py          → Start scan, cancel scan, list/detail
+│   ├── scan_job_subrouter.py          → Start scan, cancel scan, list/detail + calls scanners directly
 │   ├── finding_subrouter.py           → List/detail + update triage status
 │   ├── asset_subrouter.py             → List/detail (read-only)
 │   └── report_subrouter.py            → Generate, list, detail, delete
-├── engine/
-│   ├── __init__.py
-│   ├── base.py
-│   ├── orchestrator.py
-│   ├── port_scan.py
-│   ├── dns_scan.py
-│   ├── ssl_scan.py
-│   ├── web_scan.py
-│   └── parsers/
-│       ├── __init__.py
-│       ├── nmap_parser.py
-│       └── nuclei_parser.py
+├── scanners/                          → Plain async functions, no ABC, no orchestrator
+│   ├── port_scan.py                   → async def run(target, params) → findings + assets
+│   ├── dns_scan.py                    → async def run(target, params) → findings + assets
+│   ├── ssl_scan.py                    → async def run(target, params) → findings + assets
+│   └── web_scan.py                    → async def run(target, params) → findings + assets
+├── surrealdb/                         → Graph layer — polyglot persistence (nexotype pattern)
+│   ├── db.py                          → SurrealDB connection management
+│   ├── sync_service.py                → PostgreSQL → SurrealDB entity + relationship sync
+│   └── subrouters/
+│       ├── discovery_subrouter.py     → Graph traversal queries (attack paths, blast radius)
+│       ├── sync_subrouter.py          → Manual full/incremental sync triggers
+│       └── health_subrouter.py        → Connection health + sync status
 └── utils/
     ├── dependency_utils.py            → get_user_target(), require_active_subscription
-    ├── subscription_utils.py          → Tier constants, limits, is_service_active()
-    └── scan_scheduler.py              → Background scheduler for ScanSchedule execution
+    └── subscription_utils.py          → Tier constants, limits, is_service_active()
 ```
 
 ### 5.2 Frontend
@@ -817,4 +787,213 @@ router.include_router(gated)
 | ScanJob.schedule_id SET NULL on delete | Preserve history | Deleted schedules should not cascade-delete historical scan results. |
 | Separate Finding.category and Finding.finding_type | UI grouping vs specific check | Category groups findings in lists/charts, finding_type is the specific vulnerability ID. |
 | ScanTemplate per-target, not global | Isolation | Templates are target-specific because scan parameters depend on target type (domain vs IP vs URL). |
-| Hybrid scan engine | Custom Python + optional external parsers | Pure Python for control and portability. External tool parsing is additive, not required. |
+| Plain scanner functions, no engine pattern | Simple > complex | 4 scanners we fully control don't need ABC/orchestrator/factory. A dict + for loop in the subrouter does the same job. |
+| Polyglot persistence (PostgreSQL + SurrealDB) | Graph queries for attack paths | PostgreSQL is source of truth for CRUD. SurrealDB is a read-only graph cache for complex traversals that are expensive/awkward in SQL. Same pattern as nexotype. |
+| SurrealDB sync, not dual-write | Data consistency | Write to PostgreSQL first, then sync to SurrealDB. Never write to SurrealDB directly. If SurrealDB sync fails, PostgreSQL still has the data — graph cache can be rebuilt at any time. |
+| Rust via PyO3 (future) | Performance optimization | Port scanning is the most I/O + CPU intensive scanner. When Python's asyncio becomes a bottleneck, rewrite `port_scan.py` as a Rust module exposed via PyO3. Same function signature (`async def run(target, params) → dict`), just faster internals. Not needed for MVP — pure Python handles it fine at initial scale. |
+
+---
+
+## 8. SurrealDB Graph Layer
+
+### 8.1 Overview — Polyglot Persistence
+
+Same architecture as `nexotype/surrealdb/` and `nexotype/neo4j/`:
+- **PostgreSQL:** Source of truth. All CRUD operations write here. Simple queries (list findings by severity, get scan job details) run here.
+- **SurrealDB:** Read-only graph cache. Complex traversals (attack paths, blast radius, attack surface mapping) run here. Rebuilt from PostgreSQL at any time.
+- **Sync direction:** PostgreSQL → SurrealDB. Never the reverse. If SurrealDB is empty or corrupted, full sync rebuilds it.
+
+**Why SurrealDB over Neo4j:** SurrealDB is already used in nexotype. Same connection patterns, same SDK, same team familiarity. SurrealDB also supports document + graph in one — no need for separate document store.
+
+**Why graph for cybersecurity:** Scanning data is inherently a graph. Hosts run services, services have vulnerabilities, vulnerabilities lead to other vulnerabilities (attack chains). Graph traversals answer questions that require recursive JOINs in SQL — "if this SSH service is compromised, what else can the attacker reach?" is a 1-line graph query vs a CTE in PostgreSQL.
+
+### 8.2 Node Types (PostgreSQL entities → SurrealDB tables)
+
+Not all 7 entities become nodes. Only the ones that participate in graph relationships:
+
+| PostgreSQL Entity | SurrealDB Table | Why Node / Not Node |
+|---|---|---|
+| ScanTarget | `scan_target` | Node — root of the graph. All scans start from a target. |
+| ScanJob | `scan_job` | Node — connects targets to their discovered findings/assets. |
+| Finding | `finding` | Node — vulnerabilities are the primary query subject in graph traversals. |
+| Asset | `asset` | Node — hosts, services, technologies, certs, DNS records form the infrastructure graph. |
+| ScanTemplate | — | Not a node — configuration data, not part of the infrastructure graph. |
+| ScanSchedule | — | Not a node — scheduling metadata, not part of the infrastructure graph. |
+| Report | — | Not a node — generated output, not part of the infrastructure graph. |
+
+### 8.3 Edge Types (Relationships between nodes)
+
+```
+scan_target ──SCANNED_BY──→ scan_job
+    Properties: triggered_at (DateTime)
+
+scan_job ──DISCOVERED──→ asset
+    Properties: discovered_at (DateTime)
+
+scan_job ──FOUND──→ finding
+    Properties: discovered_at (DateTime)
+
+finding ──AFFECTS──→ asset
+    Properties: severity (String), confidence (String)
+    Why: Links a vulnerability to the specific infrastructure it affects.
+    Example: Finding("OpenSSH 7.2 CVE-2016-6210") ──AFFECTS──→ Asset(service:"OpenSSH 7.2" on port 22)
+
+asset(host) ──RUNS──→ asset(service)
+    Properties: port (Integer), protocol (String)
+    Why: Maps which services run on which hosts.
+    Example: Asset(host:"192.168.1.10") ──RUNS──→ Asset(service:"nginx/1.24.0")
+
+asset(service) ──USES──→ asset(technology)
+    Properties: detected_by (String)
+    Why: Maps technology dependencies.
+    Example: Asset(service:"nginx") ──USES──→ Asset(technology:"OpenSSL 3.0.2")
+
+asset(host) ──HAS_CERT──→ asset(certificate)
+    Properties: port (Integer)
+    Why: Maps which SSL certificates are served by which hosts.
+    Example: Asset(host:"example.com") ──HAS_CERT──→ Asset(certificate:"*.example.com expires 2025-06-01")
+
+asset(host) ──HAS_RECORD──→ asset(dns_record)
+    Properties: record_type (String)
+    Why: Maps DNS resolution.
+    Example: Asset(host:"example.com") ──HAS_RECORD──→ Asset(dns_record:"A → 93.184.216.34")
+
+finding ──LEADS_TO──→ finding
+    Properties: attack_step (Integer), description (String)
+    Why: Attack chain modeling — one vulnerability enables exploitation of another.
+    Example: Finding("exposed SSH") ──LEADS_TO──→ Finding("privilege escalation via sudo misconfiguration")
+```
+
+### 8.4 Graph Relationship Diagram
+
+```
+                                    ┌──────────────┐
+                                    │  scan_target  │
+                                    └──────┬───────┘
+                                           │ SCANNED_BY
+                                           ▼
+                                    ┌──────────────┐
+                               ┌────│   scan_job    │────┐
+                               │    └──────────────┘     │
+                          FOUND │                         │ DISCOVERED
+                               ▼                         ▼
+                        ┌────────────┐            ┌────────────┐
+                   ┌────│  finding    │──AFFECTS──→│   asset     │────┐
+                   │    └────────────┘            └────────────┘     │
+              LEADS_TO                              │    │    │      │
+                   │                             RUNS  HAS_  HAS_   USES
+                   ▼                               │  CERT  RECORD   │
+                ┌────────────┐                     ▼    ▼     ▼      ▼
+                │  finding    │               ┌────────────────────────┐
+                └────────────┘               │   asset (subtypes)      │
+                                              │  host, service, tech,  │
+                                              │  certificate, dns_rec  │
+                                              └────────────────────────┘
+```
+
+### 8.5 Sync Service
+
+Follows the exact pattern from `nexotype/surrealdb/sync_service.py`:
+
+```python
+# server/apps/cybersecurity/surrealdb/sync_service.py
+
+class CyberSyncService:
+    """
+    Syncs cybersecurity entities from PostgreSQL → SurrealDB.
+    Read-only cache — SurrealDB is never the source of truth.
+    """
+
+    # --- Entity sync ---
+    async def sync_entity(self, entity_type: str, entity: dict) -> None:
+        """Sync a single entity to SurrealDB. Creates or updates the node."""
+        # SurrealDB SDK: await surreal.create(f"{table}:{uid}", properties)
+
+    # --- Relationship sync ---
+    async def sync_relationship(self, from_type: str, from_id: int, rel_type: str, to_type: str, to_id: int, properties: dict) -> None:
+        """Create an edge between two nodes using SurrealQL RELATE."""
+        # SurrealQL: RELATE scan_target:1 -> SCANNED_BY -> scan_job:5
+
+    # --- Full sync ---
+    async def full_sync(self, db: AsyncSession) -> dict:
+        """
+        Complete PostgreSQL → SurrealDB migration.
+        1. Clear all SurrealDB data
+        2. Sync all scan_targets, scan_jobs, findings, assets
+        3. Sync all relationships (SCANNED_BY, FOUND, DISCOVERED, AFFECTS, RUNS, USES, etc.)
+        4. Return counts per entity type
+        """
+
+    # --- Incremental sync ---
+    async def incremental_sync(self, db: AsyncSession, since: datetime) -> dict:
+        """Sync only records created/modified since given datetime."""
+
+    # --- Graph queries ---
+    async def get_attack_surface(self, target_id: int, depth: int = 3) -> dict:
+        """
+        Traverse from scan_target through all discovered assets and findings.
+        Returns the full attack surface graph for a target.
+        SurrealQL: SELECT ->SCANNED_BY->scan_job->DISCOVERED->asset, ->SCANNED_BY->scan_job->FOUND->finding FROM scan_target:id FETCH ...
+        """
+
+    async def get_blast_radius(self, finding_id: int, depth: int = 2) -> dict:
+        """
+        From a finding, traverse AFFECTS → asset → RUNS → asset to find all
+        infrastructure impacted by this vulnerability.
+        """
+
+    async def find_attack_paths(self, target_id: int) -> list:
+        """
+        Find chains of findings connected by LEADS_TO edges.
+        Each chain represents a potential multi-step attack path.
+        """
+
+    async def find_shared_certificates(self, cert_value: str) -> list:
+        """
+        Find all hosts that share a given SSL certificate (certificate reuse detection).
+        Reverse traversal: asset(certificate) ←HAS_CERT← asset(host)
+        """
+
+    async def find_recurring_findings(self, target_id: int) -> list:
+        """
+        Compare findings across multiple scan_jobs for the same target.
+        Identifies vulnerabilities that persist across scans (not being fixed).
+        """
+```
+
+### 8.6 Discovery Subrouter — Graph Query Endpoints
+
+```python
+# server/apps/cybersecurity/surrealdb/subrouters/discovery_subrouter.py
+
+# GET /cybersecurity/graph/attack-surface/{target_id}?depth=3
+#   → Full attack surface visualization for a target
+
+# GET /cybersecurity/graph/blast-radius/{finding_id}?depth=2
+#   → All infrastructure affected by a specific vulnerability
+
+# GET /cybersecurity/graph/attack-paths/{target_id}
+#   → Multi-step attack chains (finding → finding → finding)
+
+# GET /cybersecurity/graph/shared-certs/{cert_value}
+#   → All hosts sharing a certificate
+
+# GET /cybersecurity/graph/recurring-findings/{target_id}
+#   → Findings that appear across multiple scans (not being remediated)
+```
+
+### 8.7 When SurrealDB Sync Happens
+
+| Event | Sync Action |
+|---|---|
+| Scan job completes | Sync new findings + assets + relationships to SurrealDB |
+| Finding triage status changes | Update finding node properties in SurrealDB |
+| Manual sync trigger (admin) | Full or incremental sync via sync_subrouter |
+| SurrealDB data loss/corruption | Full sync rebuilds everything from PostgreSQL |
+
+### 8.8 What SurrealDB Does NOT Do
+
+- **No writes originate from SurrealDB** — it is always a cache of PostgreSQL data
+- **No CRUD operations** — creating/updating/deleting entities always goes through PostgreSQL subrouters first
+- **No scan execution** — scanners write to PostgreSQL, sync service propagates to SurrealDB
+- **No auth/user management** — graph queries are gated by the same subscription middleware as all other endpoints
