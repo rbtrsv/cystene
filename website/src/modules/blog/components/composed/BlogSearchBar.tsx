@@ -104,7 +104,7 @@ const BlogSearchBar: React.FC<BlogSearchBarProps> = ({
           value={query}
           onChange={handleInputChange}
           placeholder="Search articles..."
-          className="block w-full pl-8 sm:pl-10 pr-8 sm:pr-10 py-2 sm:py-2.5 text-sm border border-zinc-300 dark:border-zinc-600 rounded-lg bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 placeholder-zinc-500 dark:placeholder-zinc-400 focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-colors duration-200"
+          className="block w-full pl-8 sm:pl-10 pr-8 sm:pr-10 py-2 sm:py-2.5 text-sm border border-zinc-300 dark:border-zinc-600 rounded-lg bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 placeholder-zinc-500 dark:placeholder-zinc-400 focus:ring-2 focus:ring-green-400 focus:border-transparent transition-colors duration-200"
         />
         
         {query && (

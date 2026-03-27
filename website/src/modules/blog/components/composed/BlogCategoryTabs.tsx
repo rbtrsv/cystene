@@ -76,7 +76,7 @@ const BlogCategoryTabs: React.FC<BlogCategoryTabsProps> = ({
           onClick={handleShowAll}
           className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all duration-200 ${
             isAllSelected
-              ? 'bg-linear-to-r from-[#17FFFD] to-[#2631f7] text-white shadow-lg'
+              ? 'bg-linear-to-r from-[#3AFF00] to-[#23FFF6] text-white shadow-lg'
               : 'bg-zinc-100 text-zinc-700 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700'
           }`}
         >
@@ -92,7 +92,7 @@ const BlogCategoryTabs: React.FC<BlogCategoryTabsProps> = ({
               onClick={() => handleCategoryClick(category)}
               className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all duration-200 ${
                 isSelected
-                  ? 'bg-linear-to-r from-[#17FFFD] to-[#2631f7] text-white shadow-lg'
+                  ? 'bg-linear-to-r from-[#3AFF00] to-[#23FFF6] text-white shadow-lg'
                   : 'bg-zinc-100 text-zinc-700 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700'
               }`}
             >
@@ -108,7 +108,7 @@ const BlogCategoryTabs: React.FC<BlogCategoryTabsProps> = ({
               onClick={() => setIsDropdownOpen(!isDropdownOpen)}
               className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all duration-200 flex items-center gap-1 ${
                 hasAdditionalSelected
-                  ? 'bg-linear-to-r from-[#17FFFD] to-[#2631f7] text-white shadow-lg'
+                  ? 'bg-linear-to-r from-[#3AFF00] to-[#23FFF6] text-white shadow-lg'
                   : 'bg-zinc-100 text-zinc-700 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700'
               }`}
             >
@@ -132,7 +132,7 @@ const BlogCategoryTabs: React.FC<BlogCategoryTabsProps> = ({
                       }}
                       className={`w-full text-left px-3 py-2 text-sm transition-colors duration-200 ${
                         isSelected
-                          ? 'bg-linear-to-r from-[#17FFFD] to-[#2631f7] text-white'
+                          ? 'bg-linear-to-r from-[#3AFF00] to-[#23FFF6] text-white'
                           : 'text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700'
                       }`}
                     >

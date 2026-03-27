@@ -10,7 +10,7 @@ interface ArticleHeaderProps {
 const ArticleHeader: React.FC<ArticleHeaderProps> = ({ title, publishDate, categories }) => {
   return (
     <header className="mb-8 sm:mb-12">
-      <h1 className="bg-linear-to-br from-[#17FFFD] to-[#2631f7] bg-clip-text text-center text-3xl sm:text-4xl font-bold text-transparent mb-4 sm:mb-6">
+      <h1 className="bg-linear-to-br from-[#3AFF00] to-[#23FFF6] bg-clip-text text-center text-3xl sm:text-4xl font-bold text-transparent mb-4 sm:mb-6">
         {title}
       </h1>
       <div className="text-center text-sm sm:text-base text-zinc-600 dark:text-zinc-400">

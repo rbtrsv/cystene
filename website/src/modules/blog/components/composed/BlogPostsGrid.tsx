@@ -28,10 +28,10 @@ const BlogPostCard: React.FC<BlogPost> = ({
     <Link href={linkHref}>
       <article className="max-w-2xl mx-auto my-6 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-xs hover:shadow-lg hover:border-zinc-300 dark:hover:border-zinc-700 transition-all duration-300 group cursor-pointer relative overflow-hidden">
         {/* Accent bar */}
-        <div className="absolute left-0 top-0 w-1 h-full bg-linear-to-b from-[#17FFFD] to-[#2631f7]" />
+        <div className="absolute left-0 top-0 w-1 h-full bg-linear-to-b from-[#3AFF00] to-[#23FFF6]" />
         <div className="p-6 sm:p-8">
           <h2 className="text-2xl sm:text-3xl font-bold tracking-tight mb-4 leading-tight">
-            <span className="text-zinc-900 group-hover:text-cyan-500 dark:text-zinc-100 dark:group-hover:text-cyan-500 transition-colors duration-200">
+            <span className="text-zinc-900 group-hover:text-green-400 dark:text-zinc-100 dark:group-hover:text-green-400 transition-colors duration-200">
               {title}
             </span>
           </h2>
@@ -46,7 +46,7 @@ const BlogPostCard: React.FC<BlogPost> = ({
                   'Demo': 'bg-orange-100 text-orange-800 border-orange-200 dark:bg-orange-900/20 dark:text-orange-300 dark:border-orange-800',
                   'Longevity': 'bg-green-100 text-green-800 border-green-200 dark:bg-green-900/20 dark:text-green-300 dark:border-green-800',
                   'Health': 'bg-emerald-100 text-emerald-800 border-emerald-200 dark:bg-emerald-900/20 dark:text-emerald-300 dark:border-emerald-800',
-                  'E-Commerce': 'bg-cyan-100 text-cyan-800 border-cyan-200 dark:bg-cyan-900/20 dark:text-cyan-300 dark:border-cyan-800',
+                  'E-Commerce': 'bg-green-100 text-green-800 border-green-200 dark:bg-green-900/20 dark:text-green-300 dark:border-green-800',
                   'Performance': 'bg-red-100 text-red-800 border-red-200 dark:bg-red-900/20 dark:text-red-300 dark:border-red-800',
                   'Supplements': 'bg-yellow-100 text-yellow-800 border-yellow-200 dark:bg-yellow-900/20 dark:text-yellow-300 dark:border-yellow-800',
                   'Product Recommendations': 'bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-900/20 dark:text-blue-300 dark:border-blue-800',

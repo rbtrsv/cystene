@@ -7,16 +7,16 @@ import Footer from '@/modules/main/components/Footer/Footer';
 import HeroSectionAnimated from '@/modules/main/components/HeroSectionAnimated/HeroSectionAnimated';
 import Favicon from '@/modules/main/public/favicon.ico';
 
-const BASE_URL = 'https://www.nudgio.tech';
+const BASE_URL = 'https://www.cystene.com';
 
 export const metadata: Metadata = {
   metadataBase: new URL(BASE_URL),
-  title: 'Nudgio — AI-Powered Product Recommendations for E-Commerce',
+  title: 'Cystene — Cybersecurity Scanning Platform',
   description:
-    'Boost your e-commerce revenue with intelligent, cross-platform product recommendations. Works with Shopify, WooCommerce, and Magento.',
-  creator: 'Nudgio Team',
-  publisher: 'Nudgio',
-  category: 'E-Commerce, Product Recommendations, AI, SaaS',
+    'Comprehensive cybersecurity scanning for your infrastructure. Port scanning, DNS enumeration, SSL analysis, and web security assessments.',
+  creator: 'Cystene Team',
+  publisher: 'Cystene',
+  category: 'Cybersecurity, Vulnerability Scanning, Security Assessment, SaaS',
   robots: {
     index: true,
     follow: true,
@@ -37,32 +37,32 @@ export const metadata: Metadata = {
   },
   alternates: { canonical: '/' },
   openGraph: {
-    title: 'Nudgio — AI-Powered Product Recommendations for E-Commerce',
+    title: 'Cystene — Cybersecurity Scanning Platform',
     description:
-      'Boost your e-commerce revenue with intelligent, cross-platform product recommendations. Works with Shopify, WooCommerce, and Magento.',
+      'Comprehensive cybersecurity scanning for your infrastructure. Port scanning, DNS enumeration, SSL analysis, and web security assessments.',
     url: '/',
-    siteName: 'Nudgio',
+    siteName: 'Cystene',
     locale: 'en_US',
     type: 'website',
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Nudgio — AI-Powered Product Recommendations for E-Commerce',
+    title: 'Cystene — Cybersecurity Scanning Platform',
     description:
-      'Boost your e-commerce revenue with intelligent, cross-platform product recommendations. Works with Shopify, WooCommerce, and Magento.',
+      'Comprehensive cybersecurity scanning for your infrastructure. Port scanning, DNS enumeration, SSL analysis, and web security assessments.',
   },
   keywords: [
-    'Product Recommendations',
-    'E-Commerce',
-    'AI Recommendations',
-    'Shopify',
-    'WooCommerce',
-    'Magento',
-    'Cross-Selling',
-    'Upselling',
+    'Cybersecurity',
+    'Vulnerability Scanning',
+    'Port Scanning',
+    'SSL Analysis',
+    'DNS Enumeration',
+    'Security Assessment',
+    'Web Security',
+    'Infrastructure Scanning',
     'SaaS',
   ],
-  authors: [{ name: 'Nudgio Team' }],
+  authors: [{ name: 'Cystene Team' }],
 };
 
 export const viewport: Viewport = {

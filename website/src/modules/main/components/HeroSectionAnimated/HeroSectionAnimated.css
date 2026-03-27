@@ -87,7 +87,7 @@
 
 .animate-gradient-foreground-1 {
   animation: gradient-foreground-1 8s infinite;
-  background-image: linear-gradient(to right, #c517ff, #2631f7);
+  background-image: linear-gradient(to right, #3AFF00, #23FFF6);
   background-clip: text;
   color: transparent;
 }

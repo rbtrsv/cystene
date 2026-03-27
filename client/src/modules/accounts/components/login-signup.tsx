@@ -17,8 +17,8 @@ import { LoginSchema, RegisterSchema } from '../schemas/auth.schema';
 import { clearAuthCookies } from '../utils/token.client.utils';
 
 // Import logos
-import logoNudgioDark from '@/modules/main/logos/nudgio_black_text_with_logo.svg';
-import logoNudgioLight from '@/modules/main/logos/nudgio_white_text_with_logo.svg';
+import logoCysteneDark from '@/modules/main/logos/cystene-black-text-with-logo.svg';
+import logoCysteneLight from '@/modules/main/logos/cystene-white-text-with-logo.svg';
 
 // Define form data types based on Zod schemas
 type LoginInput = {
@@ -50,15 +50,15 @@ export default function Login({ mode = 'signin' }: { mode?: 'signin' | 'signup' 
           <div className="flex justify-center items-center flex-col space-y-4">
             <div className="mx-auto">
               <Image
-                src={logoNudgioDark}
-                alt="Nudgio"
+                src={logoCysteneDark}
+                alt="Cystene"
                 width={180}
                 height={42}
                 className="dark:hidden block"
               />
               <Image
-                src={logoNudgioLight}
-                alt="Nudgio"
+                src={logoCysteneLight}
+                alt="Cystene"
                 width={180}
                 height={42}
                 className="hidden dark:block"
@@ -260,15 +260,15 @@ function LoginForm({ mode = 'signin' }: { mode?: 'signin' | 'signup' }) {
         <div className="p-8">
           <div className="flex justify-center mb-6">
             <Image
-              src={logoNudgioDark}
-              alt="Nudgio"
+              src={logoCysteneDark}
+              alt="Cystene"
               width={180}
               height={42}
               className="dark:hidden block"
             />
             <Image
-              src={logoNudgioLight}
-              alt="Nudgio"
+              src={logoCysteneLight}
+              alt="Cystene"
               width={180}
               height={42}
               className="hidden dark:block"

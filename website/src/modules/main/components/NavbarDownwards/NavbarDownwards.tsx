@@ -3,8 +3,8 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import logoNudgioDark from '@/modules/main/images/logos/nudgio_black_text_with_logo.svg';
-import logoNudgioWhite from '@/modules/main/images/logos/nudgio_white_text_with_logo.svg';
+import logoCysteneDark from '@/modules/main/images/logos/cystene-black-text-with-logo.svg';
+import logoCysteneLight from '@/modules/main/images/logos/cystene-white-text-with-logo.svg';
 import { Sun, MoonStar, Menu, X, ChevronDown, ChevronUp } from 'lucide-react';
 
 const navItems = [
@@ -22,29 +22,81 @@ const navItems = [
   // },
 ];
 
+// Logo component — defined outside render to satisfy react-hooks/static-components
+const Logo: React.FC = () => (
+  <div className='mr-3 flex cursor-pointer items-center sm:mr-4 md:mr-5 lg:mr-6'>
+    <Link href='/' className=''>
+      <Image
+        src={logoCysteneDark}
+        alt='Cystene'
+        width={110}
+        height={75}
+        className='block w-[100px] cursor-pointer sm:w-[105px] md:w-[110px] lg:w-[110px] xl:w-[110px] 2xl:w-[115px] dark:hidden'
+        priority
+      />
+      <Image
+        src={logoCysteneLight}
+        alt='Cystene'
+        width={110}
+        height={75}
+        className='hidden w-[100px] cursor-pointer sm:w-[105px] md:w-[110px] lg:w-[110px] xl:w-[110px] 2xl:w-[115px] dark:block'
+        priority
+      />
+    </Link>
+  </div>
+);
+
+// Theme switch button — receives handler as prop
+const ThemeSwitchButton: React.FC<{ onSwitch: () => void }> = ({ onSwitch }) => (
+  <button
+    type='button'
+    aria-label='Toggle dark mode'
+    className='p-2 transition-colors duration-200'
+    onClick={onSwitch}
+  >
+    <Sun className='hidden h-5 w-5 stroke-white/95 md:hover:stroke-green-400 dark:block' />
+    <MoonStar className='h-5 w-5 stroke-black/95 md:hover:stroke-green-400 dark:hidden' />
+  </button>
+);
+
+// Mobile menu button — receives open state and toggle handler as props
+const MobileMenuButton: React.FC<{ open: boolean; onToggle: () => void }> = ({ open, onToggle }) => (
+  <button
+    onClick={onToggle}
+    className='ml-4 cursor-pointer text-3xl md:hidden'
+  >
+    {open ? (
+      <X className='h-6 w-6 text-black md:hover:text-green-400 dark:text-white' />
+    ) : (
+      <Menu className='h-6 w-6 text-black md:hover:text-green-400 dark:text-white' />
+    )}
+  </button>
+);
+
 const NavbarDownwards: React.FC = () => {
   const isDark =
     typeof document !== 'undefined' &&
     document.documentElement.classList.contains('dark');
   const [open, setOpen] = useState(false);
   const [theme, setTheme] = useState(isDark ? 'dark' : 'light');
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
   const [isVisible, setIsVisible] = useState(true);
 
   useEffect(() => {
     let timeoutId: NodeJS.Timeout;
     let lastScroll = 0;
-    
+
     const handleScroll = () => {
       const currentScrollY = window.scrollY;
-      
+
       // Only hide/show if we've scrolled past 100px
       if (currentScrollY < 100) {
         setIsVisible(true);
         lastScroll = currentScrollY;
         return;
       }
-      
+
       if (currentScrollY > lastScroll) {
         // Scrolling down - hide after delay
         clearTimeout(timeoutId);
@@ -56,13 +108,13 @@ const NavbarDownwards: React.FC = () => {
         clearTimeout(timeoutId);
         setIsVisible(true);
       }
-      
+
       lastScroll = currentScrollY;
     };
 
     // Add scroll listener
     window.addEventListener('scroll', handleScroll, { passive: true });
-    
+
     return () => {
       window.removeEventListener('scroll', handleScroll);
       clearTimeout(timeoutId);
@@ -76,54 +128,6 @@ const NavbarDownwards: React.FC = () => {
     window.localStorage.setItem('theme', newTheme);
   };
 
-  const Logo = () => (
-    <div className='mr-3 flex cursor-pointer items-center sm:mr-4 md:mr-5 lg:mr-6'>
-      <Link href='/' className=''>
-        <Image
-          src={logoNudgioDark}
-          alt='Nudgio'
-          width={110}
-          height={75}
-          className='block w-[100px] cursor-pointer sm:w-[105px] md:w-[110px] lg:w-[110px] xl:w-[110px] 2xl:w-[115px] dark:hidden'
-          priority
-        />
-        <Image
-          src={logoNudgioWhite}
-          alt='Nudgio'
-          width={110}
-          height={75}
-          className='hidden w-[100px] cursor-pointer sm:w-[105px] md:w-[110px] lg:w-[110px] xl:w-[110px] 2xl:w-[115px] dark:block'
-          priority
-        />
-      </Link>
-    </div>
-  );
-
-  const ThemeSwitchButton = () => (
-    <button
-      type='button'
-      aria-label='Toggle dark mode'
-      className='p-2 transition-colors duration-200'
-      onClick={handleThemeSwitch}
-    >
-      <Sun className='hidden h-5 w-5 stroke-white/95 md:hover:stroke-cyan-500 dark:block' />
-      <MoonStar className='h-5 w-5 stroke-black/95 md:hover:stroke-cyan-500 dark:hidden' />
-    </button>
-  );
-
-  const MobileMenuButton = () => (
-    <button
-      onClick={() => setOpen(!open)}
-      className='ml-4 cursor-pointer text-3xl md:hidden'
-    >
-      {open ? (
-        <X className='h-6 w-6 text-black md:hover:text-cyan-500 dark:text-white' />
-      ) : (
-        <Menu className='h-6 w-6 text-black md:hover:text-cyan-500 dark:text-white' />
-      )}
-    </button>
-  );
-
   return (
     <nav className={`bg-white/30 dark:bg-black/30 fixed top-0 left-0 z-50 w-full shadow-md backdrop-blur-lg transition-transform duration-300 ease-in-out ${
       isVisible ? 'translate-y-0' : '-translate-y-full'
@@ -135,8 +139,8 @@ const NavbarDownwards: React.FC = () => {
 
         {/* Mobile Controls: Theme Switch and Menu Button */}
         <div className='flex items-center md:hidden'>
-          <ThemeSwitchButton />
-          <MobileMenuButton />
+          <ThemeSwitchButton onSwitch={handleThemeSwitch} />
+          <MobileMenuButton open={open} onToggle={() => setOpen(!open)} />
         </div>
 
         {/* Desktop Menu */}
@@ -148,14 +152,14 @@ const NavbarDownwards: React.FC = () => {
             >
               <Link
                 href={item.link}
-                className='text-xs font-medium text-black/95 transition-colors duration-200 hover:text-cyan-500 sm:text-sm md:text-sm lg:text-base xl:text-lg 2xl:text-xl dark:text-white/95 dark:hover:text-cyan-500'
+                className='text-xs font-medium text-black/95 transition-colors duration-200 hover:text-green-400 sm:text-sm md:text-sm lg:text-base xl:text-lg 2xl:text-xl dark:text-white/95 dark:hover:text-green-400'
               >
                 {item.name}
               </Link>
               {/* Dropdown template (uncomment when subItems are added to navItems):
               {item.subItems && (
                 <div className='group relative'>
-                  <button className='flex items-center text-xs font-medium text-black/95 transition-colors duration-200 group-hover:text-cyan-500 sm:text-sm md:text-sm lg:text-base xl:text-lg 2xl:text-xl dark:text-white/95 dark:group-hover:text-cyan-500'>
+                  <button className='flex items-center text-xs font-medium text-black/95 transition-colors duration-200 group-hover:text-green-400 sm:text-sm md:text-sm lg:text-base xl:text-lg 2xl:text-xl dark:text-white/95 dark:group-hover:text-green-400'>
                     {item.name}
                     <ChevronDown className='ml-1 h-4 w-4 transition-transform duration-200 group-hover:hidden' />
                     <ChevronUp className='ml-1 hidden h-4 w-4 transition-transform duration-200 group-hover:block' />
@@ -178,7 +182,7 @@ const NavbarDownwards: React.FC = () => {
             </li>
           ))}
           <li className='ml-4'>
-            <ThemeSwitchButton />
+            <ThemeSwitchButton onSwitch={handleThemeSwitch} />
           </li>
         </ul>
 

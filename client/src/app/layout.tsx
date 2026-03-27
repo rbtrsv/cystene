@@ -3,8 +3,8 @@ import "@/modules/main/styles/globals.css";
 import Favicon from '@/modules/main/public/favicon.ico';
 
 export const metadata: Metadata = {
-  title: "Nudgio",
-  description: "Ecommerce Recommendation Engine",
+  title: "Cystene",
+  description: "Cybersecurity Scanning Platform",
 };
 
 function ThemeScript() {

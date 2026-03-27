@@ -1,29 +1,29 @@
-import { PlugZap, DatabaseZap, Sparkles, CodeXml } from 'lucide-react';
+import { Crosshair, SlidersHorizontal, Radar, ClipboardCheck } from 'lucide-react';
 
 const steps = [
   {
     id: 1,
-    icon: PlugZap,
-    title: 'Connect Your Store',
-    description: 'Link your Shopify, WooCommerce, or Magento store in minutes with native API adapters.',
+    icon: Crosshair,
+    title: 'Add Your Target',
+    description: 'Enter the domain, IP address, or CIDR range you want to assess.',
   },
   {
     id: 2,
-    icon: DatabaseZap,
-    title: 'Data Sync',
-    description: 'Your product catalog and order history are automatically imported and normalized.',
+    icon: SlidersHorizontal,
+    title: 'Configure Scan',
+    description: 'Choose scan types and templates — or use smart defaults to get started fast.',
   },
   {
     id: 3,
-    icon: Sparkles,
-    title: 'AI Recommendations',
-    description: 'Our engine analyzes purchase patterns and generates intelligent product suggestions.',
+    icon: Radar,
+    title: 'Run Assessment',
+    description: 'Our engines scan ports, DNS, SSL, and web security in parallel across your targets.',
   },
   {
     id: 4,
-    icon: CodeXml,
-    title: 'Embed & Earn',
-    description: 'Drop recommendation components into your store and watch your revenue grow.',
+    icon: ClipboardCheck,
+    title: 'Review Findings',
+    description: 'Get prioritized vulnerabilities with severity ratings and remediation guidance.',
   },
 ];
 
@@ -45,7 +45,7 @@ export default function HowItWorks() {
           <div className='hidden md:block'>
             <div className='relative flex items-start justify-between'>
               {/* Connecting line behind the circles */}
-              <div className='absolute top-8 right-12 left-12 h-0.5 bg-linear-to-r from-[#17FFFD] to-[#2631f7]' />
+              <div className='absolute top-8 right-12 left-12 h-0.5 bg-linear-to-r from-[#3AFF00] to-[#23FFF6]' />
 
               {steps.map((step) => {
                 const Icon = step.icon;
@@ -53,10 +53,10 @@ export default function HowItWorks() {
                   <div key={step.id} className='relative flex w-1/4 flex-col items-center text-center px-3'>
                     {/* Numbered circle with icon */}
                     <div className='relative z-10 flex h-16 w-16 items-center justify-center rounded-full bg-zinc-100 ring-4 ring-white dark:bg-zinc-900 dark:ring-black'>
-                      <Icon className='h-7 w-7 text-cyan-500' />
+                      <Icon className='h-7 w-7 text-green-400' />
                     </div>
                     {/* Step number */}
-                    <span className='mt-3 text-sm font-bold text-cyan-500'>
+                    <span className='mt-3 text-sm font-bold text-green-400'>
                       Step {step.id}
                     </span>
                     {/* Title */}
@@ -77,7 +77,7 @@ export default function HowItWorks() {
           <div className='md:hidden'>
             <div className='relative'>
               {/* Vertical connecting line */}
-              <div className='absolute top-8 bottom-8 left-8 w-0.5 bg-linear-to-b from-[#17FFFD] to-[#2631f7]' />
+              <div className='absolute top-8 bottom-8 left-8 w-0.5 bg-linear-to-b from-[#3AFF00] to-[#23FFF6]' />
 
               <div className='space-y-10'>
                 {steps.map((step) => {
@@ -86,11 +86,11 @@ export default function HowItWorks() {
                     <div key={step.id} className='relative flex gap-5'>
                       {/* Circle with icon */}
                       <div className='relative z-10 flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-zinc-100 ring-4 ring-white dark:bg-zinc-900 dark:ring-black'>
-                        <Icon className='h-7 w-7 text-cyan-500' />
+                        <Icon className='h-7 w-7 text-green-400' />
                       </div>
                       {/* Content */}
                       <div className='pt-1'>
-                        <span className='text-sm font-bold text-cyan-500'>
+                        <span className='text-sm font-bold text-green-400'>
                           Step {step.id}
                         </span>
                         <h3 className='mt-1 text-base font-semibold text-black dark:text-white'>

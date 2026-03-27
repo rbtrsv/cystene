@@ -54,8 +54,8 @@ import {
 } from "@/modules/shadcnui/components/ui/sidebar"
 
 import Image from "next/image"
-import logoNudgioDark from '@/modules/main/logos/nudgio_black_text_with_logo.svg';
-import logoNudgioLight from '@/modules/main/logos/nudgio_white_text_with_logo.svg';
+import logoCysteneDark from '@/modules/main/logos/cystene-black-text-with-logo.svg';
+import logoCysteneLight from '@/modules/main/logos/cystene-white-text-with-logo.svg';
 
 // After `npx shadcn@latest add sidebar` re-apply these fixes in sidebar.tsx:
 // 1. CSS vars: w-[--sidebar-width] → w-(--sidebar-width), same for w-icon and max-w-skeleton
@@ -132,15 +132,15 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       <SidebarHeader className="p-4">
         <div className="flex items-center">
           <Image
-            src={logoNudgioLight}
-            alt="Nudgio"
+            src={logoCysteneLight}
+            alt="Cystene"
             width={168}
             height={39}
             className="dark:block hidden"
           />
           <Image
-            src={logoNudgioDark}
-            alt="Nudgio"
+            src={logoCysteneDark}
+            alt="Cystene"
             width={168}
             height={39}
             className="dark:hidden block"

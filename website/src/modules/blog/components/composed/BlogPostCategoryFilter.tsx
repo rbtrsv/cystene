@@ -25,11 +25,11 @@ const BlogPostComponent: React.FC<BlogPost> = ({ title, slug, summary, publishDa
   const linkHref = href || `/blog/articles/${slug}`;
   
   return (
-    <article className="max-w-2xl mx-auto bg-linear-to-br from-[#17FFFD] to-[#2631f7] p-[2px] my-4 rounded-lg shadow-lg">
+    <article className="max-w-2xl mx-auto bg-linear-to-br from-[#3AFF00] to-[#23FFF6] p-[2px] my-4 rounded-lg shadow-lg">
       <div className="bg-zinc-100 dark:bg-zinc-900 p-4 sm:p-6 rounded-lg">
         <h2 className="text-xl font-semibold tracking-tight sm:text-2xl mb-2">
           <Link href={linkHref}>
-            <span className="text-zinc-800 hover:text-cyan-500 dark:text-zinc-200 dark:hover:text-cyan-500 cursor-pointer">
+            <span className="text-zinc-800 hover:text-green-400 dark:text-zinc-200 dark:hover:text-green-400 cursor-pointer">
               {title}
             </span>
           </Link>
@@ -103,16 +103,16 @@ const BlogPostCategoryFilter: React.FC<BlogPostCategoryFilterProps> = ({
       <div className="relative mt-8 max-w-xs mx-auto" ref={dropdownRef}>
         <button
           onClick={() => setIsOpen(!isOpen)}
-          className="group w-full px-4 py-2 text-left bg-zinc-200 dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-600 rounded-md shadow-xs focus:outline-hidden focus:ring-2 focus:ring-cyan-500"
+          className="group w-full px-4 py-2 text-left bg-zinc-200 dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-600 rounded-md shadow-xs focus:outline-hidden focus:ring-2 focus:ring-green-400"
         >
           <span className="block truncate">
             {selectedCategories.length > 0 ? `${selectedCategories.length} selected` : 'Select categories'}
           </span>
           <span className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
             {isOpen ? (
-              <ChevronUp className="w-5 h-5 text-zinc-400 group-hover:text-cyan-500" aria-hidden="true" />
+              <ChevronUp className="w-5 h-5 text-zinc-400 group-hover:text-green-400" aria-hidden="true" />
             ) : (
-              <ChevronDown className="w-5 h-5 text-zinc-400 group-hover:text-cyan-500" aria-hidden="true" />
+              <ChevronDown className="w-5 h-5 text-zinc-400 group-hover:text-green-400" aria-hidden="true" />
             )}
           </span>
         </button>
@@ -124,7 +124,7 @@ const BlogPostCategoryFilter: React.FC<BlogPostCategoryFilterProps> = ({
                   type="checkbox"
                   checked={selectedCategories.includes(category)}
                   onChange={() => handleCategoryChange(category)}
-                  className="form-checkbox h-4 w-4 text-cyan-500 rounded-sm border-zinc-300 dark:border-zinc-600"
+                  className="form-checkbox h-4 w-4 text-green-400 rounded-sm border-zinc-300 dark:border-zinc-600"
                 />
                 <span className="ml-2 text-sm text-zinc-700 dark:text-zinc-300">{category}</span>
               </label>
@@ -135,11 +135,11 @@ const BlogPostCategoryFilter: React.FC<BlogPostCategoryFilterProps> = ({
       {selectedCategories.length > 0 && (
         <div className="mt-4 flex flex-wrap gap-2 justify-center">
           {selectedCategories.map((category) => (
-            <span key={category} className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-cyan-500 text-white">
+            <span key={category} className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-400 text-white">
               {category}
               <button
                 onClick={() => handleCategoryChange(category)}
-                className="ml-1 inline-flex items-center justify-center hover:bg-cyan-400 rounded-full p-0.5 transition-colors duration-200"
+                className="ml-1 inline-flex items-center justify-center hover:bg-green-300 rounded-full p-0.5 transition-colors duration-200"
               >
                 <X className="w-3 h-3" />
               </button>

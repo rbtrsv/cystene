@@ -25,11 +25,11 @@ export default function Footer() {
       <div className='mx-auto max-w-7xl px-6 py-12 lg:px-8'>
         <div className='flex justify-center md:justify-between items-center mb-6'>
           <div className='flex space-x-4 text-sm text-black dark:text-white'>
-            <Link href='/legal/privacy-policy' className='hover:text-cyan-500 dark:hover:text-cyan-500'>
+            <Link href='/legal/privacy-policy' className='hover:text-green-400 dark:hover:text-green-400'>
               Privacy Policy
             </Link>
             <span>•</span>
-            <Link href='/legal/terms-of-service' className='hover:text-cyan-500 dark:hover:text-cyan-500'>
+            <Link href='/legal/terms-of-service' className='hover:text-green-400 dark:hover:text-green-400'>
               Terms of Service
             </Link>
           </div>
@@ -38,7 +38,7 @@ export default function Footer() {
               <a
                 key={item.name}
                 href={item.href}
-                className='text-black hover:text-cyan-500 dark:text-white dark:hover:text-cyan-500'
+                className='text-black hover:text-green-400 dark:text-white dark:hover:text-green-400'
               >
                 <span className='sr-only'>{item.name}</span>
                 <item.icon className='h-6 w-6' aria-hidden='true' />
@@ -51,7 +51,7 @@ export default function Footer() {
             <a
               key={item.name}
               href={item.href}
-              className='text-black hover:text-cyan-500 dark:text-white dark:hover:text-cyan-500'
+              className='text-black hover:text-green-400 dark:text-white dark:hover:text-green-400'
             >
               <span className='sr-only'>{item.name}</span>
               <item.icon className='h-6 w-6' aria-hidden='true' />

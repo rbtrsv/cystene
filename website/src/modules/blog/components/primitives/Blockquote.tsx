@@ -13,7 +13,7 @@ const Blockquote: React.FC<BlockquoteProps> = ({
 }) => {
   return (
     <blockquote 
-      className={`border-l-4 border-l-cyan-500 pl-4 py-2 my-4 italic text-zinc-700 dark:text-zinc-300 bg-zinc-50 dark:bg-zinc-800/50 rounded-r-md ${className}`}
+      className={`border-l-4 border-l-green-400 pl-4 py-2 my-4 italic text-zinc-700 dark:text-zinc-300 bg-zinc-50 dark:bg-zinc-800/50 rounded-r-md ${className}`}
     >
       <div className="text-sm sm:text-base leading-relaxed">
         {children}

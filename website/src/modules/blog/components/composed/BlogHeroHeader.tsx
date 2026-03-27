@@ -13,7 +13,7 @@ const BlogHeroHeader: React.FC<BlogHeroHeaderProps> = ({
             
             {/* Title */}
             <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-zinc-900 dark:text-zinc-100 tracking-tight">
-              <span className="bg-linear-to-br from-[#17FFFD] to-[#2631f7] bg-clip-text text-transparent">
+              <span className="bg-linear-to-br from-[#3AFF00] to-[#23FFF6] bg-clip-text text-transparent">
                 Nudgio
               </span>{' '}
               <span className="text-zinc-900 dark:text-zinc-100">

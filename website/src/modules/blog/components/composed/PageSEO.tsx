@@ -1,5 +1,5 @@
 import { Metadata } from 'next';
-import nudgioLogo from '@/modules/main/images/logos/nudgio_black_text_with_logo.svg';
+import cysteneLogo from '@/modules/main/images/logos/cystene-black-text-with-logo.svg';
 import Favicon from '@/modules/main/public/favicon.ico';
 
 interface PageSEOProps {
@@ -19,7 +19,7 @@ interface PageSEOProps {
   noindex?: boolean;
 }
 
-const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || 'https://www.nudgio.tech';
+const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || 'https://www.cystene.com';
 
 export function generatePageMetadata({
   title,
@@ -38,21 +38,21 @@ export function generatePageMetadata({
     height: image.height || 630,
     alt: image.alt,
   } : {
-    url: `${BASE_URL}${nudgioLogo.src}`,
-    width: nudgioLogo.width || 1200,
-    height: nudgioLogo.height || 630,
+    url: `${BASE_URL}${cysteneLogo.src}`,
+    width: cysteneLogo.width || 1200,
+    height: cysteneLogo.height || 630,
     alt: title,
   };
 
   const pageUrl = `${BASE_URL}/${slug}`;
-  const pageTitle = `${title} | Nudgio`;
+  const pageTitle = `${title} | Cystene`;
 
   return {
     metadataBase: new URL(BASE_URL),
     title: pageTitle,
     description,
-    creator: author || 'Nudgio Team',
-    publisher: 'Nudgio',
+    creator: author || 'Cystene Team',
+    publisher: 'Cystene',
     category: keywords.join(', '),
     robots: {
       index: !noindex,
@@ -72,7 +72,7 @@ export function generatePageMetadata({
       description,
       type: type === 'article' ? 'article' : 'website',
       url: pageUrl,
-      siteName: 'Nudgio',
+      siteName: 'Cystene',
       locale: 'en_US',
       images: [pageImage],
       ...(type === 'article' && publishDate && author && {
@@ -84,11 +84,11 @@ export function generatePageMetadata({
       card: 'summary_large_image',
       title,
       description,
-      creator: '@nudgio_tech',
-      site: '@nudgio_tech',
+      creator: '@cystene',
+      site: '@cystene',
       images: [pageImage.url],
     },
-    authors: author ? [{ name: author }] : [{ name: 'Nudgio Team' }],
+    authors: author ? [{ name: author }] : [{ name: 'Cystene Team' }],
     alternates: { canonical: pageUrl },
     keywords: keywords,
     icons: {

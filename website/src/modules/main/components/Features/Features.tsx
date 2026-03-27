@@ -1,62 +1,62 @@
 import {
-  Sparkles,
-  ShoppingCart,
-  ArrowUpRight,
-  BarChart3,
-  Code,
-  Layers,
-  Zap,
+  Network,
   Globe,
+  ShieldCheck,
+  Bug,
+  BarChart3,
+  CalendarClock,
+  FileBarChart,
+  Server,
 } from 'lucide-react';
 
 const features = [
   {
     id: 1,
-    icon: Sparkles,
-    title: 'AI Recommendations',
-    description: 'Intelligent product suggestions powered by your catalog and order history data.',
+    icon: Network,
+    title: 'Port Scanning',
+    description: 'Discover open ports and running services across your infrastructure with TCP connect and SYN scans.',
   },
   {
     id: 2,
-    icon: ShoppingCart,
-    title: 'Cross-Selling',
-    description: 'Suggest complementary products that increase cart size and average order value.',
+    icon: Globe,
+    title: 'DNS Enumeration',
+    description: 'Map subdomains, DNS records, and zone configurations to uncover your full attack surface.',
   },
   {
     id: 3,
-    icon: ArrowUpRight,
-    title: 'Upselling',
-    description: 'Nudge customers toward higher-value alternatives and premium product options.',
+    icon: ShieldCheck,
+    title: 'SSL/TLS Analysis',
+    description: 'Validate certificates, cipher suites, and TLS configurations against current security standards.',
   },
   {
     id: 4,
-    icon: BarChart3,
-    title: 'Analytics Dashboard',
-    description: 'Track recommendation performance, conversion rates, and revenue impact in real time.',
+    icon: Bug,
+    title: 'Web Security',
+    description: 'Detect misconfigurations, exposed headers, and common web vulnerabilities across your applications.',
   },
   {
     id: 5,
-    icon: Code,
-    title: 'Embeddable Components',
-    description: 'Drop-in recommendation widgets that match your store design across any platform.',
+    icon: BarChart3,
+    title: 'Analytics Dashboard',
+    description: 'Track scan results, vulnerability trends, and security posture over time in real time.',
   },
   {
     id: 6,
-    icon: Layers,
-    title: 'Multi-Platform',
-    description: 'One recommendation engine across Shopify, WooCommerce, and Magento stores.',
+    icon: CalendarClock,
+    title: 'Scheduled Scans',
+    description: 'Automate recurring security assessments on your own schedule — daily, weekly, or custom.',
   },
   {
     id: 7,
-    icon: Zap,
-    title: 'Fast Integration',
-    description: 'Connect your store in minutes with native API adapters — no complex setup required.',
+    icon: FileBarChart,
+    title: 'Exportable Reports',
+    description: 'Generate detailed PDF and JSON reports for compliance reviews and stakeholder briefings.',
   },
   {
     id: 8,
-    icon: Globe,
-    title: 'Unified Data',
-    description: 'All your product catalogs and order data normalized into a single, intelligent model.',
+    icon: Server,
+    title: 'Unified Asset View',
+    description: 'All discovered infrastructure — hosts, ports, services, certificates — in a single security model.',
   },
 ];
 
@@ -77,9 +77,9 @@ export default function Features() {
           return (
             <div
               key={item.id}
-              className='group relative flex min-h-[210px] w-full flex-col items-center justify-center gap-4 rounded bg-zinc-100 p-6 text-center transition-all duration-300 hover:bg-linear-to-br hover:from-[#17FFFD] hover:to-[#2631f7] dark:bg-zinc-900'
+              className='group relative flex min-h-[210px] w-full flex-col items-center justify-center gap-4 rounded bg-zinc-100 p-6 text-center transition-all duration-300 hover:bg-linear-to-br hover:from-[#20F2EA] hover:to-[#36F200] dark:bg-zinc-900'
             >
-              <Icon className='h-10 w-10 text-cyan-500 transition-colors duration-300 group-hover:text-white' />
+              <Icon className='h-10 w-10 text-green-400 transition-colors duration-300 group-hover:text-white' />
               <h3 className='text-lg font-semibold text-black transition-colors duration-300 group-hover:text-white dark:text-white'>
                 {item.title}
               </h3>
