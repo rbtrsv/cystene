@@ -71,9 +71,45 @@ export const viewport: Viewport = {
   maximumScale: 1,
 };
 
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'SoftwareApplication',
+  name: 'Cystene',
+  url: 'https://www.cystene.com',
+  description:
+    'Cybersecurity scanning platform for infrastructure security. Port scanning, DNS enumeration, SSL/TLS analysis, and web security assessments with prioritized findings and remediation guidance.',
+  applicationCategory: 'SecurityApplication',
+  operatingSystem: 'Web',
+  offers: {
+    '@type': 'Offer',
+    price: '0',
+    priceCurrency: 'USD',
+    description: 'Free tier available',
+  },
+  creator: {
+    '@type': 'Organization',
+    name: 'Buraro Technologies',
+    url: 'https://www.cystene.com',
+  },
+  featureList: [
+    'Port Scanning',
+    'DNS Enumeration',
+    'SSL/TLS Analysis',
+    'Web Security Checks',
+    'Scheduled Scans',
+    'Exportable Reports',
+    'Analytics Dashboard',
+  ],
+};
+
 export default function Home() {
   return (
     <>
+      {/* JSON-LD structured data for Google and AI crawlers */}
+      <script
+        type='application/ld+json'
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       <main>
         <NavbarDownwards />
         <HeroSectionAnimated />

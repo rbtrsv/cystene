@@ -4,9 +4,8 @@ import './HeroSectionAnimated.css';
 const HeroSectionAnimated: React.FC = () => {
   return (
     <header id='hero-section'>
-      <h1
+      <p
         className='letter-spacing-custom text-center leading-none font-bold text-transparent select-none max-lg:text-5xl max-md:text-4xl max-sm:pt-24 max-sm:text-3xl sm:pt-36 lg:text-6xl'
-        aria-label='Unparalleled. Security. Solutions.'
       >
         <span
           data-content='Unparalleled.'
@@ -32,10 +31,10 @@ const HeroSectionAnimated: React.FC = () => {
             Solutions.
           </span>
         </span>
-      </h1>
-      <h2 className='mx-auto max-w-3xl py-6 text-center leading-8 font-normal tracking-tight text-black/90 max-lg:text-lg max-sm:text-lg sm:px-16 lg:text-xl dark:text-white/90'>
+      </p>
+      <h1 className='mx-auto max-w-4xl py-6 text-center leading-8 font-normal tracking-tight text-black/90 max-lg:text-lg max-sm:text-lg sm:px-16 lg:text-xl dark:text-white/90'>
         Scan your infrastructure. Find vulnerabilities. Fix them before attackers do.
-      </h2>
+      </h1>
     </header>
   );
 };

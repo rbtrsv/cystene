@@ -1,6 +1,5 @@
 import '@/modules/main/styles/globals.css';
 import { Analytics } from '@vercel/analytics/react';
-import Script from 'next/script';
 
 export default function RootLayout({
   children,

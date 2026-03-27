@@ -1,0 +1,23 @@
+# Cystene
+
+> Cystene is a SaaS cybersecurity scanning platform built by Buraro Technologies. It scans infrastructure targets (domains, IPs, IP ranges, URLs) for vulnerabilities across four dimensions: port scanning, DNS enumeration, SSL/TLS analysis, and web security checks. Users get prioritized findings with severity ratings and actionable remediation guidance.
+
+## Links
+
+- [Homepage](https://www.cystene.com)
+- [Blog](https://www.cystene.com/blog)
+- [Features](https://www.cystene.com/#features)
+- [How It Works](https://www.cystene.com/#how-it-works)
+- [Contact](https://www.cystene.com/#contact)
+- [Terms of Service](https://www.cystene.com/legal/terms-of-service)
+- [Privacy Policy](https://www.cystene.com/legal/privacy-policy)
+
+## Key Features
+
+- Port Scanning — TCP connect scans, banner grabbing, service identification
+- DNS Enumeration — subdomain discovery, DNS record analysis, SPF/DKIM/DMARC checks
+- SSL/TLS Analysis — certificate validation, cipher suite analysis, protocol version checks
+- Web Security — security header checks, misconfiguration detection, information disclosure
+- Scheduled Scans — automated recurring assessments (daily, weekly, custom)
+- Exportable Reports — PDF and JSON reports for compliance and stakeholder briefings
+- Analytics Dashboard — vulnerability trends and security posture tracking over time
