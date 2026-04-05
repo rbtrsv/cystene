@@ -31,6 +31,7 @@ const Logo: React.FC = () => (
         alt='Cystene'
         width={110}
         height={75}
+        style={{ height: 'auto' }}
         className='block w-[100px] cursor-pointer sm:w-[105px] md:w-[110px] lg:w-[110px] xl:w-[110px] 2xl:w-[115px] dark:hidden'
         priority
       />
@@ -39,6 +40,7 @@ const Logo: React.FC = () => (
         alt='Cystene'
         width={110}
         height={75}
+        style={{ height: 'auto' }}
         className='hidden w-[100px] cursor-pointer sm:w-[105px] md:w-[110px] lg:w-[110px] xl:w-[110px] 2xl:w-[115px] dark:block'
         priority
       />
