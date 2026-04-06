@@ -60,13 +60,6 @@ class Settings(BaseSettings):
     GMAIL_APP_PASSWORD: Optional[str] = None
     EMAILS_ENABLED: bool = False
 
-    # Shopify OAuth settings
-    SHOPIFY_CLIENT_ID: Optional[str] = None
-    SHOPIFY_CLIENT_SECRET: Optional[str] = None
-    SHOPIFY_SCOPES: str = "read_products,read_orders"
-    SHOPIFY_REDIRECT_URI: Optional[str] = None
-    SHOPIFY_API_VERSION: str = "2026-01"
-    
     model_config = SettingsConfigDict(
         case_sensitive=True,
         env_file=".env",
