@@ -1774,3 +1774,13 @@ Flow:
 | Grace period 7 days | Same as ecommerce | Industry standard. Prevents accidental lockout during payment issues. |
 | CybersecurityAuditLog separate per module | Not shared with AccountsAuditLog | SOC2 auditors need "show me all credential changes" — separate table makes this query instant. Same pattern as NexotypeAuditLog, AssetManagerAuditLog. |
 | audit_models.py separate from domain models | Not in infrastructure_models.py or discovery_models.py | Audit log is infrastructure util, not domain entity. Same separation as nexotype and assetmanager. |
+
+### 10.7 Future Extensions (Not Required — Architecture Ready)
+
+**AI Remediation Guidance:** LLM-powered step-by-step fix instructions per finding. Fields already exist (Finding.remediation, Finding.remediation_script). Implementation: an endpoint that takes a finding, sends context (title, description, evidence, category, cwe_id) to an LLM (Claude API), returns structured remediation steps. No model changes needed — just an API endpoint + LLM call. Can be added anytime without touching existing architecture.
+
+**Business Logic Flaw Testing:** Automated detection of price manipulation, race conditions, workflow bypass. Requires the scanner to "understand" the application's business logic — hardest thing to automate. Possible approach: user describes expected behavior, active_web_scan tests deviations. Future extension of active_web_scan.py, not a new scanner.
+
+**CI/CD Integration:** Trigger scans on every deploy. Already possible — external system calls POST /cybersecurity/scan-jobs/start with API key. A webhook/GitHub Action wrapper is a thin layer on top of existing API. No architecture changes.
+
+**Jira/Linear Integration:** Auto-create tickets from findings. A webhook that fires on Finding creation, POSTs to Jira/Linear API. Could be a simple notification system — Finding created → webhook URL → external tool. Fields available: title, severity, description, remediation, remediation_script.
