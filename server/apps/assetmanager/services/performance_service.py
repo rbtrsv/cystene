@@ -8,6 +8,19 @@ Three computations:
 3. Stakeholder Returns — from security_transactions + holdings NAV
 
 IRR calculated via Newton-Raphson method.
+
+═══════════════════════════════════════════════════════════════════════════
+DEBIT/CREDIT CONVENTION — ALL MODELS USE ENTITY PERSPECTIVE
+
+  amount_debit  = money IN to entity  (entity receives)
+  amount_credit = money OUT from entity (entity pays)
+
+This applies to BOTH SecurityTransaction AND HoldingCashFlow.
+
+IRR FORMULAS (perspective differs by audience):
+  - Fund/Holding performance:  debit - credit  (entity's view: IN minus OUT)
+  - Stakeholder returns:       credit - debit   (stakeholder's view: receives minus pays)
+═══════════════════════════════════════════════════════════════════════════
 """
 
 from datetime import date as date_type
@@ -17,7 +30,7 @@ from sqlalchemy import select, func as sql_func
 
 from ..models.holding_models import Holding, HoldingCashFlow
 from ..models.captable_models import Fee, SecurityTransaction
-from ..models.entity_models import Stakeholder
+from ..models.entity_models import Entity, Stakeholder
 from ..utils.filtering_utils import apply_soft_delete_filter
 
 
@@ -98,7 +111,7 @@ async def get_entity_performance(entity_id: int, session: AsyncSession) -> dict:
     Compute entity-level performance metrics from raw data.
 
     Data sources:
-    - holding_cash_flows: debit = money out (investment), credit = money in (return)
+    - holding_cash_flows: entity perspective (debit = money IN, credit = money OUT)
     - fees: treated as negative cash flows (costs)
     - holdings: current_fair_value for unrealized value
 
@@ -133,9 +146,11 @@ async def get_entity_performance(entity_id: int, session: AsyncSession) -> dict:
     result = await session.execute(holding_query)
     holdings = result.scalars().all()
 
-    # Calculate totals from cash flows (fund perspective: debit = out, credit = in)
-    total_invested = sum(float(cf.amount_debit or 0) for cf in cash_flows)
-    total_returned = sum(float(cf.amount_credit or 0) for cf in cash_flows)
+    # Entity perspective: debit = money IN (received), credit = money OUT (paid)
+    # total_invested = money entity sent OUT to holdings = amount_credit
+    # total_returned = money entity received back from holdings = amount_debit
+    total_invested = sum(float(cf.amount_credit or 0) for cf in cash_flows)
+    total_returned = sum(float(cf.amount_debit or 0) for cf in cash_flows)
 
     # Current fair value from holdings
     fair_value = sum(float(h.current_fair_value or 0) for h in holdings)
@@ -148,11 +163,13 @@ async def get_entity_performance(entity_id: int, session: AsyncSession) -> dict:
         fees_breakdown[fee_type] = fees_breakdown.get(fee_type, 0) + float(f.amount or 0)
 
     # Build IRR cash flows list
-    # Cash flows: investments are negative (money out), returns are positive (money in)
+    # Entity perspective IRR: debit - credit (IN minus OUT)
+    # Investment (money OUT → credit) → negative amount for IRR
+    # Distribution (money IN → debit) → positive amount for IRR
     irr_cash_flows = []
 
     for cf in cash_flows:
-        amount = float(cf.amount_credit or 0) - float(cf.amount_debit or 0)
+        amount = float(cf.amount_debit or 0) - float(cf.amount_credit or 0)
         irr_cash_flows.append({'date': cf.date, 'amount': amount})
 
     # Fees as negative cash flows
@@ -235,14 +252,15 @@ async def get_holdings_performance(entity_id: int, session: AsyncSession) -> lis
     for holding in holdings:
         h_cash_flows = cf_by_holding.get(holding.id, [])
 
-        total_invested = sum(float(cf.amount_debit or 0) for cf in h_cash_flows)
-        total_returned = sum(float(cf.amount_credit or 0) for cf in h_cash_flows)
+        # Entity perspective: credit = money OUT (invested), debit = money IN (returned)
+        total_invested = sum(float(cf.amount_credit or 0) for cf in h_cash_flows)
+        total_returned = sum(float(cf.amount_debit or 0) for cf in h_cash_flows)
         fair_value = float(holding.current_fair_value or 0)
 
-        # Build IRR cash flows
+        # Entity perspective IRR: debit - credit (IN minus OUT)
         irr_cfs = []
         for cf in h_cash_flows:
-            amount = float(cf.amount_credit or 0) - float(cf.amount_debit or 0)
+            amount = float(cf.amount_debit or 0) - float(cf.amount_credit or 0)
             irr_cfs.append({'date': cf.date, 'amount': amount})
 
         if fair_value > 0:
@@ -289,18 +307,23 @@ async def get_stakeholder_returns(entity_id: int, session: AsyncSession) -> list
         total_invested, total_returned, fair_value,
         ownership_percentage, irr, tvpi, dpi, rvpi
     """
-    # Get all stakeholders for this entity (exclude soft-deleted)
+    # Get all stakeholders for this entity with resolved name from source entity
+    # JOIN Stakeholder → Entity (via source_entity_id) to get investor name
     stk_query = (
-        select(Stakeholder)
+        select(Stakeholder, Entity.name.label("stakeholder_name"))
+        .join(Entity, Stakeholder.source_entity_id == Entity.id)
         .filter(Stakeholder.entity_id == entity_id)
     )
     stk_query = apply_soft_delete_filter(stk_query, Stakeholder)
     result = await session.execute(stk_query)
-    stakeholders = result.scalars().all()
+    stk_rows = result.all()
 
-    if not stakeholders:
+    if not stk_rows:
         return []
 
+    stakeholders = [row[0] for row in stk_rows]
+    # Map stakeholder_id → resolved name from Entity
+    stakeholder_names = {row[0].id: row.stakeholder_name for row in stk_rows}
     stakeholder_ids = [s.id for s in stakeholders]
     stakeholders_map = {s.id: s for s in stakeholders}
 
@@ -346,9 +369,11 @@ async def get_stakeholder_returns(entity_id: int, session: AsyncSession) -> list
         s_txns = txns_by_stakeholder.get(stakeholder.id, [])
         net_units = units_by_stakeholder.get(stakeholder.id, 0)
 
-        # Stakeholder perspective: credit = money in (invested), debit = money out (returned)
-        total_invested = sum(float(tx.amount_credit or 0) for tx in s_txns)
-        total_returned = sum(float(tx.amount_debit or 0) for tx in s_txns)
+        # Entity perspective (see support/to-do/3_captable_example.md):
+        # amount_debit = money entity received = stakeholder invested
+        # amount_credit = money entity paid out = stakeholder received back
+        total_invested = sum(float(tx.amount_debit or 0) for tx in s_txns)
+        total_returned = sum(float(tx.amount_credit or 0) for tx in s_txns)
 
         # Ownership percentage
         ownership_pct = round((net_units / total_units_all) * 100, 2) if total_units_all > 0 else 0
@@ -356,11 +381,12 @@ async def get_stakeholder_returns(entity_id: int, session: AsyncSession) -> list
         # Stakeholder's share of fund NAV
         stakeholder_nav = round(fund_nav * (ownership_pct / 100), 2) if ownership_pct > 0 else 0
 
-        # Build IRR cash flows (stakeholder perspective)
+        # Build IRR cash flows (entity perspective → stakeholder view for IRR)
+        # amount_debit = entity received = stakeholder outflow (negative)
+        # amount_credit = entity paid = stakeholder inflow (positive)
         irr_cfs = []
         for tx in s_txns:
-            # From stakeholder view: credit = invested (outflow), debit = returned (inflow)
-            amount = float(tx.amount_debit or 0) - float(tx.amount_credit or 0)
+            amount = float(tx.amount_credit or 0) - float(tx.amount_debit or 0)
             irr_cfs.append({'date': tx.transaction_date, 'amount': amount})
 
         # Add stakeholder's NAV share as terminal value
@@ -377,7 +403,7 @@ async def get_stakeholder_returns(entity_id: int, session: AsyncSession) -> list
 
         results.append({
             'stakeholder_id': stakeholder.id,
-            'stakeholder_name': stakeholder.name,
+            'stakeholder_name': stakeholder_names.get(stakeholder.id, 'Unknown'),
             'stakeholder_type': stakeholder.type,
             'total_invested': round(total_invested, 2),
             'total_returned': round(total_returned, 2),

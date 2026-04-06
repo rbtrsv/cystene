@@ -16,7 +16,7 @@ from ...schemas.entity_schemas.entity_organization_member_schemas import (
     CreateEntityOrganizationMember, UpdateEntityOrganizationMember,
     EntityOrganizationMemberResponse, EntityOrganizationMembersResponse
 )
-from ...utils.dependency_utils import get_entity_access, get_user_organization_id
+from ...utils.dependency_utils import get_entity_access, require_write_access
 from ...utils.filtering_utils import get_user_entity_ids, apply_soft_delete_filter
 from ...utils.crud_utils import (
     get_record_or_404,
@@ -148,13 +148,8 @@ async def create_entity_organization_member(
     4. Returns the created member details
     """
     try:
-        # Check entity access
-        entity_access = await get_entity_access(user.id, data.entity_id, session)
-        if not entity_access:
-            raise HTTPException(status_code=403, detail="You do not have access to this entity")
-
-        if entity_access.role not in ['ADMIN', 'OWNER']:
-            raise HTTPException(status_code=403, detail="You need ADMIN or OWNER role to manage entity organization members")
+        # Check entity access + role + subscription
+        entity_access = await require_write_access(user.id, data.entity_id, session, ['ADMIN', 'OWNER'])
 
         await check_duplicate(
             db=session,
@@ -163,15 +158,13 @@ async def create_entity_organization_member(
             entity_label="Entity organization membership",
         )
 
-        org_id = await get_user_organization_id(user.id, session)
-
         member = await create_with_audit(
             db=session,
             model=EntityOrganizationMember,
             table_name="entity_organization_members",
             payload=data.model_dump(),
             user_id=user.id,
-            organization_id=org_id,
+            organization_id=entity_access.organization_id,
         )
 
         await session.commit()
@@ -213,15 +206,8 @@ async def update_entity_organization_member(
             session, EntityOrganizationMember, member_id, "Entity organization member"
         )
 
-        # Check entity access
-        entity_access = await get_entity_access(user.id, member.entity_id, session)
-        if not entity_access:
-            raise HTTPException(status_code=403, detail="You do not have access to this entity")
-
-        if entity_access.role not in ['ADMIN', 'OWNER']:
-            raise HTTPException(status_code=403, detail="You need ADMIN or OWNER role to manage entity organization members")
-
-        org_id = await get_user_organization_id(user.id, session)
+        # Check entity access + role + subscription
+        entity_access = await require_write_access(user.id, member.entity_id, session, ['ADMIN', 'OWNER'])
 
         await update_with_audit(
             db=session,
@@ -229,7 +215,7 @@ async def update_entity_organization_member(
             table_name="entity_organization_members",
             payload=data.model_dump(exclude_unset=True),
             user_id=user.id,
-            organization_id=org_id,
+            organization_id=entity_access.organization_id,
         )
 
         await session.commit()
@@ -269,22 +255,15 @@ async def delete_entity_organization_member(
             session, EntityOrganizationMember, member_id, "Entity organization member"
         )
 
-        # Check entity access
-        entity_access = await get_entity_access(user.id, member.entity_id, session)
-        if not entity_access:
-            raise HTTPException(status_code=403, detail="You do not have access to this entity")
-
-        if entity_access.role not in ['ADMIN', 'OWNER']:
-            raise HTTPException(status_code=403, detail="You need ADMIN or OWNER role to manage entity organization members")
-
-        org_id = await get_user_organization_id(user.id, session)
+        # Check entity access + role + subscription
+        entity_access = await require_write_access(user.id, member.entity_id, session, ['ADMIN', 'OWNER'])
 
         await soft_delete_with_audit(
             db=session,
             item=member,
             table_name="entity_organization_members",
             user_id=user.id,
-            organization_id=org_id,
+            organization_id=entity_access.organization_id,
         )
 
         await session.commit()

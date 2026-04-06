@@ -18,7 +18,7 @@ from ...schemas.captable_schemas.funding_round_schemas import (
     FundingRoundResponse, FundingRoundsResponse,
     RoundType
 )
-from ...utils.dependency_utils import get_entity_access, get_user_organization_id
+from ...utils.dependency_utils import get_entity_access, require_write_access
 from ...utils.filtering_utils import get_user_entity_ids, apply_soft_delete_filter
 from ...utils.crud_utils import (
     get_record_or_404,
@@ -157,15 +157,8 @@ async def create_funding_round(
     4. Returns the created funding round details
     """
     try:
-        # Check entity access
-        entity_access = await get_entity_access(user.id, data.entity_id, session)
-        if not entity_access:
-            raise HTTPException(status_code=403, detail="You do not have access to this entity")
-
-        if entity_access.role not in ['EDITOR', 'ADMIN', 'OWNER']:
-            raise HTTPException(status_code=403, detail="You need EDITOR, ADMIN, or OWNER role to create funding rounds for this entity")
-
-        org_id = await get_user_organization_id(user.id, session)
+        # Check entity access + role + subscription
+        entity_access = await require_write_access(user.id, data.entity_id, session, ['EDITOR', 'ADMIN', 'OWNER'])
 
         funding_round = await create_with_audit(
             db=session,
@@ -173,7 +166,7 @@ async def create_funding_round(
             table_name="funding_rounds",
             payload=data.model_dump(),
             user_id=user.id,
-            organization_id=org_id,
+            organization_id=entity_access.organization_id,
         )
 
         await session.commit()
@@ -215,24 +208,12 @@ async def update_funding_round(
             session, FundingRound, funding_round_id, "Funding round"
         )
 
-        # Check entity access
-        entity_access = await get_entity_access(user.id, funding_round.entity_id, session)
-        if not entity_access:
-            raise HTTPException(status_code=403, detail="You do not have access to this entity")
+        # Check entity access + role + subscription
+        entity_access = await require_write_access(user.id, funding_round.entity_id, session, ['EDITOR', 'ADMIN', 'OWNER'])
 
-        if entity_access.role not in ['EDITOR', 'ADMIN', 'OWNER']:
-            raise HTTPException(status_code=403, detail="You need EDITOR, ADMIN, or OWNER role to update funding rounds for this entity")
-
-        # If entity_id is being changed, verify access to new entity
+        # If entity_id is being changed, verify access + role + subscription on new entity
         if data.entity_id is not None and data.entity_id != funding_round.entity_id:
-            new_entity_access = await get_entity_access(user.id, data.entity_id, session)
-            if not new_entity_access:
-                raise HTTPException(status_code=403, detail="You do not have access to the new entity")
-
-            if new_entity_access.role not in ['EDITOR', 'ADMIN', 'OWNER']:
-                raise HTTPException(status_code=403, detail="You need EDITOR, ADMIN, or OWNER role for the new entity")
-
-        org_id = await get_user_organization_id(user.id, session)
+            await require_write_access(user.id, data.entity_id, session, ['EDITOR', 'ADMIN', 'OWNER'])
 
         await update_with_audit(
             db=session,
@@ -240,7 +221,7 @@ async def update_funding_round(
             table_name="funding_rounds",
             payload=data.model_dump(exclude_unset=True),
             user_id=user.id,
-            organization_id=org_id,
+            organization_id=entity_access.organization_id,
         )
 
         await session.commit()
@@ -280,15 +261,8 @@ async def delete_funding_round(
             session, FundingRound, funding_round_id, "Funding round"
         )
 
-        # Check entity access
-        entity_access = await get_entity_access(user.id, funding_round.entity_id, session)
-        if not entity_access:
-            raise HTTPException(status_code=403, detail="You do not have access to this entity")
-
-        if entity_access.role not in ['ADMIN', 'OWNER']:
-            raise HTTPException(status_code=403, detail="You need ADMIN or OWNER role to delete funding rounds for this entity")
-
-        org_id = await get_user_organization_id(user.id, session)
+        # Check entity access + role + subscription
+        entity_access = await require_write_access(user.id, funding_round.entity_id, session, ['ADMIN', 'OWNER'])
 
         name = funding_round.name
 
@@ -297,7 +271,7 @@ async def delete_funding_round(
             item=funding_round,
             table_name="funding_rounds",
             user_id=user.id,
-            organization_id=org_id,
+            organization_id=entity_access.organization_id,
         )
 
         await session.commit()

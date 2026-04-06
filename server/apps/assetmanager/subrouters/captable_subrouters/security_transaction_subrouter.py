@@ -6,7 +6,7 @@ FastAPI router for SecurityTransaction model CRUD operations.
 
 from fastapi import APIRouter, HTTPException, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import select, desc
 from typing import Optional
 from datetime import date
 
@@ -19,7 +19,7 @@ from ...schemas.captable_schemas.security_transaction_schemas import (
     SecurityTransactionResponse, SecurityTransactionsResponse,
     TransactionType
 )
-from ...utils.dependency_utils import get_entity_access, get_user_organization_id
+from ...utils.dependency_utils import get_entity_access, require_write_access
 from ...utils.filtering_utils import get_user_entity_ids, apply_soft_delete_filter
 from ...utils.crud_utils import (
     get_record_or_404,
@@ -31,6 +31,80 @@ from apps.accounts.utils.auth_utils import get_current_user
 from apps.accounts.models import User
 
 router = APIRouter(tags=["Security Transactions"])
+
+
+# ==========================================
+# Transaction Reference Generator
+# ==========================================
+
+# Prefix map: transaction_type → short prefix for reference
+TRANSACTION_TYPE_PREFIXES = {
+    "issuance": "ISS",
+    "transfer": "TRF",
+    "conversion": "CNV",
+    "redemption": "RDM",
+    "exercise": "EXR",
+    "cancellation": "CNC",
+    "split": "SPL",
+    "merger": "MRG",
+}
+
+
+@router.get("/next-reference")
+async def get_next_transaction_reference(
+    transaction_type: Optional[str] = Query(None, description="Transaction type for prefix (e.g. 'issuance' → ISS)"),
+    user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+):
+    """
+    Generate the next sequential transaction reference (global, not entity-scoped).
+
+    Format: {PREFIX}-{YYYYMMDD}-{NNN}
+    Examples: ISS-20260330-001, TXN-20260330-002
+
+    Logic:
+    1. Query last transaction_reference matching today's date pattern
+    2. Increment the sequence number
+    3. Fallback to random if query fails
+    """
+    try:
+        # Prefix based on transaction type
+        prefix = TRANSACTION_TYPE_PREFIXES.get(transaction_type, "TXN") if transaction_type else "TXN"
+
+        today_str = date.today().strftime("%Y%m%d")
+        pattern = f"%-{today_str}-%"
+
+        # Find the last reference created today (across all entities)
+        query = (
+            select(SecurityTransaction.transaction_reference)
+            .filter(SecurityTransaction.transaction_reference.like(pattern))
+            .order_by(desc(SecurityTransaction.transaction_reference))
+            .limit(1)
+        )
+        result = await session.execute(query)
+        last_ref = result.scalar()
+
+        next_number = 1
+        if last_ref:
+            # Extract the number from the last reference (e.g., "ISS-20260330-003" → 3)
+            parts = last_ref.rsplit("-", 1)
+            if len(parts) == 2 and parts[1].isdigit():
+                next_number = int(parts[1]) + 1
+
+        padded = str(next_number).zfill(3)
+        reference = f"{prefix}-{today_str}-{padded}"
+
+        return {"success": True, "data": reference}
+
+    except Exception as e:
+        # Fallback to random
+        import random
+        today_str = date.today().strftime("%Y%m%d")
+        prefix = TRANSACTION_TYPE_PREFIXES.get(transaction_type, "TXN") if transaction_type else "TXN"
+        padded = str(random.randint(1, 999)).zfill(3)
+        reference = f"{prefix}-{today_str}-{padded}"
+        return {"success": True, "data": reference}
+
 
 # ==========================================
 # List Operations
@@ -177,13 +251,8 @@ async def create_security_transaction(
         # Verify entity exists (soft-delete aware)
         await get_record_or_404(session, Entity, data.entity_id, "Entity")
 
-        # Check entity access
-        entity_access = await get_entity_access(user.id, data.entity_id, session)
-        if not entity_access:
-            raise HTTPException(status_code=403, detail="You do not have access to this entity")
-
-        if entity_access.role not in ['EDITOR', 'ADMIN', 'OWNER']:
-            raise HTTPException(status_code=403, detail="You need EDITOR, ADMIN, or OWNER role to create security transactions for this entity")
+        # Check entity access + role + subscription
+        entity_access = await require_write_access(user.id, data.entity_id, session, ['EDITOR', 'ADMIN', 'OWNER'])
 
         # Verify stakeholder exists (soft-delete aware)
         await get_record_or_404(session, Stakeholder, data.stakeholder_id, "Stakeholder")
@@ -199,7 +268,17 @@ async def create_security_transaction(
         if data.related_transaction_id:
             await get_record_or_404(session, SecurityTransaction, data.related_transaction_id, "Related transaction")
 
-        org_id = await get_user_organization_id(user.id, session)
+        # Verify transaction_reference is unique
+        existing_ref = await session.execute(
+            select(SecurityTransaction.id).filter(
+                SecurityTransaction.transaction_reference == data.transaction_reference
+            )
+        )
+        if existing_ref.scalar():
+            raise HTTPException(
+                status_code=400,
+                detail=f"Transaction reference '{data.transaction_reference}' already exists"
+            )
 
         transaction = await create_with_audit(
             db=session,
@@ -207,7 +286,7 @@ async def create_security_transaction(
             table_name="security_transactions",
             payload=data.model_dump(),
             user_id=user.id,
-            organization_id=org_id,
+            organization_id=entity_access.organization_id,
         )
 
         await session.commit()
@@ -249,26 +328,16 @@ async def update_security_transaction(
             session, SecurityTransaction, transaction_id, "Security transaction"
         )
 
-        # Check entity access
-        entity_access = await get_entity_access(user.id, transaction.entity_id, session)
-        if not entity_access:
-            raise HTTPException(status_code=403, detail="You do not have access to this transaction's entity")
-
-        if entity_access.role not in ['EDITOR', 'ADMIN', 'OWNER']:
-            raise HTTPException(status_code=403, detail="You need EDITOR, ADMIN, or OWNER role to update security transactions for this entity")
+        # Check entity access + role + subscription
+        entity_access = await require_write_access(user.id, transaction.entity_id, session, ['EDITOR', 'ADMIN', 'OWNER'])
 
         # Validate foreign key changes
         if data.entity_id is not None and data.entity_id != transaction.entity_id:
             # Verify new entity exists (soft-delete aware)
             await get_record_or_404(session, Entity, data.entity_id, "New entity")
 
-            # Check access to new entity
-            new_entity_access = await get_entity_access(user.id, data.entity_id, session)
-            if not new_entity_access:
-                raise HTTPException(status_code=403, detail="You do not have access to the new entity")
-
-            if new_entity_access.role not in ['EDITOR', 'ADMIN', 'OWNER']:
-                raise HTTPException(status_code=403, detail="You need EDITOR, ADMIN, or OWNER role for the new entity")
+            # Check access + role + subscription on new entity
+            await require_write_access(user.id, data.entity_id, session, ['EDITOR', 'ADMIN', 'OWNER'])
 
         if data.stakeholder_id is not None and data.stakeholder_id != transaction.stakeholder_id:
             await get_record_or_404(session, Stakeholder, data.stakeholder_id, "New stakeholder")
@@ -283,15 +352,13 @@ async def update_security_transaction(
             if data.related_transaction_id:  # Allow setting to None
                 await get_record_or_404(session, SecurityTransaction, data.related_transaction_id, "New related transaction")
 
-        org_id = await get_user_organization_id(user.id, session)
-
         await update_with_audit(
             db=session,
             item=transaction,
             table_name="security_transactions",
             payload=data.model_dump(exclude_unset=True),
             user_id=user.id,
-            organization_id=org_id,
+            organization_id=entity_access.organization_id,
         )
 
         await session.commit()
@@ -331,15 +398,8 @@ async def delete_security_transaction(
             session, SecurityTransaction, transaction_id, "Security transaction"
         )
 
-        # Check entity access
-        entity_access = await get_entity_access(user.id, transaction.entity_id, session)
-        if not entity_access:
-            raise HTTPException(status_code=403, detail="You do not have access to this transaction's entity")
-
-        if entity_access.role not in ['ADMIN', 'OWNER']:
-            raise HTTPException(status_code=403, detail="You need ADMIN or OWNER role to delete security transactions for this entity")
-
-        org_id = await get_user_organization_id(user.id, session)
+        # Check entity access + role + subscription
+        entity_access = await require_write_access(user.id, transaction.entity_id, session, ['ADMIN', 'OWNER'])
 
         transaction_ref = transaction.transaction_reference
 
@@ -348,7 +408,7 @@ async def delete_security_transaction(
             item=transaction,
             table_name="security_transactions",
             user_id=user.id,
-            organization_id=org_id,
+            organization_id=entity_access.organization_id,
         )
 
         await session.commit()

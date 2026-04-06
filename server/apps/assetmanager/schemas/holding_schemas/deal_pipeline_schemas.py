@@ -43,10 +43,10 @@ class DealPipeline(BaseModel):
     target_entity_id: int | None = Field(None, description="Target entity ID")
     company_name: str | None = Field(None, description="Company name")
     deal_name: str = Field(description="Deal name")
-    priority: str = Field(description="Priority level (p1-p5)")
-    status: str = Field(description="Pipeline status")
+    priority: PipelinePriority = Field(description="Priority level")
+    status: PipelineStatus = Field(description="Pipeline status")
     round_type: str = Field(description="Round type")
-    sector: str = Field(description="Sector")
+    sector: str | None = Field(None, description="Sector")
 
     # Financial Details
     target_raise: float | None = Field(None, description="Target raise amount")

@@ -24,6 +24,36 @@ class ListingStatus(str, Enum):
     PRIVATE = "private"
     PUBLIC = "public"
 
+class InvestmentType(str, Enum):
+    """Investment type options — source: v7capital"""
+    EQUITY = "equity"
+    DEBT = "debt"
+    CONVERTIBLE = "convertible"
+    WARRANT = "warrant"
+    OPTION = "option"
+    CASH = "cash"
+
+class CompanyType(str, Enum):
+    """Company/entity type for holdings — describes the investment vehicle type"""
+    VENTURE_CAPITAL = "venture_capital"
+    PRIVATE_EQUITY = "private_equity"
+    PUBLIC = "public"
+    CASH = "cash"
+
+class SectorType(str, Enum):
+    """Sector options — source: v7capital"""
+    FINTECH = "fintech"
+    HEALTHTECH = "healthtech"
+    ECOMMERCE = "ecommerce"
+    SAAS = "saas"
+    AI_ML = "ai_ml"
+    BLOCKCHAIN = "blockchain"
+    CLEANTECH = "cleantech"
+    EDTECH = "edtech"
+    ENTERPRISE = "enterprise"
+    CONSUMER = "consumer"
+    OTHER = "other"
+
 # ==========================================
 # Holding Schema (Full Representation)
 # ==========================================
@@ -38,11 +68,11 @@ class Holding(BaseModel):
 
     # Investment Details
     investment_name: str = Field(description="Investment name")
-    entity_type: str = Field(description="Entity type")
-    investment_type: str = Field(description="Investment type")
+    entity_type: CompanyType = Field(description="Company type")
+    investment_type: InvestmentType = Field(description="Investment type")
     investment_round: str | None = Field(None, description="Investment round")
-    investment_status: str = Field(description="Investment status")
-    sector: str = Field(description="Sector")
+    investment_status: InvestmentStatus = Field(description="Investment status")
+    sector: SectorType | None = Field(None, description="Sector")
     listing_status: str = Field(description="Listing status")
     original_investment_date: date_type | None = Field(None, description="Original investment date")
 
@@ -83,9 +113,9 @@ class HoldingCreate(BaseModel):
     # Required fields
     entity_id: int = Field(description="Associated entity ID")
     investment_name: str = Field(min_length=1, max_length=255, description="Investment name")
-    entity_type: str = Field(max_length=50, description="Entity type")
-    investment_type: str = Field(max_length=50, description="Investment type")
-    sector: str = Field(max_length=50, description="Sector")
+    entity_type: CompanyType = Field(description="Company type")
+    investment_type: InvestmentType = Field(description="Investment type")
+    sector: SectorType | None = Field(None, description="Sector")
 
     # Fields with defaults
     investment_status: InvestmentStatus = Field(default=InvestmentStatus.ACTIVE, description="Investment status")
@@ -128,11 +158,11 @@ class HoldingUpdate(BaseModel):
 
     # Investment Details
     investment_name: str | None = Field(None, min_length=1, max_length=255)
-    entity_type: str | None = Field(None, max_length=50)
-    investment_type: str | None = Field(None, max_length=50)
+    entity_type: CompanyType | None = None
+    investment_type: InvestmentType | None = None
     investment_round: str | None = Field(None, max_length=50)
     investment_status: InvestmentStatus | None = None
-    sector: str | None = Field(None, max_length=50)
+    sector: SectorType | None = None
     listing_status: ListingStatus | None = None
     original_investment_date: date_type | None = None
 

@@ -17,7 +17,7 @@ from ...schemas.deal_schemas.entity_deal_profile_schemas import (
     EntityDealProfileResponse, EntityDealProfilesResponse,
     EntityDealType
 )
-from ...utils.dependency_utils import get_entity_access, get_user_organization_id
+from ...utils.dependency_utils import get_entity_access, require_write_access
 from ...utils.filtering_utils import get_user_entity_ids, apply_soft_delete_filter
 from ...utils.crud_utils import (
     get_record_or_404,
@@ -148,13 +148,8 @@ async def create_entity_deal_profile(
     5. Returns the created profile details
     """
     try:
-        # Check entity access
-        entity_access = await get_entity_access(user.id, data.entity_id, session)
-        if not entity_access:
-            raise HTTPException(status_code=403, detail="You do not have access to this entity")
-
-        if entity_access.role not in ['EDITOR', 'ADMIN', 'OWNER']:
-            raise HTTPException(status_code=403, detail="You need EDITOR, ADMIN, or OWNER role to create deal profiles for this entity")
+        # Check entity access + role + subscription
+        entity_access = await require_write_access(user.id, data.entity_id, session, ['EDITOR', 'ADMIN', 'OWNER'])
 
         # Enforce 1:1 uniqueness — one profile per entity
         await check_duplicate(
@@ -164,15 +159,13 @@ async def create_entity_deal_profile(
             entity_label="Entity deal profile",
         )
 
-        org_id = await get_user_organization_id(user.id, session)
-
         profile = await create_with_audit(
             db=session,
             model=EntityDealProfile,
             table_name="entity_deal_profiles",
             payload=data.model_dump(),
             user_id=user.id,
-            organization_id=org_id,
+            organization_id=entity_access.organization_id,
         )
 
         await session.commit()
@@ -212,22 +205,12 @@ async def update_entity_deal_profile(
     try:
         profile = await get_record_or_404(session, EntityDealProfile, profile_id, "Entity deal profile")
 
-        # Check entity access
-        entity_access = await get_entity_access(user.id, profile.entity_id, session)
-        if not entity_access:
-            raise HTTPException(status_code=403, detail="You do not have access to this entity")
+        # Check entity access + role + subscription
+        entity_access = await require_write_access(user.id, profile.entity_id, session, ['EDITOR', 'ADMIN', 'OWNER'])
 
-        if entity_access.role not in ['EDITOR', 'ADMIN', 'OWNER']:
-            raise HTTPException(status_code=403, detail="You need EDITOR, ADMIN, or OWNER role to update deal profiles for this entity")
-
-        # If entity_id is being changed, verify access to new entity + re-check duplicate
+        # If entity_id is being changed, verify access + role + subscription on new entity + re-check duplicate
         if data.entity_id is not None and data.entity_id != profile.entity_id:
-            new_entity_access = await get_entity_access(user.id, data.entity_id, session)
-            if not new_entity_access:
-                raise HTTPException(status_code=403, detail="You do not have access to the new entity")
-
-            if new_entity_access.role not in ['EDITOR', 'ADMIN', 'OWNER']:
-                raise HTTPException(status_code=403, detail="You need EDITOR, ADMIN, or OWNER role for the new entity")
+            await require_write_access(user.id, data.entity_id, session, ['EDITOR', 'ADMIN', 'OWNER'])
 
             await check_duplicate(
                 db=session,
@@ -237,15 +220,13 @@ async def update_entity_deal_profile(
                 exclude_id=profile_id,
             )
 
-        org_id = await get_user_organization_id(user.id, session)
-
         await update_with_audit(
             db=session,
             item=profile,
             table_name="entity_deal_profiles",
             payload=data.model_dump(exclude_unset=True),
             user_id=user.id,
-            organization_id=org_id,
+            organization_id=entity_access.organization_id,
         )
 
         await session.commit()
@@ -283,22 +264,15 @@ async def delete_entity_deal_profile(
     try:
         profile = await get_record_or_404(session, EntityDealProfile, profile_id, "Entity deal profile")
 
-        # Check entity access
-        entity_access = await get_entity_access(user.id, profile.entity_id, session)
-        if not entity_access:
-            raise HTTPException(status_code=403, detail="You do not have access to this entity")
-
-        if entity_access.role not in ['ADMIN', 'OWNER']:
-            raise HTTPException(status_code=403, detail="You need ADMIN or OWNER role to delete deal profiles for this entity")
-
-        org_id = await get_user_organization_id(user.id, session)
+        # Check entity access + role + subscription
+        entity_access = await require_write_access(user.id, profile.entity_id, session, ['ADMIN', 'OWNER'])
 
         await soft_delete_with_audit(
             db=session,
             item=profile,
             table_name="entity_deal_profiles",
             user_id=user.id,
-            organization_id=org_id,
+            organization_id=entity_access.organization_id,
         )
 
         await session.commit()

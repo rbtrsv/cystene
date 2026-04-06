@@ -11,7 +11,7 @@ from enum import Enum
 class StakeholderType(str, Enum):
     """Stakeholder type options"""
     GENERAL_PARTNER = "general_partner"
-    LIMITED_PARTNER = "limited_partner" 
+    LIMITED_PARTNER = "limited_partner"
     EMPLOYEE = "employee"
     ADVISOR = "advisor"
     BOARD_MEMBER = "board_member"
@@ -24,10 +24,9 @@ class StakeholderType(str, Enum):
 class Stakeholder(BaseModel):
     """Stakeholder schema - full representation"""
     id: int
-    name: str = Field(min_length=1, max_length=255, description="Stakeholder name")
     type: StakeholderType = Field(description="Stakeholder type")
-    entity_id: int | None = Field(None, description="Associated entity ID")
-    source_syndicate_id: int | None = Field(None, description="Source syndicate ID (when stakeholder is a syndicate proxy)")
+    entity_id: int = Field(description="Cap table entity ID (the entity this stakeholder sits on)")
+    source_entity_id: int = Field(description="Source entity ID (the investing entity — name comes from here)")
     carried_interest_percentage: float | None = Field(None, description="Carried interest percentage")
     preferred_return_rate: float | None = Field(None, description="Preferred return rate")
     distribution_tier: int = Field(default=1, description="Distribution tier")
@@ -41,7 +40,7 @@ class Stakeholder(BaseModel):
     maximum_investment: float | None = Field(None, description="Maximum investment amount")
     created_at: datetime
     updated_at: datetime | None = None
-    
+
     model_config = ConfigDict(from_attributes=True)
 
 # ==========================================
@@ -50,10 +49,9 @@ class Stakeholder(BaseModel):
 
 class CreateStakeholder(BaseModel):
     """Schema for creating a new stakeholder"""
-    name: str = Field(min_length=1, max_length=255, description="Stakeholder name")
     type: StakeholderType = Field(description="Stakeholder type")
-    entity_id: int | None = Field(None, description="Associated entity ID")
-    source_syndicate_id: int | None = Field(None, description="Source syndicate ID (when stakeholder is a syndicate proxy)")
+    entity_id: int = Field(description="Cap table entity ID (the entity this stakeholder sits on)")
+    source_entity_id: int = Field(description="Source entity ID (the investing entity — name comes from here)")
     carried_interest_percentage: float | None = Field(None, description="Carried interest percentage")
     preferred_return_rate: float | None = Field(None, description="Preferred return rate")
     distribution_tier: int = Field(default=1, description="Distribution tier")
@@ -68,10 +66,9 @@ class CreateStakeholder(BaseModel):
 
 class UpdateStakeholder(BaseModel):
     """Schema for updating a stakeholder"""
-    name: str | None = Field(None, min_length=1, max_length=255)
     type: StakeholderType | None = None
     entity_id: int | None = None
-    source_syndicate_id: int | None = None
+    source_entity_id: int | None = None
     carried_interest_percentage: float | None = None
     preferred_return_rate: float | None = None
     distribution_tier: int | None = None

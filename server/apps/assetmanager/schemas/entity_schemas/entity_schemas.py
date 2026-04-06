@@ -17,6 +17,7 @@ class EntityType(str, Enum):
     FUND = "fund"
     COMPANY = "company"
     INDIVIDUAL = "individual"
+    SYNDICATE = "syndicate"
 
 class EntityRole(str, Enum):
     """Entity organization member role options"""
@@ -35,9 +36,9 @@ class Entity(BaseModel):
     name: str = Field(min_length=1, max_length=255, description="Entity name")
     entity_type: EntityType = Field(description="Type of entity")
     parent_id: int | None = Field(None, description="Parent entity ID")
-    current_valuation: float | None = Field(None, description="Current valuation")
     organization_id: int = Field(description="Organization ID that owns this entity")
-    cash_balance: float = Field(default=0, description="Cash balance")
+    is_discoverable: bool = Field(default=False, description="Whether entity is discoverable by other organizations")
+    invite_code: str | None = Field(None, description="Invite code for private access")
     created_at: datetime
     updated_at: datetime | None = None
     
@@ -52,17 +53,15 @@ class CreateEntity(BaseModel):
     name: str = Field(min_length=1, max_length=255, description="Entity name")
     entity_type: EntityType = Field(description="Type of entity")
     parent_id: int | None = Field(None, description="Parent entity ID")
-    current_valuation: float | None = Field(None, description="Current valuation")
     organization_id: int = Field(description="Organization ID that owns this entity")
-    cash_balance: float = Field(default=0, description="Cash balance")
+    is_discoverable: bool = Field(default=False, description="Whether entity is discoverable by other organizations")
 
 class UpdateEntity(BaseModel):
     """Schema for updating an entity"""
     name: str | None = Field(None, min_length=1, max_length=255)
     entity_type: EntityType | None = None
     parent_id: int | None = None
-    current_valuation: float | None = None
-    cash_balance: float | None = None
+    is_discoverable: bool | None = None
 
 # ==========================================
 # Response Types
@@ -79,3 +78,30 @@ class EntitiesResponse(BaseModel):
     success: bool
     data: list[Entity] | None = None
     error: str | None = None
+
+# ==========================================
+# Discovery Schemas
+# ==========================================
+
+class EntityDiscoveryResult(BaseModel):
+    """Minimal entity info returned by discovery search.
+    Why: returns only public info (id, name, type) — no sensitive data."""
+    id: int
+    name: str
+    entity_type: EntityType
+
+    model_config = ConfigDict(from_attributes=True)
+
+class EntityDiscoveryResponse(BaseModel):
+    """Response containing discovery search results"""
+    success: bool
+    data: list[EntityDiscoveryResult] = []
+
+# ==========================================
+# Invite Code Schemas
+# ==========================================
+
+class JoinByInviteCode(BaseModel):
+    """Schema for joining an entity via invite code"""
+    code: str = Field(min_length=1, description="Invite code")
+    organization_id: int = Field(description="Organization requesting access")

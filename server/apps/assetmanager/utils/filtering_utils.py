@@ -1,3 +1,75 @@
+"""
+AssetManager Filtering Utilities — Query-Level Access Control
+=============================================================
+
+This module handles access control for LIST endpoints. While dependency_utils
+checks "does this user have access to THIS entity?", filtering_utils answers
+"WHICH entities can this user access?" and applies that as a query filter.
+
+Core Pattern:
+    Every list endpoint follows the same flow:
+    1. get_user_entity_ids(user_id, session) → list of entity IDs user can access
+    2. query.filter(Model.entity_id.in_(entity_ids)) → scope query to accessible data
+    3. apply_soft_delete_filter(query, Model) → exclude soft-deleted records
+
+Key Functions:
+
+    get_user_entity_ids(user_id, session, entity_type=None, min_role=None)
+        The foundation. Returns all entity IDs the user can access through
+        ANY of their organizations. Traverses User → OrganizationMember →
+        EntityOrganizationMember → Entity. Supports optional entity_type
+        and min_role filters.
+
+    apply_soft_delete_filter(query, model)
+        Adds WHERE deleted_at IS NULL. Applied to every query. Every
+        assetmanager model has deleted_at from BaseMixin.
+
+    apply_entity_access_filter(query, user_id, session, entity_column, ...)
+        Generic version: applies entity access filtering to any query given
+        the column that holds the entity_id reference.
+
+Model-Specific Filters:
+    Pre-built query modifiers for common models. Each calls
+    get_user_entity_ids() internally, then filters the appropriate FK column:
+
+    filter_entities_query         — filters Entity.id
+    filter_stakeholders_query     — filters Stakeholder.entity_id
+    filter_funding_rounds_query   — filters FundingRound.entity_id
+    filter_securities_query       — filters Security.funding_round_id (via funding round access)
+    filter_security_transactions_query — filters SecurityTransaction.funding_round_id
+    filter_financial_statements_query  — filters IncomeStatement.entity_id
+    filter_holdings_query         — filters Holding.entity_id
+    filter_deal_pipeline_query    — filters DealPipeline.entity_id
+
+Advanced Filtering:
+    filter_by_entity_type_and_role  — combined entity_type + min_role filter
+    get_entity_ids_by_type          — entity IDs filtered by type (fund/company/individual)
+    get_fund_entity_ids / get_company_entity_ids / get_individual_entity_ids — shortcuts
+
+Role-Based Filtering:
+    get_entity_ids_with_minimum_role — entity IDs where user has >= min_role
+    get_editable_entity_ids          — EDITOR or higher
+    get_manageable_entity_ids        — ADMIN or higher
+    get_owned_entity_ids             — OWNER only
+
+Cross-Entity Filtering:
+    filter_cross_entity_query(query, user_id, session, source_col, target_col)
+        For relationships where user needs access to BOTH sides (e.g., deals
+        between two entities). Filters both source and target entity columns
+        against the user's accessible entity IDs.
+
+Caching:
+    AccessFilterContext(user_id, session)
+        Caching wrapper for multi-query endpoints to avoid redundant DB calls.
+        Caches entity IDs, fund IDs, and company IDs. Use when an endpoint
+        needs to check access multiple times in the same request.
+
+Utility Functions:
+    create_empty_result_filter  — returns a filter that matches nothing
+    has_access_to_any_entity    — boolean check
+    count_accessible_entities   — count of accessible entities
+"""
+
 from typing import List, Optional, Any
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, and_
@@ -54,23 +126,22 @@ async def get_user_entity_ids(
     Returns:
         List of entity IDs the user can access
     """
-    # Get user's organization
+    # Get ALL user's organizations (user can be member of multiple orgs)
     result = await session.execute(
         select(OrganizationMember.organization_id)
         .filter(OrganizationMember.user_id == user_id)
-        .limit(1)
     )
-    user_org_id = result.scalar_one_or_none()
-    
-    if not user_org_id:
+    user_org_ids = result.scalars().all()
+
+    if not user_org_ids:
         return []
-    
+
     # Build query for entity access (exclude soft-deleted memberships and entities)
     query = (
         select(Entity.id)
         .join(EntityOrganizationMember)
         .filter(
-            EntityOrganizationMember.organization_id == user_org_id,
+            EntityOrganizationMember.organization_id.in_(user_org_ids),
             EntityOrganizationMember.deleted_at.is_(None),
             Entity.deleted_at.is_(None)
         )

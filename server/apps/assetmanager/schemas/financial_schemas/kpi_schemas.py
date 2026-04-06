@@ -6,6 +6,16 @@ Pydantic schemas for the KPI model following simplified schema guidelines.
 
 from pydantic import BaseModel, ConfigDict, Field
 from datetime import datetime
+from enum import Enum
+
+
+class DataType(str, Enum):
+    """KPI data type options"""
+    DECIMAL = "decimal"
+    INTEGER = "integer"
+    PERCENTAGE = "percentage"
+    STRING = "string"
+
 
 # ==========================================
 # KPI Schema (Full Representation)
@@ -17,7 +27,7 @@ class KPI(BaseModel):
     entity_id: int = Field(description="Associated entity ID")
     name: str = Field(description="KPI name")
     description: str | None = Field(None, description="KPI description")
-    data_type: str = Field(description="Data type (decimal, integer, percentage, etc.)")
+    data_type: DataType = Field(description="Data type")
     is_calculated: bool = Field(description="Whether the KPI is calculated from a formula")
     formula: str | None = Field(None, description="Calculation formula")
 
@@ -37,7 +47,7 @@ class KPICreate(BaseModel):
     name: str = Field(description="KPI name")
 
     # Fields with defaults
-    data_type: str = Field(default="decimal", description="Data type (decimal, integer, percentage, etc.)")
+    data_type: DataType = Field(default=DataType.DECIMAL, description="Data type")
     is_calculated: bool = Field(default=False, description="Whether the KPI is calculated from a formula")
 
     # Optional fields
@@ -49,7 +59,7 @@ class KPIUpdate(BaseModel):
     entity_id: int | None = None
     name: str | None = None
     description: str | None = None
-    data_type: str | None = None
+    data_type: DataType | None = None
     is_calculated: bool | None = None
     formula: str | None = None
 

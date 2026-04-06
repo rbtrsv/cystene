@@ -18,7 +18,7 @@ from ...schemas.financial_schemas.kpi_schemas import (
     KPICreate, KPIUpdate,
     KPIResponse, KPIsResponse
 )
-from ...utils.dependency_utils import get_entity_access, get_user_organization_id
+from ...utils.dependency_utils import get_entity_access, require_write_access
 from ...utils.filtering_utils import get_user_entity_ids, apply_soft_delete_filter
 from ...utils.crud_utils import (
     get_record_or_404,
@@ -150,15 +150,9 @@ async def create_kpi(
         # Verify entity exists (soft-delete aware)
         await get_record_or_404(session, Entity, data.entity_id, "Entity")
 
-        # Check entity access
-        entity_access = await get_entity_access(user.id, data.entity_id, session)
-        if not entity_access:
-            raise HTTPException(status_code=403, detail="You do not have access to this entity")
+        # Check entity access + role + subscription
+        entity_access = await require_write_access(user.id, data.entity_id, session, ['EDITOR', 'ADMIN', 'OWNER'])
 
-        if entity_access.role not in ['EDITOR', 'ADMIN', 'OWNER']:
-            raise HTTPException(status_code=403, detail="You need EDITOR, ADMIN, or OWNER role to create KPIs for this entity")
-
-        org_id = await get_user_organization_id(user.id, session)
 
         # create_with_audit handles: model(**payload, created_by=user_id) + flush + INSERT audit
         kpi = await create_with_audit(
@@ -167,7 +161,7 @@ async def create_kpi(
             table_name="kpis",
             payload=data.model_dump(),
             user_id=user.id,
-            organization_id=org_id,
+            organization_id=entity_access.organization_id,
         )
 
         await session.commit()
@@ -208,19 +202,13 @@ async def update_kpi(
         # get_record_or_404 handles: SELECT + soft-delete filter + 404
         kpi = await get_record_or_404(session, KPI, kpi_id, "KPI")
 
-        # Check entity access
-        entity_access = await get_entity_access(user.id, kpi.entity_id, session)
-        if not entity_access:
-            raise HTTPException(status_code=403, detail="You do not have access to this entity")
-
-        if entity_access.role not in ['EDITOR', 'ADMIN', 'OWNER']:
-            raise HTTPException(status_code=403, detail="You need EDITOR, ADMIN, or OWNER role to update KPIs for this entity")
+        # Check entity access + role + subscription
+        entity_access = await require_write_access(user.id, kpi.entity_id, session, ['EDITOR', 'ADMIN', 'OWNER'])
 
         # If updating entity_id, verify it exists (soft-delete aware)
         if data.entity_id is not None and data.entity_id != kpi.entity_id:
             await get_record_or_404(session, Entity, data.entity_id, "New entity")
 
-        org_id = await get_user_organization_id(user.id, session)
 
         # update_with_audit handles: old snapshot + setattr loop + updated_by + UPDATE audit
         await update_with_audit(
@@ -229,7 +217,7 @@ async def update_kpi(
             table_name="kpis",
             payload=data.model_dump(exclude_unset=True),
             user_id=user.id,
-            organization_id=org_id,
+            organization_id=entity_access.organization_id,
         )
 
         await session.commit()
@@ -268,15 +256,9 @@ async def delete_kpi(
         # get_record_or_404 handles: SELECT + soft-delete filter + 404
         kpi = await get_record_or_404(session, KPI, kpi_id, "KPI")
 
-        # Check entity access
-        entity_access = await get_entity_access(user.id, kpi.entity_id, session)
-        if not entity_access:
-            raise HTTPException(status_code=403, detail="You do not have access to this entity")
+        # Check entity access + role + subscription
+        entity_access = await require_write_access(user.id, kpi.entity_id, session, ['ADMIN', 'OWNER'])
 
-        if entity_access.role not in ['ADMIN', 'OWNER']:
-            raise HTTPException(status_code=403, detail="You need ADMIN or OWNER role to delete KPIs for this entity")
-
-        org_id = await get_user_organization_id(user.id, session)
 
         # soft_delete_with_audit handles: old snapshot + deleted_at/deleted_by + DELETE audit
         await soft_delete_with_audit(
@@ -284,7 +266,7 @@ async def delete_kpi(
             item=kpi,
             table_name="kpis",
             user_id=user.id,
-            organization_id=org_id,
+            organization_id=entity_access.organization_id,
         )
 
         await session.commit()

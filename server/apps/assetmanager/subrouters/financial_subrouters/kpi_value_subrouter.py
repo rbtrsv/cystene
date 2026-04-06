@@ -17,7 +17,7 @@ from ...schemas.financial_schemas.kpi_value_schemas import (
     KPIValueCreate, KPIValueUpdate,
     KPIValueResponse, KPIValuesResponse
 )
-from ...utils.dependency_utils import get_entity_access, get_user_organization_id
+from ...utils.dependency_utils import get_entity_access, require_write_access
 from ...utils.filtering_utils import get_user_entity_ids, apply_soft_delete_filter
 from ...utils.crud_utils import (
     get_record_or_404,
@@ -156,13 +156,8 @@ async def create_kpi_value(
         # Verify KPI exists (soft-delete aware)
         kpi = await get_record_or_404(session, KPI, data.kpi_id, "KPI")
 
-        # Check entity access via KPI's entity_id
-        entity_access = await get_entity_access(user.id, kpi.entity_id, session)
-        if not entity_access:
-            raise HTTPException(status_code=403, detail="You do not have access to this KPI's entity")
-
-        if entity_access.role not in ['EDITOR', 'ADMIN', 'OWNER']:
-            raise HTTPException(status_code=403, detail="You need EDITOR, ADMIN, or OWNER role to create KPI values for this entity")
+        # Check entity access + role + subscription (via KPI's entity_id)
+        entity_access = await require_write_access(user.id, kpi.entity_id, session, ['EDITOR', 'ADMIN', 'OWNER'])
 
         # check_duplicate handles: composite key check + soft-delete filter + 409
         await check_duplicate(
@@ -172,7 +167,6 @@ async def create_kpi_value(
             entity_label="KPI value",
         )
 
-        org_id = await get_user_organization_id(user.id, session)
 
         # create_with_audit handles: model(**payload, created_by=user_id) + flush + INSERT audit
         value = await create_with_audit(
@@ -181,7 +175,7 @@ async def create_kpi_value(
             table_name="kpi_values",
             payload=data.model_dump(),
             user_id=user.id,
-            organization_id=org_id,
+            organization_id=entity_access.organization_id,
         )
 
         await session.commit()
@@ -225,13 +219,8 @@ async def update_kpi_value(
         # 2-level FK chain: value → KPI → entity (soft-delete aware)
         kpi = await get_record_or_404(session, KPI, value.kpi_id, "Associated KPI")
 
-        # Check entity access via KPI's entity_id
-        entity_access = await get_entity_access(user.id, kpi.entity_id, session)
-        if not entity_access:
-            raise HTTPException(status_code=403, detail="You do not have access to this KPI's entity")
-
-        if entity_access.role not in ['EDITOR', 'ADMIN', 'OWNER']:
-            raise HTTPException(status_code=403, detail="You need EDITOR, ADMIN, or OWNER role to update KPI values for this entity")
+        # Check entity access + role + subscription (via KPI's entity_id)
+        entity_access = await require_write_access(user.id, kpi.entity_id, session, ['EDITOR', 'ADMIN', 'OWNER'])
 
         # If updating kpi_id, verify it exists (soft-delete aware)
         if data.kpi_id is not None and data.kpi_id != value.kpi_id:
@@ -251,7 +240,6 @@ async def update_kpi_value(
                 exclude_id=value_id,
             )
 
-        org_id = await get_user_organization_id(user.id, session)
 
         # update_with_audit handles: old snapshot + setattr loop + updated_by + UPDATE audit
         await update_with_audit(
@@ -260,7 +248,7 @@ async def update_kpi_value(
             table_name="kpi_values",
             payload=data.model_dump(exclude_unset=True),
             user_id=user.id,
-            organization_id=org_id,
+            organization_id=entity_access.organization_id,
         )
 
         await session.commit()
@@ -302,15 +290,9 @@ async def delete_kpi_value(
         # 2-level FK chain: value → KPI → entity (soft-delete aware)
         kpi = await get_record_or_404(session, KPI, value.kpi_id, "Associated KPI")
 
-        # Check entity access via KPI's entity_id
-        entity_access = await get_entity_access(user.id, kpi.entity_id, session)
-        if not entity_access:
-            raise HTTPException(status_code=403, detail="You do not have access to this KPI's entity")
+        # Check entity access + role + subscription (via KPI's entity_id)
+        entity_access = await require_write_access(user.id, kpi.entity_id, session, ['ADMIN', 'OWNER'])
 
-        if entity_access.role not in ['ADMIN', 'OWNER']:
-            raise HTTPException(status_code=403, detail="You need ADMIN or OWNER role to delete KPI values for this entity")
-
-        org_id = await get_user_organization_id(user.id, session)
 
         # soft_delete_with_audit handles: old snapshot + deleted_at/deleted_by + DELETE audit
         await soft_delete_with_audit(
@@ -318,7 +300,7 @@ async def delete_kpi_value(
             item=value,
             table_name="kpi_values",
             user_id=user.id,
-            organization_id=org_id,
+            organization_id=entity_access.organization_id,
         )
 
         await session.commit()

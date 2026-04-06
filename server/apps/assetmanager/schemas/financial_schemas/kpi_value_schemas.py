@@ -7,6 +7,7 @@ Pydantic schemas for the KPIValue model following simplified schema guidelines.
 from pydantic import BaseModel, ConfigDict, Field
 from datetime import datetime
 from datetime import date as date_type
+from .shared_financial_schemas import Scenario, Quarter, Semester, Month
 
 # ==========================================
 # KPIValue Schema (Full Representation)
@@ -19,11 +20,11 @@ class KPIValue(BaseModel):
 
     # Time Dimensions
     year: int = Field(description="Fiscal year")
-    quarter: str | None = Field(None, description="Fiscal quarter")
-    semester: str | None = Field(None, description="Fiscal semester")
-    month: str | None = Field(None, description="Fiscal month")
+    quarter: Quarter | None = Field(None, description="Fiscal quarter")
+    semester: Semester | None = Field(None, description="Fiscal semester")
+    month: Month | None = Field(None, description="Fiscal month")
     full_year: bool = Field(description="Whether this is a full year value")
-    scenario: str = Field(description="Scenario type (actual, budget, forecast)")
+    scenario: Scenario = Field(description="Scenario type")
     date: date_type | None = Field(None, description="KPI value date")
 
     # Value
@@ -47,12 +48,12 @@ class KPIValueCreate(BaseModel):
 
     # Fields with defaults
     full_year: bool = Field(default=False, description="Whether this is a full year value")
-    scenario: str = Field(default="actual", description="Scenario type (actual, budget, forecast)")
+    scenario: Scenario = Field(default=Scenario.ACTUAL, description="Scenario type")
 
     # Optional fields
-    quarter: str | None = Field(None, description="Fiscal quarter")
-    semester: str | None = Field(None, description="Fiscal semester")
-    month: str | None = Field(None, description="Fiscal month")
+    quarter: Quarter | None = Field(None, description="Fiscal quarter")
+    semester: Semester | None = Field(None, description="Fiscal semester")
+    month: Month | None = Field(None, description="Fiscal month")
     date: date_type | None = Field(None, description="KPI value date")
     value: float | None = Field(None, description="KPI value")
     notes: str | None = Field(None, description="Additional notes")
@@ -63,11 +64,11 @@ class KPIValueUpdate(BaseModel):
 
     # Time Dimensions
     year: int | None = None
-    quarter: str | None = None
-    semester: str | None = None
-    month: str | None = None
+    quarter: Quarter | None = None
+    semester: Semester | None = None
+    month: Month | None = None
     full_year: bool | None = None
-    scenario: str | None = None
+    scenario: Scenario | None = None
     date: date_type | None = None
 
     # Value

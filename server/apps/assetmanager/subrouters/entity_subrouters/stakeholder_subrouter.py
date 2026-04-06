@@ -6,18 +6,19 @@ FastAPI router for Stakeholder model CRUD operations.
 
 from fastapi import APIRouter, HTTPException, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import select, func
 from typing import Optional
 
 from core.db import get_session
 from ...models.entity_models import Stakeholder
+from ...models.captable_models import Commitment, SecurityTransaction
 from ...schemas.entity_schemas.stakeholder_schemas import (
     Stakeholder as StakeholderSchema,
     CreateStakeholder, UpdateStakeholder,
     StakeholderResponse, StakeholdersResponse,
     StakeholderType
 )
-from ...utils.dependency_utils import get_entity_access, get_user_organization_id
+from ...utils.dependency_utils import get_entity_access, require_write_access
 from ...utils.filtering_utils import get_user_entity_ids, apply_soft_delete_filter
 from ...utils.crud_utils import (
     get_record_or_404,
@@ -38,7 +39,6 @@ router = APIRouter(tags=["Stakeholders"])
 async def list_stakeholders(
     entity_id: Optional[int] = Query(None, description="Filter by entity"),
     stakeholder_type: Optional[StakeholderType] = Query(None, description="Filter by stakeholder type"),
-    source_syndicate_id: Optional[int] = Query(None, description="Filter by source syndicate (stakeholder proxies)"),
     limit: int = Query(100, le=1000),
     offset: int = Query(0, ge=0),
     user: User = Depends(get_current_user),
@@ -59,10 +59,9 @@ async def list_stakeholders(
         if not accessible_entity_ids:
             return StakeholdersResponse(success=True, data=[])
 
-        # Build query - filter by entities or allow null entity_id
+        # Build query - filter by entities user has access to
         query = select(Stakeholder).filter(
-            (Stakeholder.entity_id.in_(accessible_entity_ids)) |
-            (Stakeholder.entity_id.is_(None))
+            Stakeholder.entity_id.in_(accessible_entity_ids)
         )
         query = apply_soft_delete_filter(query, Stakeholder)
 
@@ -75,12 +74,8 @@ async def list_stakeholders(
         if stakeholder_type:
             query = query.filter(Stakeholder.type == stakeholder_type.value)
 
-        # Filter by source syndicate — returns stakeholder proxies for a syndicate's investments
-        if source_syndicate_id:
-            query = query.filter(Stakeholder.source_syndicate_id == source_syndicate_id)
-
         # Apply pagination
-        query = query.order_by(Stakeholder.name).offset(offset).limit(limit)
+        query = query.order_by(Stakeholder.id).offset(offset).limit(limit)
         result = await session.execute(query)
         stakeholders = result.scalars().all()
 
@@ -105,7 +100,7 @@ async def get_stakeholder(
     session: AsyncSession = Depends(get_session)
 ):
     """
-    Get stakeholder details - requires VIEW permission on entity (if stakeholder has entity_id)
+    Get stakeholder details - requires VIEW permission on entity
 
     This endpoint:
     1. Retrieves a stakeholder by ID (excludes soft-deleted)
@@ -115,14 +110,13 @@ async def get_stakeholder(
         # get_record_or_404 handles: SELECT + soft-delete filter + 404
         stakeholder = await get_record_or_404(session, Stakeholder, stakeholder_id, "Stakeholder")
 
-        # If stakeholder has entity_id, check entity access
-        if stakeholder.entity_id:
-            entity_access = await get_entity_access(user.id, stakeholder.entity_id, session)
-            if not entity_access:
-                raise HTTPException(status_code=403, detail="You do not have access to this entity")
+        # Check entity access
+        entity_access = await get_entity_access(user.id, stakeholder.entity_id, session)
+        if not entity_access:
+            raise HTTPException(status_code=403, detail="You do not have access to this entity")
 
-            if entity_access.role not in ['VIEWER', 'EDITOR', 'ADMIN', 'OWNER']:
-                raise HTTPException(status_code=403, detail="You do not have VIEW permission for this entity")
+        if entity_access.role not in ['VIEWER', 'EDITOR', 'ADMIN', 'OWNER']:
+            raise HTTPException(status_code=403, detail="You do not have VIEW permission for this entity")
 
         return StakeholderResponse(
             success=True,
@@ -145,7 +139,7 @@ async def create_stakeholder(
     session: AsyncSession = Depends(get_session)
 ):
     """
-    Create stakeholder - requires EDIT permission on entity (if entity_id provided).
+    Create stakeholder - requires EDIT permission on entity.
 
     This endpoint:
     1. Creates a new stakeholder with the provided data
@@ -154,16 +148,8 @@ async def create_stakeholder(
     4. Returns the created stakeholder details
     """
     try:
-        # If entity_id provided, check entity access
-        if data.entity_id:
-            entity_access = await get_entity_access(user.id, data.entity_id, session)
-            if not entity_access:
-                raise HTTPException(status_code=403, detail="You do not have access to this entity")
-
-            if entity_access.role not in ['EDITOR', 'ADMIN', 'OWNER']:
-                raise HTTPException(status_code=403, detail="You need EDITOR, ADMIN, or OWNER role to create stakeholders for this entity")
-
-        org_id = await get_user_organization_id(user.id, session)
+        # Check entity access + role + subscription
+        entity_access = await require_write_access(user.id, data.entity_id, session, ['EDITOR', 'ADMIN', 'OWNER'])
 
         # create_with_audit handles: model(**payload, created_by=user_id) + flush + INSERT audit
         # Enum→value conversion handled inside the helper
@@ -173,7 +159,7 @@ async def create_stakeholder(
             table_name="stakeholders",
             payload=data.model_dump(),
             user_id=user.id,
-            organization_id=org_id,
+            organization_id=entity_access.organization_id,
         )
 
         await session.commit()
@@ -202,7 +188,7 @@ async def update_stakeholder(
     session: AsyncSession = Depends(get_session)
 ):
     """
-    Update stakeholder - requires EDIT permission on entity (if stakeholder has entity_id)
+    Update stakeholder - requires EDIT permission on entity
 
     This endpoint:
     1. Updates a stakeholder with the provided data
@@ -214,16 +200,29 @@ async def update_stakeholder(
         # get_record_or_404 handles: SELECT + soft-delete filter + 404
         stakeholder = await get_record_or_404(session, Stakeholder, stakeholder_id, "Stakeholder")
 
-        # If stakeholder has entity_id, check entity access
-        if stakeholder.entity_id:
-            entity_access = await get_entity_access(user.id, stakeholder.entity_id, session)
-            if not entity_access:
-                raise HTTPException(status_code=403, detail="You do not have access to this entity")
+        # Check entity access + role + subscription
+        entity_access = await require_write_access(user.id, stakeholder.entity_id, session, ['EDITOR', 'ADMIN', 'OWNER'])
 
-            if entity_access.role not in ['EDITOR', 'ADMIN', 'OWNER']:
-                raise HTTPException(status_code=403, detail="You need EDITOR, ADMIN, or OWNER role to update stakeholders for this entity")
-
-        org_id = await get_user_organization_id(user.id, session)
+        # Protect source_entity_id — block change if stakeholder has existing transactions or commitments
+        update_data = data.model_dump(exclude_unset=True)
+        if 'source_entity_id' in update_data and update_data['source_entity_id'] != stakeholder.source_entity_id:
+            commitment_count = await session.scalar(
+                select(func.count()).select_from(Commitment).filter(
+                    Commitment.stakeholder_id == stakeholder_id,
+                    Commitment.deleted_at == None
+                )
+            )
+            txn_count = await session.scalar(
+                select(func.count()).select_from(SecurityTransaction).filter(
+                    SecurityTransaction.stakeholder_id == stakeholder_id,
+                    SecurityTransaction.deleted_at == None
+                )
+            )
+            if commitment_count > 0 or txn_count > 0:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Cannot change source_entity_id: stakeholder has {commitment_count} commitment(s) and {txn_count} transaction(s). Remove them first."
+                )
 
         # update_with_audit handles: old snapshot + setattr loop + updated_by + UPDATE audit
         # Enum→value conversion handled inside the helper
@@ -231,9 +230,9 @@ async def update_stakeholder(
             db=session,
             item=stakeholder,
             table_name="stakeholders",
-            payload=data.model_dump(exclude_unset=True),
+            payload=update_data,
             user_id=user.id,
-            organization_id=org_id,
+            organization_id=entity_access.organization_id,
         )
 
         await session.commit()
@@ -261,7 +260,7 @@ async def delete_stakeholder(
     session: AsyncSession = Depends(get_session)
 ):
     """
-    Soft delete stakeholder - requires ADMIN permission on entity (if stakeholder has entity_id)
+    Soft delete stakeholder - requires ADMIN permission on entity
 
     This endpoint:
     1. Sets deleted_at and deleted_by (soft delete, no hard delete)
@@ -272,17 +271,8 @@ async def delete_stakeholder(
         # get_record_or_404 handles: SELECT + soft-delete filter + 404
         stakeholder = await get_record_or_404(session, Stakeholder, stakeholder_id, "Stakeholder")
 
-        # If stakeholder has entity_id, check entity access
-        if stakeholder.entity_id:
-            entity_access = await get_entity_access(user.id, stakeholder.entity_id, session)
-            if not entity_access:
-                raise HTTPException(status_code=403, detail="You do not have access to this entity")
-
-            if entity_access.role not in ['ADMIN', 'OWNER']:
-                raise HTTPException(status_code=403, detail="You need ADMIN or OWNER role to delete stakeholders for this entity")
-
-        org_id = await get_user_organization_id(user.id, session)
-        name = stakeholder.name
+        # Check entity access + role + subscription
+        entity_access = await require_write_access(user.id, stakeholder.entity_id, session, ['ADMIN', 'OWNER'])
 
         # soft_delete_with_audit handles: old snapshot + deleted_at/deleted_by + DELETE audit
         await soft_delete_with_audit(
@@ -290,14 +280,14 @@ async def delete_stakeholder(
             item=stakeholder,
             table_name="stakeholders",
             user_id=user.id,
-            organization_id=org_id,
+            organization_id=entity_access.organization_id,
         )
 
         await session.commit()
 
         return {
             "success": True,
-            "message": f"Stakeholder '{name}' has been deleted"
+            "message": f"Stakeholder {stakeholder_id} has been deleted"
         }
 
     except HTTPException:

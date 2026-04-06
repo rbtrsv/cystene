@@ -1,23 +1,20 @@
-from fastapi import APIRouter, Depends
-
-from .utils.dependency_utils import require_active_subscription
+from fastapi import APIRouter
 
 # Entity subrouters
 from .subrouters.entity_subrouters.entity_subrouter import router as entity_router
 from .subrouters.entity_subrouters.entity_organization_member_subrouter import router as entity_org_member_router
 from .subrouters.entity_subrouters.entity_organization_invitation_subrouter import router as entity_org_invitation_router
 from .subrouters.entity_subrouters.stakeholder_subrouter import router as stakeholder_router
-from .subrouters.entity_subrouters.syndicate_subrouter import router as syndicate_router
-from .subrouters.entity_subrouters.syndicate_member_subrouter import router as syndicate_member_router
-from .subrouters.entity_subrouters.syndicate_transaction_subrouter import router as syndicate_transaction_router
 
 # Captable subrouters
 from .subrouters.captable_subrouters.funding_round_subrouter import router as funding_round_router
 from .subrouters.captable_subrouters.security_subrouter import router as security_router
 from .subrouters.captable_subrouters.security_transaction_subrouter import router as security_transaction_router
+from .subrouters.captable_subrouters.commitment_subrouter import router as commitment_router
 from .subrouters.captable_subrouters.cap_table_snapshot_subrouter import router as cap_table_snapshot_router
 from .subrouters.captable_subrouters.cap_table_entry_subrouter import router as cap_table_entry_router
 from .subrouters.captable_subrouters.fee_subrouter import router as fee_router
+from .subrouters.captable_subrouters.stakeholder_position_subrouter import router as stakeholder_position_router
 
 # Deal subrouters
 from .subrouters.deal_subrouters.entity_deal_profile_subrouter import router as entity_deal_profile_router
@@ -40,28 +37,23 @@ from .subrouters.financial_subrouters.financial_metrics_subrouter import router 
 from .subrouters.financial_subrouters.kpi_subrouter import router as kpi_router
 from .subrouters.financial_subrouters.kpi_value_subrouter import router as kpi_value_router
 
-# Subscription-based write lock applied at router level:
-# - GET/HEAD/OPTIONS → always allowed (reads pass through)
-# - POST/PUT/DELETE → blocked if org subscription is inactive and over free tier
-# See require_active_subscription in dependency_utils.py for details.
-router = APIRouter(prefix="/assetmanager", dependencies=[Depends(require_active_subscription)])
+router = APIRouter(prefix="/assetmanager")
 
 # Include all entity subrouters
 router.include_router(entity_router, prefix="/entities")
 router.include_router(entity_org_member_router, prefix="/entity-organization-members")
 router.include_router(entity_org_invitation_router, prefix="/entity-organization-invitations")
 router.include_router(stakeholder_router, prefix="/stakeholders")
-router.include_router(syndicate_router, prefix="/syndicates")
-router.include_router(syndicate_member_router, prefix="/syndicate-members")
-router.include_router(syndicate_transaction_router, prefix="/syndicate-transactions")
 
 # Include all captable subrouters
 router.include_router(funding_round_router, prefix="/funding-rounds")
 router.include_router(security_router, prefix="/securities")
 router.include_router(security_transaction_router, prefix="/security-transactions")
+router.include_router(commitment_router, prefix="/commitments")
 router.include_router(cap_table_snapshot_router, prefix="/cap-table-snapshots")
 router.include_router(cap_table_entry_router, prefix="/cap-table-entries")
 router.include_router(fee_router, prefix="/fees")
+router.include_router(stakeholder_position_router, prefix="/stakeholder-positions")
 
 # Include all deal subrouters
 router.include_router(entity_deal_profile_router, prefix="/entity-deal-profiles")

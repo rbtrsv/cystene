@@ -17,7 +17,7 @@ from ...schemas.captable_schemas.fee_schemas import (
     FeeResponse, FeesResponse,
     FeeType, Scenario
 )
-from ...utils.dependency_utils import get_entity_access, get_user_organization_id
+from ...utils.dependency_utils import get_entity_access, require_write_access
 from ...utils.filtering_utils import get_user_entity_ids, apply_soft_delete_filter
 from ...utils.crud_utils import (
     get_record_or_404,
@@ -158,13 +158,8 @@ async def create_fee(
     4. Returns the created fee details
     """
     try:
-        # Check entity access
-        entity_access = await get_entity_access(user.id, data.entity_id, session)
-        if not entity_access:
-            raise HTTPException(status_code=403, detail="You do not have access to this entity")
-
-        if entity_access.role not in ['EDITOR', 'ADMIN', 'OWNER']:
-            raise HTTPException(status_code=403, detail="You need EDITOR, ADMIN, or OWNER role to create fees for this entity")
+        # Check entity access + role + subscription
+        entity_access = await require_write_access(user.id, data.entity_id, session, ['EDITOR', 'ADMIN', 'OWNER'])
 
         # Verify funding round exists if provided
         if data.funding_round_id is not None:
@@ -172,15 +167,13 @@ async def create_fee(
             if not funding_round:
                 raise HTTPException(status_code=404, detail="Funding round not found")
 
-        org_id = await get_user_organization_id(user.id, session)
-
         fee = await create_with_audit(
             db=session,
             model=Fee,
             table_name="fees",
             payload=data.model_dump(),
             user_id=user.id,
-            organization_id=org_id,
+            organization_id=entity_access.organization_id,
         )
 
         await session.commit()
@@ -220,22 +213,12 @@ async def update_fee(
     try:
         fee = await get_record_or_404(session, Fee, fee_id, "Fee")
 
-        # Check entity access
-        entity_access = await get_entity_access(user.id, fee.entity_id, session)
-        if not entity_access:
-            raise HTTPException(status_code=403, detail="You do not have access to this entity")
+        # Check entity access + role + subscription
+        entity_access = await require_write_access(user.id, fee.entity_id, session, ['EDITOR', 'ADMIN', 'OWNER'])
 
-        if entity_access.role not in ['EDITOR', 'ADMIN', 'OWNER']:
-            raise HTTPException(status_code=403, detail="You need EDITOR, ADMIN, or OWNER role to update fees for this entity")
-
-        # If entity_id is being changed, verify access to new entity
+        # If entity_id is being changed, verify access + role + subscription on new entity
         if data.entity_id is not None and data.entity_id != fee.entity_id:
-            new_entity_access = await get_entity_access(user.id, data.entity_id, session)
-            if not new_entity_access:
-                raise HTTPException(status_code=403, detail="You do not have access to the new entity")
-
-            if new_entity_access.role not in ['EDITOR', 'ADMIN', 'OWNER']:
-                raise HTTPException(status_code=403, detail="You need EDITOR, ADMIN, or OWNER role for the new entity")
+            await require_write_access(user.id, data.entity_id, session, ['EDITOR', 'ADMIN', 'OWNER'])
 
         # Verify funding round exists if being changed
         if data.funding_round_id is not None and data.funding_round_id != fee.funding_round_id:
@@ -244,15 +227,13 @@ async def update_fee(
                 if not funding_round:
                     raise HTTPException(status_code=404, detail="New funding round not found")
 
-        org_id = await get_user_organization_id(user.id, session)
-
         await update_with_audit(
             db=session,
             item=fee,
             table_name="fees",
             payload=data.model_dump(exclude_unset=True),
             user_id=user.id,
-            organization_id=org_id,
+            organization_id=entity_access.organization_id,
         )
 
         await session.commit()
@@ -290,15 +271,8 @@ async def delete_fee(
     try:
         fee = await get_record_or_404(session, Fee, fee_id, "Fee")
 
-        # Check entity access
-        entity_access = await get_entity_access(user.id, fee.entity_id, session)
-        if not entity_access:
-            raise HTTPException(status_code=403, detail="You do not have access to this entity")
-
-        if entity_access.role not in ['ADMIN', 'OWNER']:
-            raise HTTPException(status_code=403, detail="You need ADMIN or OWNER role to delete fees for this entity")
-
-        org_id = await get_user_organization_id(user.id, session)
+        # Check entity access + role + subscription
+        entity_access = await require_write_access(user.id, fee.entity_id, session, ['ADMIN', 'OWNER'])
 
         fee_type = fee.fee_type
 
@@ -307,7 +281,7 @@ async def delete_fee(
             item=fee,
             table_name="fees",
             user_id=user.id,
-            organization_id=org_id,
+            organization_id=entity_access.organization_id,
         )
 
         await session.commit()

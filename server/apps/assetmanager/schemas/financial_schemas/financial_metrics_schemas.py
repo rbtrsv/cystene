@@ -8,6 +8,7 @@ from datetime import datetime
 from datetime import date as date_type
 
 from pydantic import BaseModel, ConfigDict, Field
+from .shared_financial_schemas import Scenario, Quarter, Semester, Month
 
 
 class FinancialMetrics(BaseModel):
@@ -18,11 +19,11 @@ class FinancialMetrics(BaseModel):
 
     # Time dimensions
     year: int = Field(description="Year")
-    quarter: str | None = Field(None, description="Quarter (Q1-Q4)")
-    semester: str | None = Field(None, description="Semester (S1-S2)")
-    month: str | None = Field(None, description="Month name")
+    quarter: Quarter | None = Field(None, description="Fiscal quarter")
+    semester: Semester | None = Field(None, description="Fiscal semester")
+    month: Month | None = Field(None, description="Month")
     full_year: bool = Field(default=False, description="Full year aggregation flag")
-    scenario: str = Field(description="Scenario (actual/forecast/budget)")
+    scenario: Scenario = Field(description="Scenario type")
     period_end: date_type | None = Field(None, description="As-of period end date")
 
     # Ratios: liquidity
@@ -156,11 +157,11 @@ class FinancialMetricsCreate(BaseModel):
 
     entity_id: int = Field(description="Associated entity ID")
     year: int = Field(description="Year")
-    quarter: str | None = None
-    semester: str | None = None
-    month: str | None = None
+    quarter: Quarter | None = None
+    semester: Semester | None = None
+    month: Month | None = None
     full_year: bool = False
-    scenario: str = "actual"
+    scenario: Scenario = Scenario.ACTUAL
     period_end: date_type | None = None
 
     # Keep metric fields optional for partial data ingestion.
@@ -272,11 +273,11 @@ class FinancialMetricsUpdate(BaseModel):
 
     entity_id: int | None = None
     year: int | None = None
-    quarter: str | None = None
-    semester: str | None = None
-    month: str | None = None
+    quarter: Quarter | None = None
+    semester: Semester | None = None
+    month: Month | None = None
     full_year: bool | None = None
-    scenario: str | None = None
+    scenario: Scenario | None = None
     period_end: date_type | None = None
 
     current_ratio: float | None = None

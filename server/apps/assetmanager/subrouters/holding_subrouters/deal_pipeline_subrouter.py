@@ -18,7 +18,7 @@ from ...schemas.holding_schemas.deal_pipeline_schemas import (
     DealPipelineResponse, DealPipelinesResponse,
     PipelineStatus, PipelinePriority
 )
-from ...utils.dependency_utils import get_entity_access, get_user_organization_id
+from ...utils.dependency_utils import get_entity_access, require_write_access
 from ...utils.filtering_utils import get_user_entity_ids, apply_soft_delete_filter
 from ...utils.crud_utils import (
     get_record_or_404,
@@ -158,19 +158,13 @@ async def create_deal_pipeline(
         # Verify entity exists (soft-delete aware)
         await get_record_or_404(session, Entity, data.entity_id, "Entity")
 
-        # Check entity access
-        entity_access = await get_entity_access(user.id, data.entity_id, session)
-        if not entity_access:
-            raise HTTPException(status_code=403, detail="You do not have access to this entity")
-
-        if entity_access.role not in ['EDITOR', 'ADMIN', 'OWNER']:
-            raise HTTPException(status_code=403, detail="You need EDITOR, ADMIN, or OWNER role to create deal pipeline entries for this entity")
+        # Check entity access + role + subscription
+        entity_access = await require_write_access(user.id, data.entity_id, session, ['EDITOR', 'ADMIN', 'OWNER'])
 
         # Verify target_entity FK if provided (soft-delete aware)
         if data.target_entity_id is not None:
             await get_record_or_404(session, Entity, data.target_entity_id, "Target entity")
 
-        org_id = await get_user_organization_id(user.id, session)
 
         # create_with_audit handles: model(**payload, created_by=user_id) + flush + INSERT audit
         pipeline = await create_with_audit(
@@ -179,7 +173,7 @@ async def create_deal_pipeline(
             table_name="deal_pipeline",
             payload=data.model_dump(),
             user_id=user.id,
-            organization_id=org_id,
+            organization_id=entity_access.organization_id,
         )
 
         await session.commit()
@@ -220,13 +214,8 @@ async def update_deal_pipeline(
         # get_record_or_404 handles: SELECT + soft-delete filter + 404
         pipeline = await get_record_or_404(session, DealPipeline, pipeline_id, "Deal pipeline entry")
 
-        # Check entity access
-        entity_access = await get_entity_access(user.id, pipeline.entity_id, session)
-        if not entity_access:
-            raise HTTPException(status_code=403, detail="You do not have access to this entity")
-
-        if entity_access.role not in ['EDITOR', 'ADMIN', 'OWNER']:
-            raise HTTPException(status_code=403, detail="You need EDITOR, ADMIN, or OWNER role to update deal pipeline entries for this entity")
+        # Check entity access + role + subscription
+        entity_access = await require_write_access(user.id, pipeline.entity_id, session, ['EDITOR', 'ADMIN', 'OWNER'])
 
         # If updating entity_id, verify it exists (soft-delete aware)
         if data.entity_id is not None and data.entity_id != pipeline.entity_id:
@@ -236,7 +225,6 @@ async def update_deal_pipeline(
         if data.target_entity_id is not None and data.target_entity_id != pipeline.target_entity_id:
             await get_record_or_404(session, Entity, data.target_entity_id, "New target entity")
 
-        org_id = await get_user_organization_id(user.id, session)
 
         # update_with_audit handles: old snapshot + setattr loop + updated_by + UPDATE audit
         await update_with_audit(
@@ -245,7 +233,7 @@ async def update_deal_pipeline(
             table_name="deal_pipeline",
             payload=data.model_dump(exclude_unset=True),
             user_id=user.id,
-            organization_id=org_id,
+            organization_id=entity_access.organization_id,
         )
 
         await session.commit()
@@ -284,15 +272,9 @@ async def delete_deal_pipeline(
         # get_record_or_404 handles: SELECT + soft-delete filter + 404
         pipeline = await get_record_or_404(session, DealPipeline, pipeline_id, "Deal pipeline entry")
 
-        # Check entity access
-        entity_access = await get_entity_access(user.id, pipeline.entity_id, session)
-        if not entity_access:
-            raise HTTPException(status_code=403, detail="You do not have access to this entity")
+        # Check entity access + role + subscription
+        entity_access = await require_write_access(user.id, pipeline.entity_id, session, ['ADMIN', 'OWNER'])
 
-        if entity_access.role not in ['ADMIN', 'OWNER']:
-            raise HTTPException(status_code=403, detail="You need ADMIN or OWNER role to delete deal pipeline entries for this entity")
-
-        org_id = await get_user_organization_id(user.id, session)
 
         # soft_delete_with_audit handles: old snapshot + deleted_at/deleted_by + DELETE audit
         await soft_delete_with_audit(
@@ -300,7 +282,7 @@ async def delete_deal_pipeline(
             item=pipeline,
             table_name="deal_pipeline",
             user_id=user.id,
-            organization_id=org_id,
+            organization_id=entity_access.organization_id,
         )
 
         await session.commit()

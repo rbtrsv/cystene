@@ -1,5 +1,6 @@
 """
-AssetManager CRUD Utilities
+AssetManager CRUD Utilities — Standard CRUD Helpers with Audit
+==============================================================
 
 Shared helpers for subrouter endpoints. Each helper handles one concern:
 - get_record_or_404: soft-delete filtered lookup (no org ownership — entity access is separate)
@@ -14,6 +15,44 @@ Key difference from nexotype's crud_utils:
     - No organization_id on records (finpy uses entity-based access, not org ownership)
     - check_duplicate uses dict-based filters (composite key support)
     - Access control stays in subrouters (entity access varies per model)
+
+IMPORTANT — Access Control Boundary:
+    These helpers do NOT check access. Access is always checked in the subrouter
+    BEFORE calling these functions. The typical flow is:
+
+        1. Subrouter calls require_write_access() → gets EntityOrganizationMember
+        2. Subrouter extracts org_id = entity_access.organization_id
+        3. Subrouter calls create_with_audit(..., organization_id=org_id)
+
+    The organization_id parameter on the write helpers is purely for the audit
+    log entry — it records which org the user was operating through. It is NOT
+    set on the created/updated record itself (finpy records don't have org
+    ownership — access is via EntityOrganizationMember).
+
+Functions:
+
+    get_record_or_404(db, model, item_id, entity_label)
+        Fetch a single record by PK with soft-delete filter. Raises 404 if
+        not found or soft-deleted. No access check — that's the subrouter's job.
+
+    check_duplicate(db, model, filters, entity_label, exclude_id=None)
+        Check for existing non-deleted records matching ALL filter pairs.
+        Supports composite keys (e.g., {syndicate_id: 1, member_entity_id: 2}).
+        Pass exclude_id on updates to skip the record being updated. Raises 409
+        if duplicate found. Skips check if any filter value is None.
+
+    create_with_audit(db, model, table_name, payload, user_id, organization_id)
+        Create a new record: sets created_by, flushes to get ID, logs INSERT
+        audit with new_data snapshot. Automatically converts enum values to
+        their string representation for DB storage.
+
+    update_with_audit(db, item, table_name, payload, user_id, organization_id)
+        Update an existing record: captures old_data snapshot, applies changes,
+        sets updated_by, logs UPDATE audit with old_data and new_data snapshots.
+
+    soft_delete_with_audit(db, item, table_name, user_id, organization_id)
+        Soft delete: captures old_data snapshot, sets deleted_at and deleted_by,
+        logs DELETE audit. Record stays in DB for audit trail.
 """
 
 from typing import Any

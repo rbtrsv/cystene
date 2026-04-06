@@ -49,9 +49,9 @@ class HoldingCashFlow(BaseModel):
     amount_debit: float = Field(description="Debit amount")
     amount_credit: float = Field(description="Credit amount")
     currency: str = Field(description="Currency code")
-    cash_flow_type: str = Field(description="Cash flow type")
-    category: str = Field(description="Cash flow category")
-    scenario: str = Field(description="Cash flow scenario")
+    cash_flow_type: CashFlowType = Field(description="Cash flow type")
+    category: CashFlowCategory = Field(description="Cash flow category")
+    scenario: CashFlowScenario = Field(description="Cash flow scenario")
 
     # Transaction Reference
     cash_transaction_id: int | None = Field(None, description="Associated security transaction ID")

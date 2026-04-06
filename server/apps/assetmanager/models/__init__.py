@@ -7,10 +7,10 @@ from .mixin_models import BaseMixin
 from .audit_models import AssetManagerAuditLog
 
 # Entity models
-from .entity_models import Entity, EntityOrganizationMember, EntityOrganizationInvitation, Stakeholder, Syndicate, SyndicateMember, SyndicateTransaction
+from .entity_models import Entity, EntityOrganizationMember, EntityOrganizationInvitation, Stakeholder
 
 # Cap table models
-from .captable_models import FundingRound, Security, SecurityTransaction, CapTableSnapshot, CapTableEntry, Fee
+from .captable_models import FundingRound, Security, SecurityTransaction, Commitment, CapTableSnapshot, CapTableEntry, Fee
 
 # Financial models
 from .financial_models import (
@@ -36,14 +36,12 @@ __all__ = [
     "EntityOrganizationMember",
     "EntityOrganizationInvitation",
     "Stakeholder",
-    "Syndicate",
-    "SyndicateMember",
-    "SyndicateTransaction",
 
     # Cap table models
     "FundingRound",
     "Security",
     "SecurityTransaction",
+    "Commitment",
     "CapTableSnapshot",
     "CapTableEntry",
     "Fee",

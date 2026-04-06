@@ -84,6 +84,18 @@ class Deal(Base, BaseMixin):
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     deal_type: Mapped[str] = mapped_column(String(20), default="fundraising", nullable=False)  # 'fundraising', 'acquisition', 'secondary', 'debt'
 
+    # Why status: Deal has a real lifecycle (draft → active → closed → executed → cancelled).
+    # Without explicit status, can't prevent double-execution or filter active vs. closed deals.
+    # server_default='draft' so existing rows get a status without a data migration.
+    status: Mapped[str] = mapped_column(String(20), default="draft", server_default="draft", nullable=False)  # 'draft', 'active', 'closed', 'executed', 'cancelled'
+
+    # Why funding_round_id: Traceability — from Deal you can reach FundingRound → SecurityTransactions → cap table.
+    # SET NULL: if the FundingRound is deleted, the Deal record survives.
+    # NULL until deal is executed.
+    funding_round_id: Mapped[int | None] = mapped_column(
+        Integer, ForeignKey("funding_rounds.id", ondelete="SET NULL"), nullable=True
+    )
+
     # Financial Terms
     pre_money_valuation: Mapped[float | None] = mapped_column(Numeric(15, 2), nullable=True)
     post_money_valuation: Mapped[float | None] = mapped_column(Numeric(15, 2), nullable=True)
@@ -147,19 +159,25 @@ class DealCommitment(Base, BaseMixin):
     - Soft commitments indicate interest level
     - Firm commitments are binding agreements
     - Tracks commitment history and status changes
-    - Commitments can come from direct entities or through syndicates
     """
     __tablename__ = "deal_commitments"
-    __table_args__ = (UniqueConstraint('deal_id', 'entity_id', 'syndicate_id'),)
+    __table_args__ = (UniqueConstraint('deal_id', 'entity_id'),)
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
     deal_id: Mapped[int] = mapped_column(Integer, ForeignKey("deals.id", ondelete="CASCADE"), nullable=False)
     entity_id: Mapped[int] = mapped_column(Integer, ForeignKey("entities.id", ondelete="CASCADE"), nullable=False)
-    syndicate_id: Mapped[int | None] = mapped_column(Integer, ForeignKey("syndicates.id", ondelete="SET NULL"), nullable=True)
 
     commitment_type: Mapped[str] = mapped_column(String(20), default="soft", nullable=False)  # 'soft', 'firm'
     amount: Mapped[float] = mapped_column(Numeric(15, 2), nullable=False)
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+    # Why transaction_id: Traceability — from DealCommitment you can see exactly which
+    # SecurityTransaction was created during deal execution. Same pattern as Commitment.transaction_id.
+    # SET NULL: commitment record survives if the generated transaction is deleted.
+    # NULL until deal is executed.
+    transaction_id: Mapped[int | None] = mapped_column(
+        Integer, ForeignKey("security_transactions.id", ondelete="SET NULL"), nullable=True
+    )
 
     # Relationships
     deal: Mapped["Deal"] = relationship(back_populates="commitments")

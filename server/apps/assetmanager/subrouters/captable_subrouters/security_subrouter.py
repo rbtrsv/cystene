@@ -17,7 +17,7 @@ from ...schemas.captable_schemas.security_schemas import (
     SecurityResponse, SecuritiesResponse,
     SecurityType, Currency, AntiDilutionType, InterestRateType
 )
-from ...utils.dependency_utils import get_entity_access, get_user_organization_id
+from ...utils.dependency_utils import get_entity_access, require_write_access
 from ...utils.filtering_utils import get_user_entity_ids, apply_soft_delete_filter
 from ...utils.crud_utils import (
     get_record_or_404,
@@ -165,15 +165,8 @@ async def create_security(
         if not funding_round:
             raise HTTPException(status_code=404, detail="Funding round not found")
 
-        # Check entity access
-        entity_access = await get_entity_access(user.id, funding_round.entity_id, session)
-        if not entity_access:
-            raise HTTPException(status_code=403, detail="You do not have access to this funding round's entity")
-
-        if entity_access.role not in ['EDITOR', 'ADMIN', 'OWNER']:
-            raise HTTPException(status_code=403, detail="You need EDITOR, ADMIN, or OWNER role to create securities for this entity")
-
-        org_id = await get_user_organization_id(user.id, session)
+        # Check entity access + role + subscription
+        entity_access = await require_write_access(user.id, funding_round.entity_id, session, ['EDITOR', 'ADMIN', 'OWNER'])
 
         security = await create_with_audit(
             db=session,
@@ -181,7 +174,7 @@ async def create_security(
             table_name="securities",
             payload=data.model_dump(),
             user_id=user.id,
-            organization_id=org_id,
+            organization_id=entity_access.organization_id,
         )
 
         await session.commit()
@@ -226,13 +219,8 @@ async def update_security(
         if not funding_round:
             raise HTTPException(status_code=404, detail="Associated funding round not found")
 
-        # Check entity access
-        entity_access = await get_entity_access(user.id, funding_round.entity_id, session)
-        if not entity_access:
-            raise HTTPException(status_code=403, detail="You do not have access to this security's entity")
-
-        if entity_access.role not in ['EDITOR', 'ADMIN', 'OWNER']:
-            raise HTTPException(status_code=403, detail="You need EDITOR, ADMIN, or OWNER role to update securities for this entity")
+        # Check entity access + role + subscription
+        entity_access = await require_write_access(user.id, funding_round.entity_id, session, ['EDITOR', 'ADMIN', 'OWNER'])
 
         # If funding_round_id is being changed, verify access to new funding round
         if data.funding_round_id is not None and data.funding_round_id != security.funding_round_id:
@@ -240,14 +228,8 @@ async def update_security(
             if not new_funding_round:
                 raise HTTPException(status_code=404, detail="New funding round not found")
 
-            new_entity_access = await get_entity_access(user.id, new_funding_round.entity_id, session)
-            if not new_entity_access:
-                raise HTTPException(status_code=403, detail="You do not have access to the new funding round's entity")
-
-            if new_entity_access.role not in ['EDITOR', 'ADMIN', 'OWNER']:
-                raise HTTPException(status_code=403, detail="You need EDITOR, ADMIN, or OWNER role for the new funding round's entity")
-
-        org_id = await get_user_organization_id(user.id, session)
+            # Check access + role + subscription on new funding round's entity
+            await require_write_access(user.id, new_funding_round.entity_id, session, ['EDITOR', 'ADMIN', 'OWNER'])
 
         await update_with_audit(
             db=session,
@@ -255,7 +237,7 @@ async def update_security(
             table_name="securities",
             payload=data.model_dump(exclude_unset=True),
             user_id=user.id,
-            organization_id=org_id,
+            organization_id=entity_access.organization_id,
         )
 
         await session.commit()
@@ -298,15 +280,8 @@ async def delete_security(
         if not funding_round:
             raise HTTPException(status_code=404, detail="Associated funding round not found")
 
-        # Check entity access
-        entity_access = await get_entity_access(user.id, funding_round.entity_id, session)
-        if not entity_access:
-            raise HTTPException(status_code=403, detail="You do not have access to this security's entity")
-
-        if entity_access.role not in ['ADMIN', 'OWNER']:
-            raise HTTPException(status_code=403, detail="You need ADMIN or OWNER role to delete securities for this entity")
-
-        org_id = await get_user_organization_id(user.id, session)
+        # Check entity access + role + subscription
+        entity_access = await require_write_access(user.id, funding_round.entity_id, session, ['ADMIN', 'OWNER'])
 
         security_name = security.security_name
 
@@ -315,7 +290,7 @@ async def delete_security(
             item=security,
             table_name="securities",
             user_id=user.id,
-            organization_id=org_id,
+            organization_id=entity_access.organization_id,
         )
 
         await session.commit()

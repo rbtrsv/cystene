@@ -29,7 +29,7 @@ class DealPipeline(Base, BaseMixin):
     priority: Mapped[str] = mapped_column(String(2), nullable=False)  # 'p1', 'p2', 'p3', 'p4', 'p5'
     status: Mapped[str] = mapped_column(String(50), default="initial_screening", nullable=False)
     round_type: Mapped[str] = mapped_column(String(50), nullable=False)  # 'pre_seed', 'seed', 'series_a', etc.
-    sector: Mapped[str] = mapped_column(String(50), nullable=False)  # 'fintech', 'healthtech', etc.
+    sector: Mapped[str | None] = mapped_column(String(50), nullable=True)  # 'fintech', 'healthtech', etc.
 
     # Investment Details
     target_raise: Mapped[float | None] = mapped_column(Numeric(15, 2), nullable=True)
@@ -84,7 +84,7 @@ class Holding(Base, BaseMixin):
     investment_type: Mapped[str] = mapped_column(String(50), nullable=False)  # 'equity', 'debt', 'convertible', etc.
     investment_round: Mapped[str | None] = mapped_column(String(50), nullable=True)
     investment_status: Mapped[str] = mapped_column(String(50), default="active", nullable=False)  # 'active', 'exited', 'written_off'
-    sector: Mapped[str] = mapped_column(String(50), nullable=False)
+    sector: Mapped[str | None] = mapped_column(String(50), nullable=True)
     listing_status: Mapped[str] = mapped_column(String(20), default="private", nullable=False)  # 'private', 'public', 'delisted'
     original_investment_date: Mapped[date_type | None] = mapped_column(Date, nullable=True)
 

@@ -1,17 +1,68 @@
 """
-AssetManager Subscription Utilities
+AssetManager Subscription Utilities — Billing & Write-Lock
+==========================================================
 
-Pricing model: quantity-based per entity.
-One Stripe product, one price. Quantity = number of entities owned by the org.
-Every entity costs the same regardless of entity_type (fund, company, individual).
+Quantity-based Stripe billing for entity access.
+
+Architecture Overview:
+    One Stripe product, one price. Quantity = number of entities owned by the org.
+    Every entity costs the same regardless of entity_type (fund, company, individual).
+
+    Entity.organization_id = the BILLING OWNER org. This is the org that created
+    the entity and pays for it. This is NOT the same as entity_access.organization_id
+    (the access org through which a user operates). See __init__.py docstring for
+    the full distinction.
+
+Free Tier:
+    FREE_ENTITY_LIMIT = 1. The first entity is free — no subscription required.
+    Once an org creates a second entity, they need an active subscription.
+    Billable quantity = total entities - FREE_ENTITY_LIMIT.
+    Example: org has 3 entities → Stripe quantity = 2.
+
+Write-Lock Mechanism:
+    is_org_write_locked(org_id, session) → bool
+    An org is write-locked when ALL of these are true:
+    - Entity count > FREE_ENTITY_LIMIT (they've used paid features)
+    - Subscription is not ACTIVE or TRIALING (canceled, past_due, etc.)
+    - manual_override is not set
+
+    When write-locked:
+    - All READ operations still work (list, get, export)
+    - All WRITE operations are blocked with HTTP 403
+    - Enforced by ensure_entity_subscription() in dependency_utils.py
+
+    manual_override flag: set on Subscription for invoice/bank transfer clients
+    who pay outside of Stripe. Bypasses all Stripe status checks.
+
+Stripe Sync Flow:
+    Only triggered from entity_subrouter.py on entity create/delete:
+
+    Entity CREATE:
+        1. Entity created → entity count increases
+        2. sync_stripe_quantity(subscription, new_count) called
+        3. Stripe subscription quantity updated → proration applied automatically
+
+    Entity DELETE (soft delete):
+        1. Entity soft-deleted → entity count decreases
+        2. sync_stripe_quantity(subscription, new_count) called
+        3. Stripe subscription quantity updated → credit applied at next invoice
+
+    No other model triggers Stripe sync — only entities affect billing.
+
+Integration Points:
+    - dependency_utils.ensure_entity_subscription() calls is_org_write_locked()
+    - dependency_utils.check_entity_subscription() calls is_org_write_locked()
+    - entity_subrouter.py create/delete calls sync_stripe_quantity()
 
 Helpers:
-- Entity count per organization (for quantity-based billing)
-- Stripe quantity sync (auto-increment/decrement on entity create/delete)
-- Write lock check (block writes when subscription canceled + over free limit)
+    get_org_entity_count(org_id, session)  — count non-deleted entities for billing
+    get_org_subscription(org_id, session)  — fetch org's Subscription record
+    sync_stripe_quantity(subscription, n)  — update Stripe quantity (returns bool)
+    is_org_write_locked(org_id, session)   — check if org writes are blocked
 
-These are pure helpers — not FastAPI dependencies. The dependency that
-uses them lives in dependency_utils.py (require_active_subscription).
+These are pure helpers — not FastAPI dependencies. The dependencies that
+use them live in dependency_utils.py (ensure_entity_subscription,
+check_entity_subscription).
 
 Stripe Dashboard setup (required once):
     1. Products → Create product:

@@ -1,5 +1,6 @@
 """
-AssetManager Audit Utilities
+AssetManager Audit Utilities — Explicit Audit Logging
+=====================================================
 
 Explicit helper functions for logging data changes to AssetManagerAuditLog.
 Called in subrouter endpoints after CRUD operations.
@@ -11,6 +12,40 @@ Why explicit calls instead of event listeners or DB triggers:
 
 Same pattern as nexotype audit_utils, adapted for assetmanager's
 entity-based access model (no is_curated/organization_id on records).
+
+AssetManagerAuditLog Table Structure:
+    table_name       — which table was modified (e.g., "entities", "stakeholders")
+    record_id        — PK of the modified record
+    action           — "INSERT", "UPDATE", or "DELETE"
+    old_data         — JSON snapshot of record BEFORE the change (None for INSERT)
+    new_data         — JSON snapshot of record AFTER the change (None for DELETE)
+    user_id          — who performed the action (loose FK to accounts.User)
+    organization_id  — the org through which the user performed the action
+                       (from entity_access.organization_id — the ACCESS org,
+                       NOT Entity.organization_id which is the billing owner)
+    ip_address       — request IP (optional)
+    timestamp        — auto-set server timestamp
+
+Serialization:
+    model_to_dict() converts a SQLAlchemy model instance to a JSON-serializable
+    dict. Handles Decimal → float, datetime/date → ISO string. Captures ALL
+    columns automatically via __table__.columns — no manual field listing.
+
+Integration:
+    Subrouters typically don't call log_audit() directly. Instead they use
+    crud_utils helpers (create_with_audit, update_with_audit, soft_delete_with_audit)
+    which wrap log_audit() with the standard snapshot pattern.
+
+    Direct log_audit() calls are used for edge cases where crud_utils helpers
+    don't fit (e.g., entity_subrouter.py which has custom create/delete logic
+    for subscription sync).
+
+Query Functions:
+    get_record_audit_logs       — audit history for a specific record
+    get_user_audit_logs         — all actions by a specific user
+    get_organization_audit_logs — all actions through a specific org
+    get_table_audit_logs        — all changes to a specific table
+    All return newest-first, with configurable limit (default 100).
 """
 
 from typing import Any, List

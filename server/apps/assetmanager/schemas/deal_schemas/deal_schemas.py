@@ -20,6 +20,16 @@ class DealType(str, Enum):
     SECONDARY = "secondary"
     DEBT = "debt"
 
+# Why DealStatus: Mirrors the 5 lifecycle states on Deal.status.
+# Used for validation in DealStatusUpdate and DealExecuteInput responses.
+class DealStatus(str, Enum):
+    """Deal lifecycle status options"""
+    DRAFT = "draft"
+    ACTIVE = "active"
+    CLOSED = "closed"
+    EXECUTED = "executed"
+    CANCELLED = "cancelled"
+
 # ==========================================
 # Deal Schema (Full Representation)
 # ==========================================
@@ -30,6 +40,14 @@ class Deal(BaseModel):
     entity_id: int = Field(description="Associated entity ID")
     name: str = Field(description="Deal name")
     deal_type: DealType = Field(description="Type of deal")
+
+    # Why status on read schema: Frontend needs to display current lifecycle state and
+    # determine which action buttons to show (activate, close, execute, cancel).
+    status: DealStatus = Field(description="Deal lifecycle status")
+
+    # Why funding_round_id on read schema: Frontend can link to the created FundingRound
+    # after execution, showing the cap table impact.
+    funding_round_id: int | None = Field(None, description="Linked FundingRound ID after execution")
 
     # Financial Terms
     pre_money_valuation: float | None = Field(None, description="Pre-money valuation")
@@ -210,6 +228,46 @@ class DealUpdate(BaseModel):
     acquisition_price: float | None = None
     payment_structure: str | None = None
     deal_structure: str | None = None
+
+# ==========================================
+# Action Schemas (Status + Execute)
+# ==========================================
+
+class DealStatusUpdate(BaseModel):
+    """
+    Schema for updating deal status via PUT /{deal_id}/status.
+    Why: Status transitions are controlled separately from general deal updates
+    to enforce allowed transitions (e.g., can't go directly to 'executed').
+    """
+    status: DealStatus
+
+class DealExecuteInput(BaseModel):
+    """
+    Schema for executing a fundraising deal via POST /{deal_id}/execute.
+    Why: These fields can't be inferred from the Deal record alone — admin
+    must specify the round type, security details, and default stakeholder type
+    at execution time because one deal could theoretically use different security structures.
+    """
+    round_type: str = Field(max_length=20, description="Funding round type (seed, series_a, series_b, etc.)")
+    security_name: str = Field(max_length=255, description="Security name (e.g., 'Series A Preferred')")
+    security_code: str = Field(max_length=20, description="Security code (e.g., 'SER-A')")
+    security_type: str = Field(max_length=50, description="Security type (common, preferred, convertible, safe)")
+    stakeholder_type: str = Field(default="limited_partner", max_length=20, description="Default stakeholder type for new stakeholders")
+
+class DealExecuteResponse(BaseModel):
+    """
+    Response from deal execution.
+    Why: Execution creates multiple records across 4 tables — the response provides
+    a summary so the admin can verify counts without querying each table separately.
+    """
+    success: bool
+    funding_round_id: int
+    security_id: int
+    stakeholders_created: int
+    transactions_created: int
+    total_amount: float
+    message: str
+    error: str | None = None
 
 # ==========================================
 # Response Types

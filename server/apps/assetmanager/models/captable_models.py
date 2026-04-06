@@ -1,6 +1,7 @@
-from sqlalchemy import Integer, String, Boolean, ForeignKey, Text, Numeric, Date
+from sqlalchemy import Integer, String, Boolean, ForeignKey, Text, Numeric, Date, DateTime
 from sqlalchemy.orm import relationship, Mapped, mapped_column
-from datetime import date as date_type
+from sqlalchemy.sql import func
+from datetime import date as date_type, datetime
 from typing import Optional
 from core.db import Base
 from .mixin_models import BaseMixin
@@ -36,6 +37,7 @@ class FundingRound(Base, BaseMixin):
     security_transactions: Mapped[list["SecurityTransaction"]] = relationship(back_populates="funding_round", cascade="all, delete-orphan")
     cap_table_entries: Mapped[list["CapTableEntry"]] = relationship(back_populates="funding_round", cascade="all, delete-orphan")
     fees: Mapped[list["Fee"]] = relationship(back_populates="funding_round", cascade="all, delete-orphan")
+    commitments: Mapped[list["Commitment"]] = relationship(back_populates="funding_round", cascade="all, delete-orphan")
 
 
 class Security(Base, BaseMixin):
@@ -162,7 +164,7 @@ class SecurityTransaction(Base, BaseMixin):
     security_id: Mapped[int | None] = mapped_column(Integer, ForeignKey("securities.id", ondelete="RESTRICT"), nullable=True)
 
     # Transaction details
-    transaction_reference: Mapped[str] = mapped_column(String(50), nullable=False)
+    transaction_reference: Mapped[str] = mapped_column(String(50), unique=True, nullable=False)
     transaction_type: Mapped[str] = mapped_column(String(20), nullable=False)  # 'issuance', 'transfer', 'conversion', etc.
     units_debit: Mapped[float] = mapped_column(Numeric(15, 2), default=0, nullable=False)
     units_credit: Mapped[float] = mapped_column(Numeric(15, 2), default=0, nullable=False)
@@ -181,6 +183,69 @@ class SecurityTransaction(Base, BaseMixin):
     funding_round: Mapped["FundingRound"] = relationship(back_populates="security_transactions")
     security: Mapped[Optional["Security"]] = relationship(back_populates="security_transactions")
     related_transaction: Mapped[Optional["SecurityTransaction"]] = relationship("SecurityTransaction", remote_side=[id])
+
+
+class Commitment(Base, BaseMixin):
+    """
+    Pro-rata subscription commitment for funding rounds.
+    Admin invites stakeholders to participate financially based on cap table ownership %.
+    - Stakeholder responds: full pro-rata, partial, or pass
+    - Admin reviews: approve or reject
+    - Admin generates ISSUANCE transaction from approved commitment
+    - Status flow: invited → committed/passed → approved/rejected → transaction generated
+    """
+    __tablename__ = "commitments"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+
+    # Core references
+    # RESTRICT: commitment is for a specific entity. Can't delete entity while
+    # commitments reference it — must delete commitments first.
+    entity_id: Mapped[int] = mapped_column(Integer, ForeignKey("entities.id", ondelete="RESTRICT"), nullable=False)
+    # RESTRICT: commitment is for a specific funding round. Can't delete round while
+    # commitments reference it — must delete commitments first.
+    funding_round_id: Mapped[int] = mapped_column(Integer, ForeignKey("funding_rounds.id", ondelete="RESTRICT"), nullable=False)
+    # RESTRICT: commitment is for a specific security. Can't delete security while
+    # commitments reference it — must delete commitments first.
+    security_id: Mapped[int] = mapped_column(Integer, ForeignKey("securities.id", ondelete="RESTRICT"), nullable=False)
+    # CASCADE: if stakeholder is deleted, their commitments are deleted too.
+    stakeholder_id: Mapped[int] = mapped_column(Integer, ForeignKey("stakeholders.id", ondelete="CASCADE"), nullable=False)
+
+    # Status & Type
+    # Status flow: invited → committed/passed → approved/rejected
+    status: Mapped[str] = mapped_column(String(50), default="invited", nullable=False)  # 'invited', 'committed', 'passed', 'approved', 'rejected'
+    # NULL when invited, set when stakeholder responds
+    commitment_type: Mapped[str | None] = mapped_column(String(50), nullable=True)  # 'full_pro_rata', 'partial'
+
+    # Pro-rata calculation (snapshot at invitation time — frozen, later cap table changes don't affect)
+    pro_rata_percentage: Mapped[float] = mapped_column(Numeric(5, 2), nullable=False)
+    pro_rata_amount: Mapped[float] = mapped_column(Numeric(15, 2), nullable=False)  # target_amount × pro_rata_percentage
+
+    # Committed amount (NULL when invited/passed, set when stakeholder commits)
+    committed_amount: Mapped[float | None] = mapped_column(Numeric(15, 2), nullable=True)
+
+    # Transaction link (populated when admin generates ISSUANCE transaction from approved commitment)
+    # SET NULL: commitment record should survive if the generated transaction is deleted.
+    transaction_id: Mapped[int | None] = mapped_column(Integer, ForeignKey("security_transactions.id", ondelete="SET NULL"), nullable=True)
+
+    # Notes
+    notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+    # Invitation tracking
+    invited_by: Mapped[int | None] = mapped_column(Integer, nullable=True)  # User ID who sent the invite (loose coupling like BaseMixin)
+    invited_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+    # Response tracking
+    responded_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+    # Review tracking
+    reviewed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    reviewed_by: Mapped[int | None] = mapped_column(Integer, nullable=True)  # User ID who approved/rejected
+
+    # Relationships
+    funding_round: Mapped["FundingRound"] = relationship(back_populates="commitments")
+    security: Mapped["Security"] = relationship()
+    security_transaction: Mapped[Optional["SecurityTransaction"]] = relationship()
 
 
 class CapTableSnapshot(Base, BaseMixin):
