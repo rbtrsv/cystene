@@ -55,7 +55,7 @@ export default function ContactSection() {
   return (
     <div id='contact' className='relative isolate bg-white dark:bg-black'>
       <div className='mx-auto grid max-w-7xl grid-cols-1 lg:grid-cols-2'>
-        <div className='relative px-7 pt-24 pb-20 sm:pt-32 md:px-20 lg:static lg:py-40'>
+        <div className='relative px-7 pt-14 pb-20 sm:pt-20 md:px-20 lg:static lg:py-32'>
           <div className='mx-auto max-w-xl lg:mx-0 lg:max-w-lg'>
             <h2 className='text-3xl font-bold tracking-tight text-black first-letter:font-bold lg:text-5xl dark:text-white'>
               Contact
