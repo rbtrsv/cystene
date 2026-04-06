@@ -1,11 +1,16 @@
 # Cystene — Cybersecurity Domain Architecture
 
-Stable reference document. Defines all entities, fields, relationships, enums, scan engine architecture, and directory structure for the cybersecurity scanning domain.
+Stable reference document. Defines all entities, fields, relationships, enums, scanner architecture, and directory structure for the cybersecurity domain.
+
+**Product type:** Enterprise Security Posture Management (ESPM) platform — NOT just a scanner.
+**What this means:** Cystene scans from the outside (network/web) AND from the inside (SSH, API keys, domain credentials). Users describe their infrastructure, scan it, get findings with business context, compliance mapping, and actionable remediation. Reports are audit-ready for SOC2, ISO27001, NIS2.
 
 **App name:** `cybersecurity`
 **URL prefix:** `/cybersecurity/*`
 **Backend:** `server/apps/cybersecurity/`
 **Frontend:** `client/src/modules/cybersecurity/`, `client/src/app/(cybersecurity)/`
+
+**Reference material:** Lessons built from Black Hat Python (Seitz/Arnold, 2nd Ed) and Black Hat Rust (Kerkour). Full coverage map: `support/cystene/lessons-coverage-map.md`.
 
 ---
 
@@ -81,18 +86,19 @@ Stable reference document. Defines all entities, fields, relationships, enums, s
 
 ## 1. Entity Overview
 
-8 domain entities. Build order follows FK dependency (parent before child).
+9 domain entities. Build order follows FK dependency (parent before child).
 
 | # | Entity | Table | BaseMixin | Why BaseMixin / No BaseMixin |
 |---|---|---|---|---|
-| 1 | Infrastructure | `infrastructure` | YES | CRUD entity — users describe their infrastructure (servers, apps, databases) with business context (environment, criticality, owner). Optional but enables high-value features: contextual reports, risk prioritization, compliance audits. Same pattern as Entity in FinPy (Organization → Entity → children). |
-| 2 | ScanTarget | `scan_targets` | YES | CRUD entity — users create, update, soft-delete targets. Optional FK to Infrastructure for business context. |
-| 3 | ScanTemplate | `scan_templates` | YES | CRUD entity — users create, update, soft-delete reusable scan configs |
-| 4 | ScanSchedule | `scan_schedules` | YES | CRUD entity — users create, update, soft-delete recurring schedules |
-| 5 | ScanJob | `scan_jobs` | YES | Mutable lifecycle — status transitions (pending → running → completed/failed), users can cancel (soft-delete). Includes security_score (0-100) computed at completion. |
-| 6 | Finding | `findings` | NO | Append-only — scanner writes once, never edited. Status field tracks triage workflow but no soft delete needed. Includes fingerprint for deduplication across scans. Bulk data table, same pattern as APIUsageTracking/RecommendationAnalytics in ecommerce. |
-| 7 | Asset | `assets` | NO | Append-only — scanner discovers infrastructure, writes once. Upsert by (scan_job_id, asset_type, value). Bulk data table. |
-| 8 | Report | `reports` | YES | CRUD entity — users generate, rename, soft-delete reports |
+| 1 | Infrastructure | `infrastructure` | YES | CRUD entity — users describe their infrastructure (servers, apps, databases, cloud accounts) with business context (environment, criticality, owner). Same pattern as Entity in FinPy (Organization → Entity → children). |
+| 2 | Credential | `credentials` | YES | CRUD entity — encrypted credentials (SSH keys, cloud API keys, domain passwords) for internal scanning. Fernet encryption (same pattern as ecommerce WidgetAPIKey). Linked to Infrastructure. |
+| 3 | ScanTarget | `scan_targets` | YES | CRUD entity — users create, update, soft-delete targets. Optional FK to Infrastructure for business context. |
+| 4 | ScanTemplate | `scan_templates` | YES | CRUD entity — users create, update, soft-delete reusable scan configs |
+| 5 | ScanSchedule | `scan_schedules` | YES | CRUD entity — users create, update, soft-delete recurring schedules |
+| 6 | ScanJob | `scan_jobs` | YES | Mutable lifecycle — status transitions (pending → running → completed/failed), users can cancel (soft-delete). Includes security_score (0-100) and execution_point (cloud/remote_agent). |
+| 7 | Finding | `findings` | NO | Append-only — scanner writes once, never edited. Status field tracks triage workflow but no soft delete needed. Includes fingerprint for deduplication, compliance metadata (CWE/OWASP/MITRE), and remediation_script. |
+| 8 | Asset | `assets` | NO | Append-only — scanner discovers infrastructure, writes once. Includes service_metadata for deep discovery. Upsert by (scan_job_id, asset_type, value). |
+| 9 | Report | `reports` | YES | CRUD entity — users generate, rename, soft-delete reports |
 
 ---
 
@@ -103,7 +109,8 @@ Determines build order. Parent entities must exist before children.
 ```
 users (accounts)
   └── organizations (accounts)
-        └── infrastructure (organization_id) — optional, user describes what they own
+        └── infrastructure (organization_id) — what the user owns
+              ├── credentials (infrastructure_id?, organization_id) — encrypted SSH keys, API keys, passwords
               └── scan_targets (infrastructure_id?, user_id, organization_id)
                     ├── scan_templates (target_id)
                     ├── scan_schedules (target_id, template_id)
@@ -113,7 +120,7 @@ users (accounts)
                     └── reports (target_id, scan_job_id?)
 ```
 
-**Build order:** Infrastructure → ScanTarget → ScanTemplate → ScanSchedule → ScanJob → Finding → Asset → Report
+**Build order:** Infrastructure → Credential → ScanTarget → ScanTemplate → ScanSchedule → ScanJob → Finding → Asset → Report
 
 ---
 
@@ -165,6 +172,7 @@ class Infrastructure(BaseMixin, Base):
     is_active           Boolean, default=True            # Soft toggle
 
     # Relationships
+    credentials         relationship → Credential (back_populates="infrastructure", cascade="all, delete-orphan")
     scan_targets        relationship → ScanTarget (back_populates="infrastructure", cascade="all, delete-orphan")
 ```
 
@@ -176,6 +184,7 @@ class InfraType(str, Enum):
     DATABASE = "database"               # PostgreSQL, MySQL, MongoDB, Redis
     NETWORK_DEVICE = "network_device"   # Router, switch, firewall, load balancer
     CLOUD_SERVICE = "cloud_service"     # AWS S3, CloudFront, Lambda, Azure Functions
+    CLOUD_ACCOUNT = "cloud_account"     # Entire AWS/Azure/GCP account — for cloud_audit_scan
 ```
 
 **Enum — Environment:**
@@ -198,7 +207,67 @@ class Criticality(str, Enum):
 
 ---
 
-### 3.2 ScanTarget (BaseMixin)
+### 3.2 Credential (BaseMixin)
+
+**Purpose:** Encrypted credentials for internal scanning — SSH keys, cloud API keys, domain passwords.
+**Scope:** Per-organization, optionally linked to Infrastructure. One credential can be used across multiple scan jobs.
+**Usage:** "Production SSH Key (for host_audit_scan)", "AWS Prod API Key (for cloud_audit_scan)", "corp.local\admin (for ad_audit_scan)".
+
+**Why separate entity (not fields on Infrastructure):** A credential may be used for multiple pieces of infrastructure. Storing credentials directly on Infrastructure would require duplicating sensitive data. Same decoupling pattern as ecommerce's WidgetAPIKey (separate from EcommerceConnection).
+
+**Security:** All credential values MUST be encrypted using Fernet symmetric encryption (same pattern as ecommerce WidgetAPIKey.api_key_encrypted). Decryption happens only at scan time — scanners receive already-decrypted values (same pattern as ecommerce adapter factory).
+
+```python
+# ==========================================
+# 2. CREDENTIALS
+# ==========================================
+
+class Credential(BaseMixin, Base):
+    __tablename__ = "credentials"
+
+    id                  Integer, PK, index
+    organization_id     Integer, FK("organizations.id", ondelete="CASCADE"), not null
+    infrastructure_id   Integer, FK("infrastructure.id", ondelete="SET NULL"), nullable
+    # Why FK to infrastructure: credential is tied to a piece of infrastructure.
+    # Why SET NULL: credential survives infrastructure deletion (can be reassigned).
+    # Why nullable: credential can be created before linking to infrastructure.
+
+    # Credential identification
+    name                String(255), not null           # "Production SSH Key", "AWS Prod API Key"
+    cred_type           String(50), not null             # "ssh_key", "ssh_password", "api_key", "domain_credentials", "service_account"
+
+    # Encrypted value — Fernet symmetric encryption
+    encrypted_value     Text, not null                  # Fernet-encrypted credential value
+    # Why Text not String: encrypted values are base64 strings, SSH private keys can be very long
+    # Why Fernet: same encryption pattern as ecommerce WidgetAPIKey.api_key_encrypted
+
+    # Metadata (unencrypted — safe to store in plain text)
+    username            String(255), nullable           # SSH username, API key ID, domain\username
+    metadata            Text, nullable                  # JSON string: {"port": 22, "region": "eu-central-1", "domain": "corp.local"}
+    # Why metadata as JSON text: flexible per-credential-type context without adding columns for each type
+
+    # Status
+    is_active           Boolean, default=True           # Soft toggle
+    last_used_at        DateTime(timezone=True), nullable  # When last used for a scan
+    last_verified_at    DateTime(timezone=True), nullable  # When last verified working (connectivity test)
+
+    # Relationships
+    infrastructure      relationship → Infrastructure (back_populates="credentials")
+```
+
+**Enum — CredentialType:**
+```python
+class CredentialType(str, Enum):
+    SSH_KEY = "ssh_key"                     # SSH private key (for host_audit_scan — Lesson 4, 10)
+    SSH_PASSWORD = "ssh_password"           # SSH username + password
+    API_KEY = "api_key"                     # Cloud API key: AWS Access Key, Azure Client Secret, GCP Service Account (for cloud_audit_scan — Lesson 11)
+    DOMAIN_CREDENTIALS = "domain_credentials"  # Active Directory domain\username + password (for ad_audit_scan — Lesson 9)
+    SERVICE_ACCOUNT = "service_account"     # Service account JSON file (GCP) or similar
+```
+
+---
+
+### 3.3 ScanTarget (BaseMixin)
 
 **Purpose:** What we scan — a domain, IP address, IP range, or URL that the user owns and wants to assess.
 **Scope:** Per-user, per-organization. One target = one scannable endpoint. Optionally linked to Infrastructure for business context.
@@ -262,7 +331,7 @@ class VerificationMethod(str, Enum):
 
 ---
 
-### 3.3 ScanTemplate (BaseMixin)
+### 3.4 ScanTemplate (BaseMixin)
 
 **Purpose:** How we scan — reusable configuration defining which scan types to run and with what parameters.
 **Scope:** Per-target. One template can be reused across many jobs.
@@ -304,6 +373,18 @@ class ScanTemplate(BaseMixin, Base):
     timeout_seconds     Integer, default=300            # Max scan duration in seconds (5 min default)
     max_concurrent      Integer, default=50             # Max concurrent connections/threads
 
+    # Active scanning consent — legal requirement
+    active_scan_consent Boolean, default=False
+    # Why: Active scanning (SQLi, XSS detection) sends payloads to the target.
+    # Can trigger WAF blocks, security alerts, or in extreme cases affect production.
+    # User must explicitly authorize active testing. Required when scan_types includes "active_web_scan".
+
+    # Custom engine parameters — per-scanner flexibility
+    engine_params       Text, nullable                  # JSON string with scanner-specific overrides
+    # Why: Enables custom wordlists, custom headers, custom payloads per scan.
+    # Example: {"custom_paths": ["/api/internal", "/legacy"], "custom_headers": {"X-Auth": "token"}}
+    # API scanning (lesson 17) requires custom headers and target-specific paths.
+
     # Relationships
     target              relationship → ScanTarget (back_populates="templates")
     schedules           relationship → ScanSchedule (back_populates="template", cascade="all, delete-orphan")
@@ -317,13 +398,23 @@ class ScanType(str, Enum):
     PORT_SCAN = "port_scan"     # TCP connect scan, service banner grabbing
     DNS_ENUM = "dns_enum"       # DNS record enumeration, subdomain discovery
     SSL_CHECK = "ssl_check"     # SSL/TLS certificate validation, cipher analysis
-    WEB_SCAN = "web_scan"       # HTTP security headers, common misconfigurations
+    WEB_SCAN = "web_scan"       # HTTP security headers, common misconfigurations, directory/file discovery
+    VULN_SCAN = "vuln_scan"     # CVE matching against detected service versions (network_scanner.py pattern)
+    API_SCAN = "api_scan"       # JWT analysis, GraphQL introspection, CORS, rate limiting (lesson 17)
+    ACTIVE_WEB_SCAN = "active_web_scan"  # Safe detection-only: SQLi, XSS, LFI, command injection (lessons 2, 17). Requires active_scan_consent=True.
+    PASSWORD_AUDIT = "password_audit"   # Brute force, default credentials, weak passwords (Lesson 6, BHP Ch5-6)
+    HOST_AUDIT = "host_audit"           # Privilege escalation, SUID, cron, permissions via SSH (Lesson 4, 10, BHP Ch2, Ch10)
+    CLOUD_AUDIT = "cloud_audit"         # S3 buckets, IAM, security groups via cloud API keys (Lesson 11)
+    AD_AUDIT = "ad_audit"              # AD enumeration, Kerberoasting, stale accounts via domain credentials (Lesson 9, BHP Ch10)
+    MOBILE_SCAN = "mobile_scan"         # APK analysis — hardcoded creds, insecure storage, SSL pinning (Lesson 8). File upload, scan & delete.
 
-    # Future expansion — each maps to a new ScanEngine implementation
-    VULN_SCAN = "vuln_scan"     # Known vulnerability matching (CVE database)
+    # Future expansion
+    TECH_DETECT = "tech_detect" # Technology stack fingerprinting (Wappalyzer-style)
     WAF_DETECT = "waf_detect"   # Web Application Firewall detection
     WHOIS = "whois"             # WHOIS record lookup
-    TECH_DETECT = "tech_detect" # Technology stack fingerprinting (Wappalyzer-style)
+    CLOUD_SCAN = "cloud_scan"   # S3 bucket checks, metadata service exposure (lesson 11)
+    SMB_SCAN = "smb_scan"       # SMB enumeration, shares, null sessions (lesson 5, smb_exploit.py)
+    AD_SCAN = "ad_scan"         # Active Directory enumeration (lesson 9)
 ```
 
 **Enum — PortRange:**
@@ -345,7 +436,7 @@ class ScanSpeed(str, Enum):
 
 ---
 
-### 3.4 ScanSchedule (BaseMixin)
+### 3.5 ScanSchedule (BaseMixin)
 
 **Purpose:** When we scan — recurring schedule configuration tied to a target + template pair.
 **Scope:** Per-target. Multiple schedules per target allowed (different templates at different intervals).
@@ -392,7 +483,7 @@ class ScheduleFrequency(str, Enum):
 
 ---
 
-### 3.5 ScanJob (BaseMixin)
+### 3.6 ScanJob (BaseMixin)
 
 **Purpose:** Tracks a single scan execution — what was scanned, when it started/ended, status, and results summary.
 **Scope:** Per-target. Created manually (user clicks "Scan Now") or automatically (scheduler triggers).
@@ -431,6 +522,12 @@ class ScanJob(BaseMixin, Base):
     info_count          Integer, default=0
     total_assets        Integer, default=0
 
+    # Execution context
+    execution_point     String(50), default="cloud"     # "cloud" or "remote_agent"
+    # Why: "cloud" = scanned from Cystene servers (default, all external scanners).
+    # "remote_agent" = scanned from agent installed in client's network (future — needed for
+    # wireless scanning Lesson 7, internal network scanning). Prepares architecture for agent model.
+
     # Security score — executive dashboard metric
     security_score      Integer, nullable               # 0-100, computed at scan completion
     # Why: executives need a single number for board reporting and trend tracking.
@@ -462,7 +559,7 @@ class JobStatus(str, Enum):
 
 ---
 
-### 3.6 Finding (NO BaseMixin)
+### 3.7 Finding (NO BaseMixin)
 
 **Purpose:** A vulnerability, misconfiguration, or security issue discovered during a scan.
 **Scope:** Per-scan-job. Each scan job produces 0..N findings.
@@ -507,7 +604,11 @@ class Finding(Base):
     # Finding details
     title               String(500), not null           # Human-readable title: "SSH Server Running Outdated Version"
     description         Text, not null                  # Detailed explanation of what was found
-    remediation         Text, nullable                  # How to fix this finding
+    remediation         Text, nullable                  # How to fix this finding (text explanation)
+    remediation_script  Text, nullable                  # Copiable fix command/snippet
+    # Why separate from remediation: remediation is explanation, remediation_script is actionable.
+    # Ex: "chmod 600 ~/.ssh/authorized_keys", "add_header X-Frame-Options DENY;",
+    # "aws s3api put-bucket-acl --bucket NAME --acl private". User copies and applies directly.
     evidence            Text, nullable                  # Raw evidence (banner text, response headers, DNS records)
 
     # Location — where the finding was discovered
@@ -600,15 +701,48 @@ class FindingCategory(str, Enum):
     WEB_MISCONFIGURATION = "web_misconfiguration"  # Directory listing, debug mode, server info disclosure
     INFORMATION_DISCLOSURE = "information_disclosure"  # Version strings, stack traces, error details
 
-    # Future categories (when VulnScanEngine, etc. are added)
-    KNOWN_VULNERABILITY = "known_vulnerability" # Matched against CVE database
+    # Vuln scanner findings (from vuln_scan.py — CVE matching)
+    KNOWN_VULNERABILITY = "known_vulnerability" # Service version matched against CVE database
+
+    # API scanner findings (from api_scan.py)
+    API_VULNERABILITY = "api_vulnerability"     # JWT weakness, GraphQL introspection, IDOR, rate limiting bypass
+
+    # Active web scanner findings (from active_web_scan.py — detection only)
+    INJECTION_DETECTED = "injection_detected"   # SQLi, command injection, XSS confirmed via safe payloads
+
+    # Web scanner extended findings (from directory/file discovery)
+    FILE_EXPOSURE = "file_exposure"             # .git, .env, backup files, config files accessible
+    DIRECTORY_LISTING = "directory_listing"     # Directory indexing enabled on web server
+    CORS_MISCONFIGURATION = "cors_misconfiguration"  # Permissive CORS policy (wildcard origin, credentials allowed)
+    OPEN_REDIRECT = "open_redirect"            # Unvalidated redirect allowing phishing
+
+    # Host audit findings (from host_audit_scan — Lesson 4, 10)
+    PRIVILEGE_ESCALATION = "privilege_escalation"       # SUID binary, weak sudo config, writable cron
+    WEAK_FILE_PERMISSIONS = "weak_file_permissions"     # World-readable sensitive files, weak SSH key permissions
+    EXPOSED_CREDENTIALS = "exposed_credentials"         # Credentials in config files, env vars, shell history
+    INSECURE_SERVICE_CONFIG = "insecure_service_config" # Dangerous service configurations found via SSH audit
+
+    # Cloud audit findings (from cloud_audit_scan — Lesson 11)
+    CLOUD_MISCONFIGURATION = "cloud_misconfiguration"   # Public S3 bucket, open security group, IMDSv1 enabled
+    IAM_ISSUE = "iam_issue"                             # Overprivileged IAM role, stale access keys, no MFA
+
+    # AD audit findings (from ad_audit_scan — Lesson 9)
+    AD_WEAKNESS = "ad_weakness"                         # Kerberoastable accounts, unconstrained delegation, stale accounts
+
+    # Password audit findings (from password_audit_scan — Lesson 6)
+    WEAK_PASSWORD = "weak_password"                     # Default credentials, brute-forceable service passwords
+
+    # Mobile findings (from mobile_scan — Lesson 8)
+    MOBILE_VULNERABILITY = "mobile_vulnerability"       # Hardcoded credentials, insecure storage, missing SSL pinning
+
+    # General categories
     WEAK_AUTHENTICATION = "weak_authentication" # Weak auth mechanisms detected
     CONFIGURATION_ERROR = "configuration_error" # General misconfiguration
 ```
 
 ---
 
-### 3.7 Asset (NO BaseMixin)
+### 3.8 Asset (NO BaseMixin)
 
 **Purpose:** Discovered infrastructure — an IP, hostname, service, or technology found during scanning.
 **Scope:** Per-scan-job. Each scan job discovers 0..N assets.
@@ -641,6 +775,14 @@ class Asset(Base):
     service_version     String(255), nullable           # "OpenSSH 8.9", "nginx/1.24.0"
     banner              Text, nullable                  # Raw service banner
 
+    # Deep discovery metadata — detalii complete pentru blast radius analysis
+    service_metadata    Text, nullable                  # JSON string with full discovery data
+    # Why: Nu stocam doar "nginx/1.24.0". Stocam bannerul SSH complet, cipher suites SSL,
+    # headerele HTTP expuse, certificat chain details. Aceasta e baza pentru analiza de tip
+    # "Blast Radius" din SurrealDB graph layer.
+    # Exemplu: {"banner": "SSH-2.0-OpenSSH_8.9", "ciphers": [...], "key_exchange": [...]}
+    # Text not JSONB: consistent cu restul proiectului (no PG-specific types).
+
     # Metadata
     confidence          String(50), default="confirmed" # "confirmed", "probable", "possible"
     first_seen_at       DateTime(timezone=True), server_default=func.now()  # When first discovered
@@ -672,7 +814,7 @@ class AssetConfidence(str, Enum):
 
 ---
 
-### 3.8 Report (BaseMixin)
+### 3.9 Report (BaseMixin)
 
 **Purpose:** A generated report document summarizing scan results for a target.
 **Scope:** Per-target, optionally linked to a specific scan job.
@@ -759,12 +901,20 @@ The original plan used a full engine pattern with 5 components: (1) `base.py` �
 
 Each scanner is a single async function in its own file. Same input, same output — just convention, not enforced by inheritance.
 
-| Scanner | ScanType | Python Libraries | What It Does |
-|---|---|---|---|
-| `port_scan.run()` | `port_scan` | `socket`, `asyncio` | TCP connect scan, banner grabbing, service identification |
-| `dns_scan.run()` | `dns_enum` | `dns.resolver` (dnspython) | A/AAAA/MX/NS/TXT/CNAME records, subdomain brute-force, SPF/DKIM/DMARC checks |
-| `ssl_scan.run()` | `ssl_check` | `ssl`, `socket`, `cryptography` | Certificate validation, cipher enumeration, protocol version checks, expiry detection |
-| `web_scan.run()` | `web_scan` | `httpx` | Security header checks (CSP, HSTS, X-Frame-Options, X-Content-Type-Options, etc.), redirect analysis, server info disclosure |
+| Scanner | ScanType | Python Libraries | What It Does | Source Material |
+|---|---|---|---|---|
+| `port_scan.run()` | `port_scan` | `socket`, `asyncio` | TCP connect scan, banner grabbing, service identification | Lesson 1, port_scanner.py, network_scanner.py, BHP ch2, BHR ch2 |
+| `dns_scan.run()` | `dns_enum` | `dns.resolver` (dnspython) | A/AAAA/MX/NS/TXT/CNAME records, subdomain brute-force via crt.sh API, SPF/DKIM/DMARC checks | Lesson 1, Lesson 12 (OSINT), BHR ch2 subdomains.rs |
+| `ssl_scan.run()` | `ssl_check` | `ssl`, `socket`, `cryptography` | Certificate validation, cipher enumeration, protocol version checks, expiry detection, chain completeness | cryptography_basics.md, BHP ch2 |
+| `web_scan.run()` | `web_scan` | `httpx` | Security header checks (CSP, HSTS, X-Frame-Options, etc.), redirect analysis, server info disclosure, **directory/file discovery** (/.git/HEAD, /.env, /backup, /admin, /api/, /swagger, /wp-admin, /phpmyadmin, /server-status, robots.txt parsing) | Lesson 1, dir_buster.sh, BHR ch4 (14 HTTP modules), web_technologies.md |
+| `vuln_scan.run()` | `vuln_scan` | `httpx` | CVE matching — takes service versions from port_scan output, compares against local database of known vulnerable versions. Produces KNOWN_VULNERABILITY findings with cve_id, cvss_score, cwe_id | Lesson 5, network_scanner.py (KNOWN_VULNERABILITIES dict), common_vulnerabilities.md |
+| `api_scan.run()` | `api_scan` | `httpx`, `pyjwt` | JWT analysis (weak signing, expired tokens, none algorithm), GraphQL introspection detection, CORS misconfiguration, common API paths (/api/v1/, /swagger/, /openapi.json), rate limiting detection, OpenAPI/Swagger exposure | Lesson 17, web_technologies.md |
+| `active_web_scan.run()` | `active_web_scan` | `httpx` | **Detection-only** (safe payloads, NOT exploitation): SQLi detection (inject `'`, check SQL errors), reflected XSS detection (inject harmless marker, check reflection), command injection detection (inject `; echo MARKER`, check output), LFI detection (test `../../../etc/passwd`), open redirect detection. **Requires active_scan_consent=True on ScanTemplate.** | Lesson 2, sql_injector.py, cmd_injector.py, Lesson 17 |
+| `password_audit_scan.run()` | `password_audit` | `asyncssh`, `httpx` | Brute force on detected services (SSH, FTP, HTTP login), default credentials check (admin/admin, root/root), weak password detection. Tests against common wordlist. | Lesson 6, hash_cracker.py, BHP Ch5-6 |
+| `host_audit_scan.run()` | `host_audit` | `asyncssh` | Connects via SSH (Credential entity). Checks: SUID binaries, weak file permissions, cron jobs, sudo config, exposed credentials in config/env/history, SIP status (macOS), FileVault (macOS), LaunchAgents (macOS). OS-aware (Linux vs macOS). | Lesson 4, 10, privesc_scanner.py, BHP Ch2, Ch10 |
+| `cloud_audit_scan.run()` | `cloud_audit` | `boto3` (AWS), `azure-mgmt` (Azure) | Uses cloud API keys (Credential entity). Checks: S3 bucket exposure, IAM overprivileged roles, security groups, metadata service (IMDSv1), unencrypted storage, public snapshots, stale access keys. | Lesson 11 |
+| `ad_audit_scan.run()` | `ad_audit` | `ldap3`, `impacket` | Uses domain credentials (Credential entity). Checks: Kerberoastable accounts, ASREPRoastable, unconstrained delegation, stale accounts, weak trust configs, password policy. | Lesson 9, BHP Ch10 |
+| `mobile_scan.run()` | `mobile_scan` | `androguard` | User uploads APK. Analyzes: hardcoded credentials, insecure data storage, missing SSL pinning, exported components, manifest permissions, debuggable flag. **File deleted immediately after scan.** | Lesson 8, apk_analyzer.py |
 
 ### 4.3 Scanner Function Signature
 
@@ -798,14 +948,29 @@ No orchestrator class. The subrouter imports scanner modules and calls them dire
 ```python
 # server/apps/cybersecurity/subrouters/scan_job_subrouter.py
 
-from cybersecurity.scanners import port_scan, dns_scan, ssl_scan, web_scan
+from cybersecurity.scanners import (
+    port_scan, dns_scan, ssl_scan, web_scan, vuln_scan, api_scan,
+    active_web_scan, password_audit_scan, host_audit_scan,
+    cloud_audit_scan, ad_audit_scan, mobile_scan,
+)
 
 # Simple dict mapping — replaces factory + strategy pattern + orchestrator
 scanner_map = {
+    # External scanners (no credentials needed)
     "port_scan": port_scan.run,
     "dns_enum": dns_scan.run,
     "ssl_check": ssl_scan.run,
     "web_scan": web_scan.run,
+    "vuln_scan": vuln_scan.run,
+    "api_scan": api_scan.run,
+    "active_web_scan": active_web_scan.run,        # requires active_scan_consent
+    "password_audit": password_audit_scan.run,
+    # Internal scanners (require Credential entity)
+    "host_audit": host_audit_scan.run,              # requires SSH credential
+    "cloud_audit": cloud_audit_scan.run,            # requires cloud API key credential
+    "ad_audit": ad_audit_scan.run,                  # requires domain credential
+    # Upload scanner
+    "mobile_scan": mobile_scan.run,                 # requires APK file upload
 }
 
 # In the "start scan" endpoint:
@@ -830,6 +995,7 @@ server/apps/cybersecurity/
 │   ├── __init__.py                    → Re-exports all models (nexotype pattern)
 │   ├── mixin_models.py                → BaseMixin (imported from nexotype or local copy)
 │   ├── infrastructure_models.py       → Infrastructure
+│   ├── credential_models.py           → Credential (Fernet encrypted)
 │   ├── scan_target_models.py          → ScanTarget (FK to infrastructure)
 │   ├── scan_template_models.py        → ScanTemplate
 │   ├── scan_schedule_models.py        → ScanSchedule
@@ -839,6 +1005,7 @@ server/apps/cybersecurity/
 │   └── report_models.py              → Report
 ├── schemas/
 │   ├── infrastructure_schemas.py      → Create, Update, Detail, ListResponse, Response
+│   ├── credential_schemas.py          → Create, Update, Detail, ListResponse, Response (encrypted_value never returned)
 │   ├── scan_target_schemas.py         → Create, Update, Detail, ListResponse, Response
 │   ├── scan_template_schemas.py
 │   ├── scan_schedule_schemas.py
@@ -848,6 +1015,7 @@ server/apps/cybersecurity/
 │   └── report_schemas.py
 ├── subrouters/
 │   ├── infrastructure_subrouter.py    → CRUD (list, detail, create, update, soft-delete)
+│   ├── credential_subrouter.py        → CRUD + verify connectivity (test SSH/API key works)
 │   ├── scan_target_subrouter.py       → CRUD + verify ownership
 │   ├── scan_template_subrouter.py     → CRUD
 │   ├── scan_schedule_subrouter.py     → CRUD + activate/deactivate
@@ -856,10 +1024,18 @@ server/apps/cybersecurity/
 │   ├── asset_subrouter.py             → List/detail (read-only)
 │   └── report_subrouter.py            → Generate, list, detail, delete
 ├── scanners/                          → Plain async functions, no ABC, no orchestrator
-│   ├── port_scan.py                   → async def run(target, params) → findings + assets
-│   ├── dns_scan.py                    → async def run(target, params) → findings + assets
-│   ├── ssl_scan.py                    → async def run(target, params) → findings + assets
-│   └── web_scan.py                    → async def run(target, params) → findings + assets
+│   ├── port_scan.py                   → TCP connect, banner grabbing, service ID
+│   ├── dns_scan.py                    → DNS records, subdomain brute-force, SPF/DKIM/DMARC
+│   ├── ssl_scan.py                    → Certificate, ciphers, TLS versions, chain validation
+│   ├── web_scan.py                    → Security headers, server disclosure, directory/file discovery
+│   ├── vuln_scan.py                   → CVE matching against detected service versions
+│   ├── api_scan.py                    → JWT analysis, GraphQL, CORS, rate limiting
+│   ├── active_web_scan.py             → Detection-only: SQLi, XSS, LFI, cmd injection (requires consent)
+│   ├── password_audit_scan.py         → Brute force, default credentials, weak passwords
+│   ├── host_audit_scan.py             → Privilege escalation, SUID, cron, permissions via SSH
+│   ├── cloud_audit_scan.py            → S3 buckets, IAM, security groups via cloud API keys
+│   ├── ad_audit_scan.py               → AD enumeration, Kerberoasting via domain credentials
+│   └── mobile_scan.py                 → APK analysis (upload, scan, delete)
 ├── surrealdb/                         → Graph layer — polyglot persistence (nexotype pattern)
 │   ├── db.py                          → SurrealDB connection management
 │   ├── sync_service.py                → PostgreSQL → SurrealDB entity + relationship sync
@@ -1004,6 +1180,17 @@ router.include_router(gated)
 | No RemediationTask entity | Finding.status is sufficient | Task tracking belongs in JIRA/Linear. Building task management inside a security platform duplicates existing tools. Finding triage (open → acknowledged → resolved → false_positive) handles the core workflow. |
 | No Knowledge Base entity | Finding.description + remediation | Per-finding guidance is more actionable than a generic article library. Content management is a separate product. |
 | No AssetInventory entity (CMDB) | Infrastructure + scan-discovered Asset | Infrastructure entity captures what user OWNS (manual, business context). Asset entity captures what scanner FINDS (automatic, technical). Together they cover what Intrudify calls "Assets Management" without building a full CMDB. |
+| 7 production scanners | Port, DNS, SSL, Web, Vuln, API, Active Web | Production product needs comprehensive coverage. 4 scanners = discovery tool. 7 scanners = security platform. Based on lessons 1, 2, 5, 17, BHP, BHR, and Intrudify competitor analysis. |
+| Active scanning requires consent | active_scan_consent Boolean on ScanTemplate | Active payloads (SQLi, XSS, cmd injection) can trigger WAF blocks, security alerts, or affect production. User must explicitly authorize. Detection-only approach — confirms vulnerability exists without exploiting it. |
+| Compliance metadata on Finding | cwe_id, owasp_category, mitre_tactic, mitre_technique | SOC2/ISO27001 audits require standard vulnerability classification. CWE maps to Common Weakness Enumeration. OWASP maps to Top 10. MITRE ATT&CK maps to kill chain. Without these, reports are not audit-ready. |
+| Deep discovery metadata on Asset | service_metadata (Text/JSON) | Full banners, cipher suites, SSH key fingerprints, HTTP headers enable blast radius analysis in SurrealDB graph layer. A port number and service name alone are not actionable. |
+| Detection not exploitation | Active web scanner confirms vuln exists, does not exploit | Exploitation risks breaking production systems, corrupting data, or triggering legal issues. Safe payloads (inject `'`, check for SQL error response) are sufficient for vulnerability confirmation in reports. |
+| engine_params on ScanTemplate | JSON text for scanner-specific overrides | Custom wordlists, headers, and paths needed for API scanning and enterprise use cases. Enables flexibility without adding new fields for every scanner parameter. |
+| Credential entity separate from Infrastructure | Fernet-encrypted, reusable across infrastructure | Credentials can apply to multiple infrastructure items. Storing on Infrastructure would duplicate sensitive data. Same pattern as ecommerce WidgetAPIKey (separate from EcommerceConnection). |
+| 12 production scanners | 7 external + 1 password + 3 internal (SSH/API/domain) + 1 upload (mobile) | ESPM platform needs comprehensive coverage: external scanning, internal audit, cloud audit, AD audit, mobile analysis. |
+| ScanJob.execution_point | "cloud" (default) or "remote_agent" (future) | Prepares architecture for agent-based scanning (wireless Lesson 7, internal network). No agent infrastructure yet but DB schema is ready. |
+| Finding.remediation_script | Copiable fix command separate from remediation text | Remediation is explanation, remediation_script is actionable (chmod, nginx config, AWS CLI). User copies and applies directly. |
+| Mobile scan: upload, scan, delete | No permanent file storage | APK uploaded for analysis, findings extracted, file deleted immediately. Legal and storage simplicity — no user data retention. |
 
 ---
 
