@@ -6,8 +6,18 @@ import Image from 'next/image';
 import logoCysteneDark from '@/modules/main/images/logos/cystene-black-text-with-logo.svg';
 import logoCysteneLight from '@/modules/main/images/logos/cystene-white-text-with-logo.svg';
 import { Sun, MoonStar, Menu, X, ChevronDown, ChevronUp } from 'lucide-react';
+import AnimatedButton from '@/modules/main/components/AnimatedButton/AnimatedButton';
 
-const navItems = [
+interface NavItem {
+  name: string;
+  link: string;
+  subItems?: {
+    name: string;
+    link: string;
+  }[];
+}
+
+const navItems: NavItem[] = [
   { name: 'Features', link: '/#features' },
   { name: 'Blog', link: '/blog' },
   { name: 'Contact', link: '/#contact' },
@@ -81,8 +91,7 @@ const NavbarDownwards: React.FC = () => {
     document.documentElement.classList.contains('dark');
   const [open, setOpen] = useState(false);
   const [theme, setTheme] = useState(isDark ? 'dark' : 'light');
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [_activeDropdown, _setActiveDropdown] = useState<string | null>(null);
+  const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
   const [isVisible, setIsVisible] = useState(true);
 
   useEffect(() => {
@@ -152,14 +161,7 @@ const NavbarDownwards: React.FC = () => {
               key={item.name}
               className={`relative my-0 ${index !== 0 ? 'ml-2 sm:ml-3 md:ml-4 lg:ml-5 xl:ml-6' : ''} text-xs font-normal sm:text-sm md:text-sm lg:text-base xl:text-lg 2xl:text-xl`}
             >
-              <Link
-                href={item.link}
-                className='text-xs font-medium text-black/95 transition-colors duration-200 hover:text-green-400 sm:text-sm md:text-sm lg:text-base xl:text-lg 2xl:text-xl dark:text-white/95 dark:hover:text-green-400'
-              >
-                {item.name}
-              </Link>
-              {/* Dropdown template (uncomment when subItems are added to navItems):
-              {item.subItems && (
+              {item.subItems ? (
                 <div className='group relative'>
                   <button className='flex items-center text-xs font-medium text-black/95 transition-colors duration-200 group-hover:text-green-400 sm:text-sm md:text-sm lg:text-base xl:text-lg 2xl:text-xl dark:text-white/95 dark:group-hover:text-green-400'>
                     {item.name}
@@ -179,10 +181,21 @@ const NavbarDownwards: React.FC = () => {
                     ))}
                   </ul>
                 </div>
+              ) : (
+                <Link
+                  href={item.link}
+                  className='text-xs font-medium text-black/95 transition-colors duration-200 hover:text-green-400 sm:text-sm md:text-sm lg:text-base xl:text-lg 2xl:text-xl dark:text-white/95 dark:hover:text-green-400'
+                >
+                  {item.name}
+                </Link>
               )}
-              */}
             </li>
           ))}
+          <li className='ml-2 sm:ml-3 md:ml-4 lg:ml-5 xl:ml-6'>
+            <Link href='https://client.cystene.com/' target='_blank' rel='noopener noreferrer' className='cursor-pointer'>
+              <AnimatedButton text='Dashboard' className='text-xs sm:text-sm md:text-sm lg:text-base xl:text-lg 2xl:text-xl font-medium cursor-pointer' />
+            </Link>
+          </li>
           <li className='ml-4'>
             <ThemeSwitchButton onSwitch={handleThemeSwitch} />
           </li>
@@ -194,15 +207,7 @@ const NavbarDownwards: React.FC = () => {
         >
           {navItems.map((item) => (
             <li key={item.name} className='my-7 text-xl font-normal'>
-              <Link
-                href={item.link}
-                onClick={() => setOpen(false)}
-                className='text-xl font-medium text-black/95 dark:text-white/95'
-              >
-                {item.name}
-              </Link>
-              {/* Mobile dropdown template (uncomment when subItems are added to navItems):
-              {item.subItems && (
+              {item.subItems ? (
                 <div>
                   <button
                     onClick={() =>
@@ -235,10 +240,22 @@ const NavbarDownwards: React.FC = () => {
                     ))}
                   </ul>
                 </div>
+              ) : (
+                <Link
+                  href={item.link}
+                  onClick={() => setOpen(false)}
+                  className='text-xl font-medium text-black/95 dark:text-white/95'
+                >
+                  {item.name}
+                </Link>
               )}
-              */}
             </li>
           ))}
+          <li className='my-7'>
+            <Link href='https://client.cystene.com/' target='_blank' rel='noopener noreferrer' onClick={() => setOpen(false)} className='cursor-pointer'>
+              <AnimatedButton text='Dashboard' className='text-xl font-medium cursor-pointer' />
+            </Link>
+          </li>
         </ul>
       </div>
     </nav>

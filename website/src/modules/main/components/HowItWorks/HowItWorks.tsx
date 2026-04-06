@@ -29,11 +29,11 @@ const steps = [
 
 export default function HowItWorks() {
   return (
-    <section id='how-it-works'>
+    <section id='workflow'>
       <div className='bg-white py-6 sm:py-14 dark:bg-black'>
         <div className='mx-auto max-w-2xl text-center'>
           <h2 className='text-3xl font-bold tracking-tight text-black lg:text-4xl dark:text-white'>
-            How It Works
+            Workflow
           </h2>
         </div>
       </div>
