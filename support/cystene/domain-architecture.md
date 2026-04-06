@@ -14,9 +14,16 @@ Stable reference document. Defines all entities, fields, relationships, enums, s
 ```
 ┌─────────────────────────────────────────────────────────┐
 │                      UTILIZATOR                         │
-│              (login, alege target, configureaza)         │
+│          (login, descrie infrastructura, scanez)         │
 └─────────────────────┬───────────────────────────────────┘
                       │
+                      ▼
+┌─────────────────────────────────────────────────────────┐
+│                Infrastructure (optional)                 │
+│    (ce detine userul: server, aplicatie, baza de date)   │
+│    environment, criticality, owner → BUSINESS CONTEXT    │
+└─────────────────────┬───────────────────────────────────┘
+                      │ infrastructure_id (optional FK)
                       ▼
 ┌─────────────────────────────────────────────────────────┐
 │                   ScanTarget                            │
@@ -35,7 +42,7 @@ Stable reference document. Defines all entities, fields, relationships, enums, s
                ▼
          ┌───────────┐
          │  ScanJob   │  pending → running → completed/failed
-         └─────┬─────┘
+         └─────┬─────┘                    + security_score (0-100)
                │ ruleaza scannerele selectate
                │
     ┌──────────┼──────────────────────┐
@@ -50,7 +57,8 @@ Stable reference document. Defines all entities, fields, relationships, enums, s
     Findings       Assets
   (vulnerabi-   (ce a descoperit:
    litati,       porturi, servicii,
-   severitate)   certificate, DNS)
+   fingerprint,  certificate, DNS)
+   dedup)             │
                │
                ▼
            Reports
@@ -59,29 +67,32 @@ Stable reference document. Defines all entities, fields, relationships, enums, s
 ```
 
 **Fluxul:**
-1. User creeaza **ScanTarget** (ex: `cystene.com`)
-2. User creeaza **ScanTemplate** (ex: port scan + DNS scan, top 1000 ports, timeout 3s)
-3. Optional: **ScanSchedule** (ruleaza saptamanal)
-4. User apasa "Start Scan" → se creeaza un **ScanJob**
-5. Subrouter-ul ia `scan_types` din template → cheama `SCANNERS["port_scan"]`, `SCANNERS["dns_scan"]` in paralel cu `asyncio.gather()`
-6. Fiecare scanner scrie **Findings** (vulnerabilitati) + **Assets** (infrastructura descoperita)
-7. User genereaza **Report** din rezultate
+1. Optional: User descrie **Infrastructure** (ex: "Production Web Server", critical, owned by Backend Team)
+2. User creeaza **ScanTarget** (ex: `cystene.com`) — optional legat de Infrastructure pentru business context
+3. User creeaza **ScanTemplate** (ex: port scan + DNS scan, top 1000 ports, timeout 3s)
+4. Optional: **ScanSchedule** (ruleaza saptamanal)
+5. User apasa "Start Scan" → se creeaza un **ScanJob**
+6. Subrouter-ul ia `scan_types` din template → cheama `SCANNERS["port_scan"]`, `SCANNERS["dns_scan"]` in paralel cu `asyncio.gather()`
+7. Fiecare scanner scrie **Findings** (cu fingerprint pentru dedup) + **Assets** (infrastructura descoperita)
+8. ScanJob calculeaza **security_score** (0-100) la completare
+9. User genereaza **Report** din rezultate — cu business context din Infrastructure
 
 ---
 
 ## 1. Entity Overview
 
-7 domain entities. Build order follows FK dependency (parent before child).
+8 domain entities. Build order follows FK dependency (parent before child).
 
 | # | Entity | Table | BaseMixin | Why BaseMixin / No BaseMixin |
 |---|---|---|---|---|
-| 1 | ScanTarget | `scan_targets` | YES | CRUD entity — users create, update, soft-delete targets |
-| 2 | ScanTemplate | `scan_templates` | YES | CRUD entity — users create, update, soft-delete reusable scan configs |
-| 3 | ScanSchedule | `scan_schedules` | YES | CRUD entity — users create, update, soft-delete recurring schedules |
-| 4 | ScanJob | `scan_jobs` | YES | Mutable lifecycle — status transitions (pending → running → completed/failed), users can cancel (soft-delete) |
-| 5 | Finding | `findings` | NO | Append-only — scanner writes once, never edited. Status field tracks triage workflow but no soft delete needed. Bulk data table, same pattern as APIUsageTracking/RecommendationAnalytics in ecommerce. |
-| 6 | Asset | `assets` | NO | Append-only — scanner discovers infrastructure, writes once. Upsert by (scan_job_id, asset_type, value). Bulk data table. |
-| 7 | Report | `reports` | YES | CRUD entity — users generate, rename, soft-delete reports |
+| 1 | Infrastructure | `infrastructure` | YES | CRUD entity — users describe their infrastructure (servers, apps, databases) with business context (environment, criticality, owner). Optional but enables high-value features: contextual reports, risk prioritization, compliance audits. Same pattern as Entity in FinPy (Organization → Entity → children). |
+| 2 | ScanTarget | `scan_targets` | YES | CRUD entity — users create, update, soft-delete targets. Optional FK to Infrastructure for business context. |
+| 3 | ScanTemplate | `scan_templates` | YES | CRUD entity — users create, update, soft-delete reusable scan configs |
+| 4 | ScanSchedule | `scan_schedules` | YES | CRUD entity — users create, update, soft-delete recurring schedules |
+| 5 | ScanJob | `scan_jobs` | YES | Mutable lifecycle — status transitions (pending → running → completed/failed), users can cancel (soft-delete). Includes security_score (0-100) computed at completion. |
+| 6 | Finding | `findings` | NO | Append-only — scanner writes once, never edited. Status field tracks triage workflow but no soft delete needed. Includes fingerprint for deduplication across scans. Bulk data table, same pattern as APIUsageTracking/RecommendationAnalytics in ecommerce. |
+| 7 | Asset | `assets` | NO | Append-only — scanner discovers infrastructure, writes once. Upsert by (scan_job_id, asset_type, value). Bulk data table. |
+| 8 | Report | `reports` | YES | CRUD entity — users generate, rename, soft-delete reports |
 
 ---
 
@@ -91,25 +102,106 @@ Determines build order. Parent entities must exist before children.
 
 ```
 users (accounts)
-  └── scan_targets (user_id, organization_id)
-        ├── scan_templates (target_id)
-        ├── scan_schedules (target_id, template_id)
-        ├── scan_jobs (target_id, template_id, schedule_id?)
-        │     ├── findings (scan_job_id)
-        │     └── assets (scan_job_id)
-        └── reports (target_id, scan_job_id?)
+  └── organizations (accounts)
+        └── infrastructure (organization_id) — optional, user describes what they own
+              └── scan_targets (infrastructure_id?, user_id, organization_id)
+                    ├── scan_templates (target_id)
+                    ├── scan_schedules (target_id, template_id)
+                    ├── scan_jobs (target_id, template_id, schedule_id?)
+                    │     ├── findings (scan_job_id, first_found_job_id?)
+                    │     └── assets (scan_job_id)
+                    └── reports (target_id, scan_job_id?)
 ```
 
-**Build order:** ScanTarget → ScanTemplate → ScanSchedule → ScanJob → Finding → Asset → Report
+**Build order:** Infrastructure → ScanTarget → ScanTemplate → ScanSchedule → ScanJob → Finding → Asset → Report
 
 ---
 
 ## 3. Entity Definitions
 
-### 3.1 ScanTarget (BaseMixin)
+### 3.1 Infrastructure (BaseMixin)
+
+**Purpose:** What the user owns — a server, application, database, network device, or cloud service. Provides business context (environment, criticality, owner) that makes scan findings actionable.
+**Scope:** Per-organization. Users describe their infrastructure BEFORE scanning.
+**Usage:** "Production Web Server (critical, Backend Team, Hetzner eu-central)", "Customer Database (critical, Data Team, AWS eu-west-1)".
+
+**Why this entity exists:** Without business context, a finding is just "port 3306 open on 91.98.44.218". With Infrastructure, the same finding becomes "port 3306 open on Production Database Server (critical, owned by Data Team)" — actionable, prioritizable, and reportable to executives. This is the difference between a $20/mo scanner tool and a $500/mo security platform. Same pattern as Entity in FinPy (Organization → Entity → Holdings).
+
+```python
+# ==========================================
+# 1. INFRASTRUCTURE
+# ==========================================
+
+class Infrastructure(BaseMixin, Base):
+    __tablename__ = "infrastructure"
+
+    id                  Integer, PK, index
+    organization_id     Integer, FK("organizations.id", ondelete="CASCADE"), not null
+    # Why organization-scoped: infrastructure belongs to the team, not an individual user
+
+    # What it is
+    name                String(255), not null           # "Production Web Server", "Customer Database"
+    infra_type          String(50), not null             # "server", "application", "database", "network_device", "cloud_service"
+    description         Text, nullable                   # Freeform description of what this infrastructure does
+
+    # Business context — THIS IS THE VALUE
+    # Why these fields: enables risk prioritization, contextual reports, compliance audits
+    environment         String(50), default="production" # "production", "staging", "development", "testing"
+    criticality         String(50), default="medium"     # "critical", "high", "medium", "low"
+    owner               String(255), nullable            # "Backend Team", "DevOps", a person's name
+    # Why owner is String not FK: teams/people change, owner is descriptive context not a strict relationship
+
+    # Technical identifiers (optional — user fills in what they know)
+    # Why all nullable: not all infrastructure has all fields (a cloud service has no IP, a network device has no URL)
+    ip_address          String(255), nullable            # "91.98.44.218", "10.0.1.0/24"
+    hostname            String(255), nullable            # "prod-web-01.internal"
+    url                 String(500), nullable            # "https://app.cystene.com"
+    cloud_provider      String(100), nullable            # "aws", "hetzner", "gcp", "azure", "digitalocean"
+    region              String(100), nullable            # "eu-central-1", "fsn1", "us-east-1"
+
+    # Metadata
+    tags                String(500), nullable            # Comma-separated tags ("production,web,critical,pci")
+    notes               Text, nullable                   # Freeform notes
+    is_active           Boolean, default=True            # Soft toggle
+
+    # Relationships
+    scan_targets        relationship → ScanTarget (back_populates="infrastructure", cascade="all, delete-orphan")
+```
+
+**Enum — InfraType:**
+```python
+class InfraType(str, Enum):
+    SERVER = "server"                   # Physical or virtual server
+    APPLICATION = "application"         # Web app, API, microservice
+    DATABASE = "database"               # PostgreSQL, MySQL, MongoDB, Redis
+    NETWORK_DEVICE = "network_device"   # Router, switch, firewall, load balancer
+    CLOUD_SERVICE = "cloud_service"     # AWS S3, CloudFront, Lambda, Azure Functions
+```
+
+**Enum — Environment:**
+```python
+class Environment(str, Enum):
+    PRODUCTION = "production"
+    STAGING = "staging"
+    DEVELOPMENT = "development"
+    TESTING = "testing"
+```
+
+**Enum — Criticality:**
+```python
+class Criticality(str, Enum):
+    CRITICAL = "critical"       # Business-critical — downtime or breach causes immediate revenue/data loss
+    HIGH = "high"               # Important — significant impact if compromised
+    MEDIUM = "medium"           # Standard — normal business operations
+    LOW = "low"                 # Non-essential — minimal impact if compromised
+```
+
+---
+
+### 3.2 ScanTarget (BaseMixin)
 
 **Purpose:** What we scan — a domain, IP address, IP range, or URL that the user owns and wants to assess.
-**Scope:** Per-user, per-organization. One target = one scannable endpoint.
+**Scope:** Per-user, per-organization. One target = one scannable endpoint. Optionally linked to Infrastructure for business context.
 **Usage:** "example.com", "192.168.1.0/24", "https://app.example.com".
 
 ```python
@@ -123,6 +215,9 @@ class ScanTarget(BaseMixin, Base):
     id                  Integer, PK, index
     user_id             Integer, FK("users.id", ondelete="CASCADE"), not null
     organization_id     Integer, FK("organizations.id", ondelete="CASCADE"), not null
+    infrastructure_id   Integer, FK("infrastructure.id", ondelete="SET NULL"), nullable
+    # Why nullable: user can scan without describing infrastructure first. SET NULL: target survives infrastructure deletion.
+    # Why this FK: links scan results to business context (environment, criticality, owner) for reports and prioritization.
 
     # Target identification
     name                String(255), not null          # Human-readable label ("Production API", "Corporate Website")
@@ -141,6 +236,7 @@ class ScanTarget(BaseMixin, Base):
     is_active           Boolean, default=True          # Soft toggle — False disables scheduling without deleting
 
     # Relationships
+    infrastructure      relationship → Infrastructure (back_populates="scan_targets")
     templates           relationship → ScanTemplate (back_populates="target", cascade="all, delete-orphan")
     schedules           relationship → ScanSchedule (back_populates="target", cascade="all, delete-orphan")
     jobs                relationship → ScanJob (back_populates="target", cascade="all, delete-orphan")
@@ -166,7 +262,7 @@ class VerificationMethod(str, Enum):
 
 ---
 
-### 3.2 ScanTemplate (BaseMixin)
+### 3.3 ScanTemplate (BaseMixin)
 
 **Purpose:** How we scan — reusable configuration defining which scan types to run and with what parameters.
 **Scope:** Per-target. One template can be reused across many jobs.
@@ -249,7 +345,7 @@ class ScanSpeed(str, Enum):
 
 ---
 
-### 3.3 ScanSchedule (BaseMixin)
+### 3.4 ScanSchedule (BaseMixin)
 
 **Purpose:** When we scan — recurring schedule configuration tied to a target + template pair.
 **Scope:** Per-target. Multiple schedules per target allowed (different templates at different intervals).
@@ -296,7 +392,7 @@ class ScheduleFrequency(str, Enum):
 
 ---
 
-### 3.4 ScanJob (BaseMixin)
+### 3.5 ScanJob (BaseMixin)
 
 **Purpose:** Tracks a single scan execution — what was scanned, when it started/ended, status, and results summary.
 **Scope:** Per-target. Created manually (user clicks "Scan Now") or automatically (scheduler triggers).
@@ -335,6 +431,12 @@ class ScanJob(BaseMixin, Base):
     info_count          Integer, default=0
     total_assets        Integer, default=0
 
+    # Security score — executive dashboard metric
+    security_score      Integer, nullable               # 0-100, computed at scan completion
+    # Why: executives need a single number for board reporting and trend tracking.
+    # Formula: start at 100, deduct weighted points per finding (critical=-40, high=-20, medium=-5, low=-1, info=0). Floor at 0.
+    # Why cached here: avoids recomputation on every dashboard load. Snapshot of score at scan time.
+
     # Error tracking
     error_message       Text, nullable                  # Error details if status = "failed"
     # Why Text not String: stack traces and error details can be long
@@ -360,7 +462,7 @@ class JobStatus(str, Enum):
 
 ---
 
-### 3.5 Finding (NO BaseMixin)
+### 3.6 Finding (NO BaseMixin)
 
 **Purpose:** A vulnerability, misconfiguration, or security issue discovered during a scan.
 **Scope:** Per-scan-job. Each scan job produces 0..N findings.
@@ -378,6 +480,23 @@ class Finding(Base):
 
     id                  Integer, PK, index
     scan_job_id         Integer, FK("scan_jobs.id", ondelete="CASCADE"), not null
+
+    # Deduplication — tracks recurring findings across scans
+    fingerprint         String(255), not null, index
+    # Why: SHA-256 hash of (category + finding_type + host + port + protocol + url).
+    # Enables "new vs recurring" distinction: when writing findings, check if same fingerprint
+    # exists in a previous scan for the same target. Without this, recurring scans produce
+    # duplicate noise and dashboard counts are meaningless. Powers the "New Vulnerabilities"
+    # dashboard card (Intrudify pattern: "New: 9" vs "All: 612").
+
+    is_new              Boolean, default=True
+    # Why: False if same fingerprint existed in a previous scan for this target.
+    # Computed at scan time by checking previous findings. Enables dashboard filtering.
+
+    first_found_job_id  Integer, FK("scan_jobs.id", ondelete="SET NULL"), nullable
+    # Why: Links back to the FIRST scan that discovered this vulnerability.
+    # Enables "age of vulnerability" tracking — how long has this been open?
+    # SET NULL: original scan job can be deleted without breaking current finding.
 
     # Classification
     severity            String(50), not null            # "critical", "high", "medium", "low", "info"
@@ -402,9 +521,31 @@ class Finding(Base):
     cve_id              String(50), nullable            # "CVE-2016-6210"
     cvss_score          Float, nullable                 # 0.0 - 10.0
 
+    # Compliance mapping — necesare pentru rapoarte SOC2/ISO27001
+    cwe_id              String(50), nullable            # "CWE-89" (SQL Injection), "CWE-79" (XSS)
+    # Why: CWE (Common Weakness Enumeration) — standard industry classification.
+    # Rapoartele de compliance cer mapping la CWE. Fara asta, auditorul nu poate valida.
+
+    owasp_category      String(100), nullable           # "A03:2021-Injection", "A05:2021-Security Misconfiguration"
+    # Why: OWASP Top 10 — cel mai recunoscut standard de web security.
+    # Clientii enterprise intreaba "suntem conformi OWASP?". Acest camp raspunde direct.
+
+    mitre_tactic        String(100), nullable           # "Initial Access", "Credential Access", "Discovery"
+    # Why: MITRE ATT&CK framework — standard folosit de SOC teams si threat intelligence.
+    # Leaga findings de kill chain phases. Necesar pentru rapoarte avansate.
+
+    mitre_technique     String(100), nullable           # "T1190" (Exploit Public-Facing Application)
+    # Why: MITRE ATT&CK technique ID — granularitate sub-tactic.
+    # Permite mapping precis la framework-ul de threat intelligence.
+
     # Triage status — user workflow for handling findings
     status              String(50), default="open"      # "open", "acknowledged", "resolved", "false_positive"
     # Why status on append-only: this is business state (triage), not CRUD lifecycle (no soft delete needed)
+
+    # Accountability
+    resolved_by         Integer, nullable               # User ID who marked finding as resolved
+    # Why: audit trail for compliance reports. Answers "who fixed what and when" for NIS2/SOC2/ISO27001.
+    # status_changed_at already tracks when, this tracks who.
 
     # Timestamps
     discovered_at       DateTime(timezone=True), server_default=func.now()  # When scanner found it
@@ -412,6 +553,7 @@ class Finding(Base):
 
     # Relationships
     scan_job            relationship → ScanJob (back_populates="findings")
+    first_found_job     relationship → ScanJob (foreign_keys=[first_found_job_id])
 ```
 
 **Enum — Severity:**
@@ -466,7 +608,7 @@ class FindingCategory(str, Enum):
 
 ---
 
-### 3.6 Asset (NO BaseMixin)
+### 3.7 Asset (NO BaseMixin)
 
 **Purpose:** Discovered infrastructure — an IP, hostname, service, or technology found during scanning.
 **Scope:** Per-scan-job. Each scan job discovers 0..N assets.
@@ -530,7 +672,7 @@ class AssetConfidence(str, Enum):
 
 ---
 
-### 3.7 Report (BaseMixin)
+### 3.8 Report (BaseMixin)
 
 **Purpose:** A generated report document summarizing scan results for a target.
 **Scope:** Per-target, optionally linked to a specific scan job.
@@ -687,7 +829,8 @@ server/apps/cybersecurity/
 ├── models/
 │   ├── __init__.py                    → Re-exports all models (nexotype pattern)
 │   ├── mixin_models.py                → BaseMixin (imported from nexotype or local copy)
-│   ├── scan_target_models.py          → ScanTarget
+│   ├── infrastructure_models.py       → Infrastructure
+│   ├── scan_target_models.py          → ScanTarget (FK to infrastructure)
 │   ├── scan_template_models.py        → ScanTemplate
 │   ├── scan_schedule_models.py        → ScanSchedule
 │   ├── scan_job_models.py             → ScanJob
@@ -695,6 +838,7 @@ server/apps/cybersecurity/
 │   ├── asset_models.py                → Asset
 │   └── report_models.py              → Report
 ├── schemas/
+│   ├── infrastructure_schemas.py      → Create, Update, Detail, ListResponse, Response
 │   ├── scan_target_schemas.py         → Create, Update, Detail, ListResponse, Response
 │   ├── scan_template_schemas.py
 │   ├── scan_schedule_schemas.py
@@ -703,6 +847,7 @@ server/apps/cybersecurity/
 │   ├── asset_schemas.py
 │   └── report_schemas.py
 ├── subrouters/
+│   ├── infrastructure_subrouter.py    → CRUD (list, detail, create, update, soft-delete)
 │   ├── scan_target_subrouter.py       → CRUD + verify ownership
 │   ├── scan_template_subrouter.py     → CRUD
 │   ├── scan_schedule_subrouter.py     → CRUD + activate/deactivate
@@ -851,6 +996,14 @@ router.include_router(gated)
 | Polyglot persistence (PostgreSQL + SurrealDB) | Graph queries for attack paths | PostgreSQL is source of truth for CRUD. SurrealDB is a read-only graph cache for complex traversals that are expensive/awkward in SQL. Same pattern as nexotype. |
 | SurrealDB sync, not dual-write | Data consistency | Write to PostgreSQL first, then sync to SurrealDB. Never write to SurrealDB directly. If SurrealDB sync fails, PostgreSQL still has the data — graph cache can be rebuilt at any time. |
 | Rust via PyO3 (future) | Performance optimization | Port scanning is the most I/O + CPU intensive scanner. When Python's asyncio becomes a bottleneck, rewrite `port_scan.py` as a Rust module exposed via PyO3. Same function signature (`async def run(target, params) → dict`), just faster internals. Not needed for MVP — pure Python handles it fine at initial scale. |
+| Infrastructure entity | Business context layer | Same pattern as Entity in FinPy (Organization → Entity → children). Without it, findings are raw technical data. With it, findings have environment, criticality, and owner — enabling risk prioritization, contextual compliance reports, and executive dashboards. Optional FK from ScanTarget — user can scan without describing infrastructure first. |
+| Infrastructure.infrastructure_id nullable on ScanTarget | Gradual adoption | Users can start scanning immediately without describing infrastructure. They can add business context later. SET NULL on delete — targets survive infrastructure cleanup. |
+| Finding fingerprint for dedup | SHA-256 hash of location + type | Recurring scans need "new vs recurring" distinction. Without this, scan counts balloon and dashboards are noise. Powers "New Vulnerabilities" vs "All Vulnerabilities" dashboard cards. |
+| Security score on ScanJob | 0-100, computed at completion | Executives need a single number for board reporting. Cached on ScanJob to avoid recomputation. Enables trend tracking across scans. |
+| Finding.resolved_by | Audit trail | Compliance audits (NIS2, SOC2, ISO27001) require proof of who fixed what and when. status_changed_at tracks when, resolved_by tracks who. |
+| No RemediationTask entity | Finding.status is sufficient | Task tracking belongs in JIRA/Linear. Building task management inside a security platform duplicates existing tools. Finding triage (open → acknowledged → resolved → false_positive) handles the core workflow. |
+| No Knowledge Base entity | Finding.description + remediation | Per-finding guidance is more actionable than a generic article library. Content management is a separate product. |
+| No AssetInventory entity (CMDB) | Infrastructure + scan-discovered Asset | Infrastructure entity captures what user OWNS (manual, business context). Asset entity captures what scanner FINDS (automatic, technical). Together they cover what Intrudify calls "Assets Management" without building a full CMDB. |
 
 ---
 
