@@ -253,6 +253,7 @@ class Credential(BaseMixin, Base):
 
     # Relationships
     infrastructure      relationship → Infrastructure (back_populates="credentials")
+    templates           relationship → ScanTemplate (back_populates="credential")
 ```
 
 **Enum — CredentialType:**
@@ -385,8 +386,18 @@ class ScanTemplate(BaseMixin, Base):
     # Example: {"custom_paths": ["/api/internal", "/legacy"], "custom_headers": {"X-Auth": "token"}}
     # API scanning (lesson 17) requires custom headers and target-specific paths.
 
+    # Credential for internal scanners
+    credential_id       Integer, FK("credentials.id", ondelete="SET NULL"), nullable
+    # Why: Internal scanners (host_audit, cloud_audit, ad_audit) need a specific credential.
+    # User selects which credential to use when creating the template.
+    # Nullable: external scanners (port, dns, ssl, web) don't need credentials.
+    # SET NULL: template survives credential deletion (user can reassign later).
+    # Why here and not traversing Infrastructure→Credential: avoids 3-JOIN ambiguity.
+    # Infrastructure can have multiple credentials (SSH + AWS + domain). This field is explicit.
+
     # Relationships
     target              relationship → ScanTarget (back_populates="templates")
+    credential          relationship → Credential (back_populates="templates")
     schedules           relationship → ScanSchedule (back_populates="template", cascade="all, delete-orphan")
     jobs                relationship → ScanJob (back_populates="template", cascade="all, delete-orphan")
 ```
@@ -996,7 +1007,8 @@ server/apps/cybersecurity/
 │   ├── mixin_models.py                → BaseMixin (imported from nexotype or local copy)
 │   ├── infrastructure_models.py       → Infrastructure + Credential + ScanTarget (3 clase cu FK intre ele)
 │   ├── execution_models.py            → ScanTemplate + ScanSchedule + ScanJob (3 clase cu FK intre ele)
-│   └── discovery_models.py            → Finding + Asset + Report (3 clase)
+│   ├── discovery_models.py            → Finding + Asset + Report (3 clase)
+│   └── audit_models.py               → CybersecurityAuditLog (NO BaseMixin, immutable, pattern from nexotype)
 │
 ├── schemas/                           → SUBFOLDERE pe domeniu (pattern nexotype — fisiere separate per entitate)
 │   ├── infrastructure/
@@ -1222,6 +1234,8 @@ router.include_router(gated)
 | Mobile scan: upload, scan, delete | No permanent file storage | APK uploaded for analysis, findings extracted, file deleted immediately. Legal and storage simplicity — no user data retention. |
 | encryption_utils.py | Fernet (AES-128-CBC), key from SHA-256(SECRET_KEY) | Same exact pattern as ecommerce/utils/encryption_utils.py. Single encrypt/decrypt point. Credential subrouter encrypts on create/update, scanner dispatcher decrypts before passing to internal scanners. |
 | Scanner folder structure | external/ internal/ upload/ | Organized by scan category (needs no credentials, needs credentials, needs file upload). Not by lesson number. Clear separation of security boundaries. |
+| credential_id on ScanTemplate | Direct FK instead of traversing Infrastructure→Credential | Explicit credential selection per template. Avoids 3-JOIN traversal (ScanJob→ScanTarget→Infrastructure→Credential) and ambiguity when Infrastructure has multiple credentials of different types. User picks "which SSH key" when creating template. |
+| v1 Modular Monolith over v2 Microservices | FastAPI + PostgreSQL + SurrealDB | PostgreSQL handles tens of millions of rows with proper indexes. asyncio handles thousands of concurrent I/O connections. scanner_map[type]() can be replaced with redis_queue.publish() in 5 lines when needed. v2 (Kafka, Elasticsearch, worker nodes) would take 4-6 months of infra setup for zero benefit at current scale. |
 | Rust via PyO3 (future) | Optional performance modules | Port scanning, password brute force, banner parsing — CPU/IO intensive. Rust module compiled via maturin, imported in Python. Same function signature. Python fallback if Rust not compiled. Reference: BHR Ch2-3 (rayon, tokio). |
 
 ---
@@ -1488,3 +1502,275 @@ class CyberSyncService:
 - **No scan execution** — scanners write to PostgreSQL, sync service propagates to SurrealDB
 - **No auth/user management** — graph queries are gated by the same subscription middleware as all other endpoints
 - **No Credential data** — encrypted credentials (SSH keys, API keys, passwords) MUST NEVER be synced to SurrealDB. Only Infrastructure metadata (name, type, environment, criticality, owner) is synced — never sensitive credential values.
+
+---
+
+## 9. Architecture Notes — v1 vs v2
+
+### 9.1 Current Architecture (v1 — Modular Monolith)
+
+```
+Client (Next.js) → FastAPI Server → PostgreSQL (source of truth)
+                                   → SurrealDB (graph cache, read-only)
+                                   → DragonflyDB (cache, rate limiting)
+```
+
+- **Scanners run in-process** — asyncio.create_task() in FastAPI background
+- **All data in PostgreSQL** — findings, assets, credentials, everything
+- **SurrealDB** — read-only graph cache for attack paths, blast radius
+- **DragonflyDB** — Redis-compatible cache (already used in ecommerce for recommendations + rate limiting). 25x faster than Redis, drop-in replacement, same `redis.asyncio` library.
+
+### 9.2 Hypothetical v2 (Hyper-Scale — Event-Driven Microservices)
+
+```
+Client → FastAPI (API Gateway only) → Message Broker (DragonflyDB Streams / custom queue)
+                                           ↓
+                                     Scanner Workers (Rust/Go containers)
+                                           ↓
+                                     PostgreSQL (metadata) + Elasticsearch (findings/assets full-text)
+                                           ↓
+                                     SurrealDB (graph)
+```
+
+- **FastAPI becomes API gateway only** — writes ScanJob status='pending', publishes ScanRequested event to queue
+- **Scanner Workers** — separate containers consuming from queue, running scans, publishing FindingsDiscovered events back
+- **Elasticsearch/OpenSearch** — replaces PostgreSQL for Finding/Asset storage. Optimized for full-text search across millions of banners, headers, certificates
+- **DragonflyDB Streams** — replaces Kafka as message broker. We already have DragonflyDB in the stack. DragonflyDB supports Redis Streams (XADD/XREAD) which work like a lightweight Kafka — ordered, persistent, consumer groups. No need for separate Kafka cluster.
+
+### 9.3 Why v1 is Correct Now
+
+| Argument | Why v1 wins |
+|---|---|
+| **PostgreSQL handles the scale** | Tens of millions of rows with proper indexes (fingerprint, scan_job_id, severity). Partitioning by scan_job_id if needed later. No need for Elasticsearch. |
+| **asyncio handles the concurrency** | Scanning is 99% I/O bound (waiting for network responses). One Python process with asyncio holds thousands of concurrent connections. Not CPU bound — no need for worker containers. |
+| **DragonflyDB already in stack** | Already used in ecommerce (cache_utils.py). If we need a message queue later, DragonflyDB Streams (XADD/XREAD) give us Kafka-like semantics without a new service. Same Coolify container. |
+| **SurrealDB gives us graph intelligence** | Attack paths, blast radius, shared certificates — enterprise-level queries without microservices. Already proven in nexotype. |
+| **Operational simplicity** | v1: 1 FastAPI + 1 PostgreSQL + 1 SurrealDB + 1 DragonflyDB = 4 services on Coolify. v2: + Elasticsearch cluster + N worker containers + monitoring = 10+ services. |
+| **5-line migration path** | When v1 hits limits, replace `scanner_map[type](target)` with `dragonfly.xadd("scan_queue", {"type": type, "target": target})`. Scanner code stays the same — just runs in a worker instead of in-process. |
+
+### 9.4 Why NOT v2 Now
+
+| Argument | Why v2 would hurt |
+|---|---|
+| **4-6 months of infra setup** | Kubernetes/Docker orchestration, worker auto-scaling, dead letter queues, retry logic, health checks, log aggregation — all before writing a single scanner. |
+| **Zero customers** | Optimizing for 10,000 companies when you have zero is the definition of premature optimization. |
+| **Elasticsearch is redundant** | SurrealDB already supports full-text search (SEARCH analyzer). PostgreSQL has GIN indexes for text search. Adding a third search engine is waste. |
+| **Kafka is overkill** | DragonflyDB Streams (already in our stack) provide ordered, persistent message delivery with consumer groups. Kafka adds ZooKeeper, schema registry, partition management — operational nightmare for a small team. |
+
+### 9.5 When to Migrate to v2
+
+Migrate when ANY of these happen:
+- asyncio event loop becomes CPU bottleneck (port scanning > 10,000 concurrent targets)
+- PostgreSQL Finding/Asset tables exceed 100M rows and queries slow down despite indexes
+- Customer requires on-premise scanning (needs agent/worker architecture)
+- Team grows to 5+ backend engineers who can own separate services
+
+**Migration is surgical, not a rewrite:**
+1. Add DragonflyDB Stream consumer (scanner worker) — same scanner code, different entry point
+2. Replace `asyncio.create_task(scanner())` with `dragonfly.xadd("scan_queue", job_data)`
+3. Move Finding/Asset writes to batch inserts from worker
+4. Done — FastAPI stays the same, scanners stay the same, just the orchestration changes
+
+### 9.6 Technology Stack Summary
+
+| Component | v1 (Now) | v2 (Future if needed) | Already in Stack? |
+|---|---|---|---|
+| API Server | FastAPI (in-process scanners) | FastAPI (API gateway only) | ✅ Yes |
+| Database | PostgreSQL (all data) | PostgreSQL (metadata only) | ✅ Yes |
+| Graph | SurrealDB (read-only cache) | SurrealDB (same) | ✅ Yes (nexotype) |
+| Cache + Rate Limiting | DragonflyDB | DragonflyDB (same) | ✅ Yes (ecommerce cache_utils.py) |
+| Message Queue | — (not needed) | DragonflyDB Streams (XADD/XREAD) | ✅ DragonflyDB already deployed |
+| Full-text Search | PostgreSQL GIN / SurrealDB SEARCH | Elasticsearch/OpenSearch | ❌ Not needed — SurrealDB covers it |
+| Scanner Workers | — (in-process asyncio) | Rust/Go containers | ❌ Not needed — asyncio is sufficient |
+| Encryption | Fernet (ecommerce pattern) | Fernet (same) | ✅ Yes (encryption_utils.py) |
+
+---
+
+## 10. Subscription, Pricing & Access Control
+
+### 10.1 Tier Model
+
+Hybrid: monthly subscription (access + feature gating) + scan credits (usage). Prices are starting points — structure matters more than exact numbers.
+
+| Tier | Price | Targets | Scans/month | Scanners | Scheduled Scans | Reports | Rate Limit |
+|---|---|---|---|---|---|---|---|
+| **FREE** | $0 | 1 | 20 | External only (port, dns, ssl, web, vuln, api, active_web, password) | ❌ | Basic HTML | 10 req/min |
+| **PRO** | $49/mo | 10 | 500 | + internal (host_audit, cloud_audit, mobile_scan) | ✅ daily/weekly | PDF + compliance | 60 req/min |
+| **ENTERPRISE** | $199/mo | Unlimited | 5,000 | + ad_audit (all 12 scanners) | ✅ hourly/daily/weekly/monthly | All + delta + executive | 300 req/min |
+| **CUSTOM** | Contact | Custom | Custom | Custom | Custom | Custom | Custom |
+
+**What is a scan credit?** 1 scanner execution = 1 credit. A ScanJob with scan_types="port_scan,dns_enum,ssl_check" = 3 credits. Monthly reset on 1st of each month.
+
+**Why these choices:**
+- FREE has ALL external scanners — the hook is seeing findings, not being limited on what you can scan. If user can't run vuln_scan or ssl_check, they don't understand the product's value.
+- PRO unlocks internal scanning (SSH, cloud) — this is what makes customers pay. External scanning is commodity, internal scanning is value.
+- AD audit = ENTERPRISE only — most sensitive (domain credentials), most valuable, enterprise-only use case.
+- 1 target on FREE — forces upgrade quickly for real usage. 20 scans/month = enough for 4-5 complete scans to evaluate.
+- Prices are intentionally low to start — easier to raise than lower.
+
+### 10.2 Feature Gating by Tier
+
+| Feature | FREE | PRO | ENTERPRISE |
+|---|---|---|---|
+| External scanners (port, dns, ssl, web, vuln, api, active_web, password) | ✅ | ✅ | ✅ |
+| Internal scanners (host_audit, cloud_audit) | ❌ | ✅ | ✅ |
+| AD audit scanner | ❌ | ❌ | ✅ |
+| Mobile scanner (APK upload) | ❌ | ✅ | ✅ |
+| Credential management | ❌ | ✅ | ✅ |
+| Infrastructure items | 1 | 10 | Unlimited |
+| Scheduled scans | ❌ | ✅ daily/weekly | ✅ all frequencies |
+| Compliance reports (SOC2, ISO27001, NIS2) | ❌ | ✅ | ✅ |
+| Executive summary reports | ❌ | ❌ | ✅ |
+| Delta reports (diff between scans) | ❌ | ❌ | ✅ |
+| SurrealDB graph queries (attack paths, blast radius) | ❌ | ✅ | ✅ |
+| API access (programmatic scanning) | ❌ | ✅ | ✅ |
+| Scan result caching (DragonflyDB) | Basic | Full | Full |
+
+### 10.3 Utils to Implement
+
+4 utility files, each following established patterns from sibling modules:
+
+**`subscription_utils.py`** — Pattern: ecommerce/utils/subscription_utils.py
+```python
+TIER_ORDER = ["FREE", "PRO", "ENTERPRISE", "CUSTOM"]
+
+TIER_LIMITS = {
+    "FREE": {
+        "monthly_scan_credits": 20,
+        "max_infrastructure": 1,
+        "max_targets": 1,
+        "max_credentials": 0,
+        "max_schedules": 0,
+        "requests_per_minute": 10,
+        "requests_per_hour": 200,
+        "allowed_scan_types": ["port_scan", "dns_enum", "ssl_check", "web_scan", "vuln_scan", "api_scan", "active_web_scan", "password_audit"],
+        "allowed_report_types": ["full"],
+        "allowed_schedule_frequencies": [],
+    },
+    "PRO": { ... },      # 500 credits, 10 targets, + internal scanners, daily/weekly scheduling
+    "ENTERPRISE": { ... }, # 5000 credits, unlimited, all scanners, all frequencies
+}
+
+# Functions:
+# get_org_subscription(org_id, db) → Subscription
+# get_org_tier(subscription) → str
+# tier_is_sufficient(current, required) → bool
+# get_tier_limits(tier) → dict
+# get_monthly_scan_credits_used(org_id, db) → int
+# is_service_active(org_id, db) → bool
+# is_scan_type_allowed(scan_type, tier) → bool
+```
+
+**`rate_limiting_utils.py`** — Pattern: exact copy ecommerce/utils/rate_limiting_utils.py
+- Dual backend: "memory" (dev) / "dragonfly" (production)
+- Sliding window: per-minute + per-hour
+- `check_rate_limit(org_id, tier)` → True or raises 429
+- DragonflyDB already deployed on Coolify
+
+**`dependency_utils.py`** — Pattern: ecommerce + assetmanager combined
+```python
+# Router-level dependencies:
+# require_active_subscription() — blocks ALL requests when inactive. 7-day grace period.
+# enforce_rate_limit() — per-org per-minute + per-hour
+# enforce_scan_credit_limit() — blocks POST /start if monthly credits exceeded
+# enforce_scan_type_access(scan_types) — blocks if scan_type not in tier's allowed list
+# get_user_organization_id(user, db) → int
+# get_user_target(user, target_id, db) → ScanTarget (ownership + soft-delete check)
+```
+
+**`audit_utils.py`** — Pattern: exact copy assetmanager/utils/audit_utils.py + nexotype/utils/audit_utils.py
+```python
+# model_to_dict(instance) → JSON-serializable dict (handles Decimal, datetime, date)
+# log_audit(db, org_id, user_id, table_name, record_id, action, old_data, new_data, ip_address)
+# get_record_audit_logs(db, table_name, record_id) → list
+# get_organization_audit_logs(db, org_id) → list
+```
+
+### 10.4 CybersecurityAuditLog
+
+Separate model in `models/audit_models.py`. Same pattern as `NexotypeAuditLog` and `AssetManagerAuditLog`.
+
+```python
+class CybersecurityAuditLog(Base):
+    """
+    Tracks all data changes across cybersecurity models.
+    No BaseMixin — audit rows are immutable. No soft delete, no updated_by.
+    Loose coupling to accounts (integer IDs, no FKs).
+
+    Why separate from AccountsAuditLog: cybersecurity audit is more sensitive
+    (who added SSH key, who deleted credential, who marked finding as resolved).
+    Must be queryable independently for SOC2/ISO27001 compliance.
+    """
+    __tablename__ = "cybersecurity_audit_logs"
+
+    id                  Integer, PK, index
+    organization_id     Integer, nullable              # Loose coupling — no FK to accounts
+    user_id             Integer, nullable              # Loose coupling — no FK to accounts
+    table_name          String(50), nullable           # "infrastructure", "credentials", "scan_targets"
+    record_id           Integer, nullable              # ID of affected record
+    action              Text, not null                 # "INSERT", "UPDATE", "DELETE"
+    old_data            JSON, nullable                 # State before change
+    new_data            JSON, nullable                 # State after change
+    timestamp           DateTime(timezone=True), server_default=func.now()
+    ip_address          String(45), nullable
+```
+
+**Used by subrouters:** infrastructure, credential, scan_target (CRUD operations that modify sensitive data)
+**NOT used by:** finding, asset (append-only scanner writes — no user edits to audit)
+**Also used by:** scan_template, scan_schedule (configuration changes), report (generation/deletion)
+
+### 10.5 Stripe Integration — How Billing Works
+
+**Stripe is handled entirely by the accounts module.** Cybersecurity never touches Stripe directly.
+
+```
+Flow:
+1. User clicks "Upgrade to Pro" on frontend
+2. Frontend calls accounts API → POST /accounts/subscriptions/checkout (price_id)
+3. accounts/utils/stripe_utils.py → creates Stripe Checkout Session
+4. User pays on Stripe hosted page → redirected back
+5. Stripe fires webhook → POST /accounts/subscriptions/webhook
+6. accounts/utils/stripe_utils.py → handle_subscription_change()
+   → reads product.metadata.tier (e.g. "PRO")
+   → saves Subscription.plan_name = "PRO", subscription_status = "ACTIVE"
+7. Next cybersecurity API call:
+   → cybersecurity/utils/dependency_utils.py → require_active_subscription()
+   → cybersecurity/utils/subscription_utils.py → reads Subscription.plan_name
+   → looks up TIER_LIMITS["PRO"] → applies limits (10 targets, 500 scans/mo, etc.)
+```
+
+**Billing model comparison across modules:**
+
+| Module | Billing Model | How it reads tier |
+|---|---|---|
+| Ecommerce | Tier-based (FREE/PRO/ENTERPRISE) | Subscription.plan_name → TIER_LIMITS dict |
+| AssetManager | Quantity-based (per entity) | Stripe quantity = entity_count - free_limit. Auto-sync. |
+| Nexotype | Domain-gated tiers | Subscription.plan_name → DOMAIN_TIER_MAP |
+| **Cybersecurity** | **Tier-based (like ecommerce)** | **Subscription.plan_name → TIER_LIMITS dict** |
+
+**Why tier-based like ecommerce (not quantity-based like assetmanager):**
+- AssetManager charges per entity because each entity (fund, company) has similar cost to serve
+- Cybersecurity charges per tier because scan complexity varies wildly (port scan = cheap, AD audit = expensive). Flat per-target pricing wouldn't reflect actual cost.
+
+**Stripe Dashboard setup for Cystene (one-time config):**
+1. Products → Create 2 products:
+   - "Cystene Pro" — recurring $49/month. Metadata: `tier=PRO, tier_order=1, features=10 targets,500 scans/mo,Internal scanners,Compliance reports`
+   - "Cystene Enterprise" — recurring $199/month. Metadata: `tier=ENTERPRISE, tier_order=2, features=Unlimited targets,5000 scans/mo,All scanners,All reports`
+2. Webhook endpoint: `https://server.cystene.com/accounts/subscriptions/webhook` (already configured in accounts)
+3. Customer Portal: enable plan switching + proration + cancellation
+
+**FREE tier has no Stripe product** — it's the default when no subscription exists. `subscription_utils.is_service_active()` returns True if within free tier limits (1 target, 20 scans/mo), even without a Subscription record.
+
+### 10.6 Design Decisions
+
+| Decision | Choice | Why |
+|---|---|---|
+| Hybrid pricing (subscription + credits) | Not pure per-scan, not pure flat rate | Pure per-scan scares users. Pure flat rate doesn't scale with usage. Credits give predictability. |
+| FREE tier has all external scanners | 8 out of 12 scanners available for free | External scanning is the hook — user must see findings to understand value. Limiting scanners at FREE would cripple the demo experience. |
+| Internal scanners gated behind PRO | host_audit, cloud_audit, mobile_scan require payment | Internal scanning requires Credential management (trust, security). This is the premium value proposition. |
+| AD audit = ENTERPRISE only | Most expensive scanner for most sensitive use case | Active Directory credentials = highest trust level. Kerberoasting detection = enterprise-only concern. |
+| 1 credit = 1 scanner execution | Not per job, not per target | User controls cost by choosing what to scan. A job with 3 scan_types costs 3 credits. Transparent. |
+| Reads always allowed post-expiry | Even after subscription lapses | Users must always access their findings and reports. Only new scans and writes blocked. |
+| Grace period 7 days | Same as ecommerce | Industry standard. Prevents accidental lockout during payment issues. |
+| CybersecurityAuditLog separate per module | Not shared with AccountsAuditLog | SOC2 auditors need "show me all credential changes" — separate table makes this query instant. Same pattern as NexotypeAuditLog, AssetManagerAuditLog. |
+| audit_models.py separate from domain models | Not in infrastructure_models.py or discovery_models.py | Audit log is infrastructure util, not domain entity. Same separation as nexotype and assetmanager. |

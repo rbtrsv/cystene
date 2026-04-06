@@ -161,7 +161,7 @@ No ungated routes in MVP (no external platform integrations, no public endpoints
 
 | Step | File | Action | Test |
 |---|---|---|---|
-| ❌ | `models/execution_models.py` | Create `ScanTemplate(BaseMixin, Base)`, `ScanSchedule(BaseMixin, Base)`, `ScanJob(BaseMixin, Base)` — all 3 with fields from §3.4, §3.5, §3.6. Include enums: ScanType, PortRange, ScanSpeed, ScheduleFrequency, JobStatus. ScanJob includes security_score + execution_point. | Python imports. All 3 classes importable. |
+| ❌ | `models/execution_models.py` | Create `ScanTemplate(BaseMixin, Base)`, `ScanSchedule(BaseMixin, Base)`, `ScanJob(BaseMixin, Base)` — all 3 with fields from §3.4, §3.5, §3.6. Include enums: ScanType, PortRange, ScanSpeed, ScheduleFrequency, JobStatus. ScanTemplate includes credential_id FK (SET NULL, nullable) — direct link to Credential for internal scanners. ScanJob includes security_score + execution_point. | Python imports. All 3 classes importable. |
 | ❌ | `models/__init__.py` | Add `from .execution_models import *` re-export. | All 3 classes importable. |
 | ❌ | `schemas/execution/__init__.py` | Create subfolder + init. | Directory exists. |
 | ❌ | `schemas/execution/scan_template_schemas.py` | Pydantic 2: Create, Update, Detail. Include ScanType, PortRange, ScanSpeed enums. | Imports without error. |
@@ -193,14 +193,18 @@ No ungated routes in MVP (no external platform integrations, no public endpoints
 
 | Step | File | Action | Test |
 |---|---|---|---|
-| ❌ | `utils/dependency_utils.py` | `get_user_target()`, `require_active_subscription`, `enforce_rate_limit`, `get_user_organization_id()`. Pattern from ecommerce. | Python imports. |
-| ❌ | `utils/subscription_utils.py` | Tier constants (FREE, PRO, ENTERPRISE), scan limits, `is_service_active()`. | Python imports. |
+| ❌ | `models/audit_models.py` | Create `CybersecurityAuditLog(Base)` — NO BaseMixin, immutable. Same pattern as `nexotype/models/audit_models.py`. Fields: id, organization_id, user_id, table_name, record_id, action, old_data (JSON), new_data (JSON), timestamp, ip_address. Loose coupling to accounts (no FKs). | Python imports. |
+| ❌ | `models/__init__.py` | Add `from .audit_models import *` re-export. | CybersecurityAuditLog importable. |
+| ❌ | `utils/subscription_utils.py` | TIER_LIMITS dict (FREE/PRO/ENTERPRISE), get_org_tier, is_service_active, get_monthly_scan_credits_used, is_scan_type_allowed. Pattern from `ecommerce/utils/subscription_utils.py`. See domain-architecture §10.1 for tier values. | Python imports. |
+| ❌ | `utils/rate_limiting_utils.py` | DragonflyDB sliding window (per-minute + per-hour). Copy exact pattern from `ecommerce/utils/rate_limiting_utils.py`. Dual backend: memory (dev) / dragonfly (prod). | Python imports. |
+| ❌ | `utils/dependency_utils.py` | require_active_subscription (blocks all when inactive, 7-day grace), enforce_rate_limit, enforce_scan_credit_limit (blocks POST /start if over), enforce_scan_type_access (blocks if scan_type not in tier), get_user_organization_id, get_user_target. Pattern from ecommerce + assetmanager. | Python imports. |
 | ❌ | `utils/encryption_utils.py` | Fernet encrypt/decrypt. Copy pattern from `ecommerce/utils/encryption_utils.py`. | `encrypt_value("test")` → encrypted. `decrypt_value(encrypted)` → "test". |
+| ❌ | `utils/audit_utils.py` | model_to_dict, log_audit, get_record_audit_logs, get_organization_audit_logs. Copy pattern from `assetmanager/utils/audit_utils.py`. Used by infrastructure/credential/scan_target subrouters. | Python imports. |
 | ❌ | `router.py` | Main router. Prefix `/cybersecurity`. Import all subrouters from 3 domain subfolders. Gate behind `require_active_subscription` + `enforce_rate_limit`. | Python imports. |
 | ❌ | `server/main.py` | Mount `cybersecurity_router`. | Server starts. `/docs` shows all endpoints. |
-| ❌ | `server/migrations/env.py` | `from apps.cybersecurity.models import *`. | `makemigrations` detects 9 new tables (user runs). |
+| ❌ | `server/migrations/env.py` | `from apps.cybersecurity.models import *`. | `makemigrations` detects all domain tables + cybersecurity_audit_logs (user runs). |
 
-**Phase 1 completion test:** Server boots. All `/cybersecurity/*` endpoints visible in FastAPI docs. CRUD operations work for all 9 entities (after user runs migrations). Credential encrypted_value never returned in API responses. Subscription gating blocks unauthenticated/unsubscribed requests.
+**Phase 1 completion test:** Server boots. All `/cybersecurity/*` endpoints visible in FastAPI docs. CRUD operations work for all 9 domain entities + audit log (after user runs migrations). Credential encrypted_value never returned in API responses. Subscription gating blocks unauthenticated/unsubscribed requests. Audit log populated on infrastructure/credential CRUD operations.
 
 ---
 
