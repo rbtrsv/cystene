@@ -44,7 +44,7 @@ STRIPE_WEBHOOK_SECRET=whsec_...       (from `stripe listen` — see step 5)
 
 **.env.production (Coolify — live mode):**
 ```
-STRIPE_SECRET_KEY=sk_live_51TFIsc...  (from Stripe Dashboard → Live mode → Secret key)
+STRIPE_SECRET_KEY=sk_live_YOUR_LIVE_KEY  (from Stripe Dashboard → Live mode → Secret key)
 STRIPE_WEBHOOK_SECRET=whsec_...       (from webhook endpoint created in step 4)
 ```
 
@@ -89,27 +89,27 @@ stripe prices create \
 ### Live mode (pass live secret key):
 
 ```bash
-STRIPE_API_KEY=sk_live_51TFIsc... stripe products create \
+STRIPE_API_KEY=sk_live_YOUR_LIVE_KEY stripe products create \
   --name="Pro" \
   --description="Security scanning platform for growing teams. 10 targets, 500 scans/month, internal scanners, compliance reports, scheduled scans." \
   -d "metadata[tier]=PRO" \
   -d "metadata[tier_order]=1" \
   -d "metadata[features]=10 targets,500 scans/mo,Internal scanners (SSH Cloud),Compliance reports,Scheduled scans,API access"
 
-STRIPE_API_KEY=sk_live_51TFIsc... stripe prices create \
+STRIPE_API_KEY=sk_live_YOUR_LIVE_KEY stripe prices create \
   --product="prod_xxx" \
   -d "unit_amount=4900" \
   -d "currency=usd" \
   -d "recurring[interval]=month"
 
-STRIPE_API_KEY=sk_live_51TFIsc... stripe products create \
+STRIPE_API_KEY=sk_live_YOUR_LIVE_KEY stripe products create \
   --name="Enterprise" \
   --description="Full security posture management. Unlimited targets, 5000 scans/month, all scanners including AD audit, all report types." \
   -d "metadata[tier]=ENTERPRISE" \
   -d "metadata[tier_order]=2" \
   -d "metadata[features]=Unlimited targets,5000 scans/mo,All 12 scanners,All report types,Hourly scheduling,Priority support"
 
-STRIPE_API_KEY=sk_live_51TFIsc... stripe prices create \
+STRIPE_API_KEY=sk_live_YOUR_LIVE_KEY stripe prices create \
   --product="prod_xxx" \
   -d "unit_amount=19900" \
   -d "currency=usd" \
@@ -146,7 +146,7 @@ Output gives you `Secret: whsec_xxx` → this goes in Coolify env vars as `STRIP
 ### Live mode:
 
 ```bash
-STRIPE_API_KEY=sk_live_51TFIsc... stripe webhook_endpoints create \
+STRIPE_API_KEY=sk_live_YOUR_LIVE_KEY stripe webhook_endpoints create \
   --url="https://server.cystene.com/accounts/subscriptions/webhook" \
   -d "enabled_events[]=checkout.session.completed" \
   -d "enabled_events[]=customer.subscription.created" \
@@ -206,7 +206,7 @@ Save changes.
 stripe products list -d "active=true"
 
 # Live mode
-STRIPE_API_KEY=sk_live_51TFIsc... stripe products list -d "active=true"
+STRIPE_API_KEY=sk_live_YOUR_LIVE_KEY stripe products list -d "active=true"
 ```
 
 ### Test checkout flow:
@@ -238,8 +238,8 @@ STRIPE_API_KEY=sk_live_51TFIsc... stripe products list -d "active=true"
 ### Webhooks:
 | Mode | Webhook ID | Secret | URL |
 |---|---|---|---|
-| Test | `we_1TJK7eCgafRZki0XLLGrZCSI` | `whsec_8dZ4HSfZWQOmBFB2Lw66UUk31IVu1AWW` | server.cystene.com |
-| Live | `we_1TJK7pCgafRZki0XK0xB3tye` | `whsec_BKpDn09BKMU6ay88zLa0xM3FsAkCrgVa` | server.cystene.com |
+| Test | `we_1TJK7eCgafRZki0XLLGrZCSI` | `whsec_YOUR_TEST_WEBHOOK_SECRET` | server.cystene.com |
+| Live | `we_1TJK7pCgafRZki0XK0xB3tye` | `whsec_YOUR_LIVE_WEBHOOK_SECRET` | server.cystene.com |
 | Local | — | from `stripe listen` output | localhost:8003 |
 
 ---

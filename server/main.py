@@ -6,6 +6,7 @@ from core.config import settings
 
 from apps.main.router import router as main_router
 from apps.accounts.router import router as accounts_router
+from apps.cybersecurity.router import router as cybersecurity_router
 
 
 app = FastAPI(
@@ -29,6 +30,7 @@ if settings.BACKEND_CORS_ORIGINS:
 
 app.include_router(main_router)
 app.include_router(accounts_router)
+app.include_router(cybersecurity_router)
 
 if __name__ == "__main__":
     uvicorn.run("main:app", port=8003, reload=True)
