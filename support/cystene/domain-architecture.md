@@ -9,6 +9,66 @@ Stable reference document. Defines all entities, fields, relationships, enums, s
 
 ---
 
+## 0. Architecture Overview
+
+```
+┌─────────────────────────────────────────────────────────┐
+│                      UTILIZATOR                         │
+│              (login, alege target, configureaza)         │
+└─────────────────────┬───────────────────────────────────┘
+                      │
+                      ▼
+┌─────────────────────────────────────────────────────────┐
+│                   ScanTarget                            │
+│         (domeniu/IP/URL pe care vrea sa-l scaneze)       │
+└───────┬──────────────┬──────────────────────────────────┘
+        │              │
+        ▼              ▼
+  ScanTemplate    ScanSchedule
+  (CE scanezi:    (CAND scanezi:
+   port, dns,      daily, weekly,
+   ssl, web +      cron expression)
+   parametri)          │
+        │              │
+        └──────┬───────┘
+               │ creeaza
+               ▼
+         ┌───────────┐
+         │  ScanJob   │  pending → running → completed/failed
+         └─────┬─────┘
+               │ ruleaza scannerele selectate
+               │
+    ┌──────────┼──────────────────────┐
+    │          │          │           │
+    ▼          ▼          ▼           ▼
+ scan_ports  scan_dns  scan_ssl  scan_web
+    │          │          │           │
+    └──────────┴──────────┴───────────┘
+               │ scriu rezultate in DB
+        ┌──────┴──────┐
+        ▼             ▼
+    Findings       Assets
+  (vulnerabi-   (ce a descoperit:
+   litati,       porturi, servicii,
+   severitate)   certificate, DNS)
+               │
+               ▼
+           Reports
+      (PDF/JSON export,
+       executive summary)
+```
+
+**Fluxul:**
+1. User creeaza **ScanTarget** (ex: `cystene.com`)
+2. User creeaza **ScanTemplate** (ex: port scan + DNS scan, top 1000 ports, timeout 3s)
+3. Optional: **ScanSchedule** (ruleaza saptamanal)
+4. User apasa "Start Scan" → se creeaza un **ScanJob**
+5. Subrouter-ul ia `scan_types` din template → cheama `SCANNERS["port_scan"]`, `SCANNERS["dns_scan"]` in paralel cu `asyncio.gather()`
+6. Fiecare scanner scrie **Findings** (vulnerabilitati) + **Assets** (infrastructura descoperita)
+7. User genereaza **Report** din rezultate
+
+---
+
 ## 1. Entity Overview
 
 7 domain entities. Build order follows FK dependency (parent before child).

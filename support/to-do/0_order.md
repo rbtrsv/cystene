@@ -312,54 +312,62 @@ No ungated routes in MVP (no external platform integrations, no public endpoints
 
 ---
 
-## Phase 3: Scan Engine (Python — 4 MVP Scanners + Orchestrator)
+## Phase 3: Scanners (Python — 4 MVP Scanners)
 
-**Goal:** Implement the hybrid scan engine. Each scanner is independently testable. Orchestrator coordinates them per ScanJob.
+**Goal:** Implement 4 plain async scanner functions. Each scanner is independently testable. A simple dict-based dispatcher in the subrouter coordinates them per ScanJob.
+
+> **Note:** The implementation details below are not set in stone. They are based on patterns from Black Hat Python (Seitz/Arnold) and Black Hat Rust (Kerkour), adapted for our async Python stack. The exact approach may change as we implement — treat these as starting points, not rigid specs.
 
 **Reference files to read:**
 - `.examples/infosec-research/scripts/lesson_01_recon/port_scanner.py` — basic port scanning pattern
 - `.examples/infosec-research/scripts/lesson_05_network_service/network_scanner.py` — service detection, banner grabbing, vulnerability checking
-- `support/cystene/domain-architecture.md` §4 — ScanEngine ABC, orchestrator, engine directory structure
+- `support/cystene/domain-architecture.md` §4 — simplified scanners, no ABC/orchestrator
+- `support/cystene/readings/BHPCode/Chapter02/` — TCP client, netcat (banner grabbing pattern), TCP server
+- `support/cystene/readings/BHPCode/Chapter03/scanner.py` — raw socket host discovery, IP/ICMP header decoding
+- `support/cystene/readings/BHPCode/Chapter05/` — web directory brute-forcing, WordPress mapping
+- `support/cystene/readings/BHRCode/black-hat-rust-code/ch_02/tricoder/` — subdomain enumeration (crt.sh API), port scanning (TCP connect + timeout), rayon threadpool
+- `support/cystene/readings/BHRCode/black-hat-rust-code/ch_03/tricoder/` — async port scan with tokio channels + bounded concurrency (`for_each_concurrent`)
+- `support/cystene/readings/BHRCode/black-hat-rust-code/ch_04/tricoder/` — modular scanner architecture: trait-based HTTP vulnerability checks (git HEAD disclosure, .env disclosure, directory listing, etc.), each check is a small struct with name/description/scan
 
-### 3A. Engine Infrastructure
+**Implementation notes from reference material:**
 
-| # | Step | File | Action | Test |
-|---|---|---|---|---|
-| 3A.1 | ❌ | `server/apps/cybersecurity/engine/__init__.py` | Create empty `__init__.py`. | Directory importable. |
-| 3A.2 | ❌ | `server/apps/cybersecurity/engine/base.py` | Create `ScanEngine` ABC with `scan()` and `engine_type()` abstract methods. Return type: `dict` with keys `findings`, `assets`, `errors`, `duration_seconds`. | Python imports without error. |
+- **Port scanning** — TCP connect technique: `asyncio.open_connection(host, port)` with timeout (Python equivalent of Rust's `TcpStream::connect_timeout`). Use `asyncio.Semaphore` for bounded concurrency (like BHR ch_03's `for_each_concurrent`). Banner grabbing: send probe bytes, read response within timeout. Service identification from port number + banner content.
+- **Subdomain enumeration** — crt.sh certificate transparency API: `GET https://crt.sh/?q=%25.{domain}&output=json`. Dedup entries, filter wildcards, verify each subdomain resolves via DNS. Pattern from BHR ch_02 `subdomains.rs`.
+- **Web vulnerability checks** — Each check is a simple function: HTTP GET to a specific path, check response status + body content. Example from BHR ch_04: GitHeadDisclosure fetches `/.git/HEAD`, checks if body starts with `ref:`. Same pattern applies to `.env` disclosure, directory listing, exposed dashboards, etc. BHP ch_05 `bruter.py` shows threaded directory brute-forcing with wordlists.
+- **Concurrency model** — Python async: `asyncio.gather()` to run scanners in parallel per job, `asyncio.Semaphore(max_concurrent)` within each scanner to limit concurrent connections. No thread pools needed — asyncio handles I/O-bound scanning well. For CPU-bound work (future Rust port scanner via PyO3), use `asyncio.to_thread()` or `run_in_executor()`.
 
-### 3B. PortScanEngine
-
-| # | Step | File | Action | Test |
-|---|---|---|---|---|
-| 3B.1 | ❌ | `server/apps/cybersecurity/engine/port_scan.py` | Implement `PortScanEngine(ScanEngine)`. TCP connect scan using `asyncio.open_connection()`. Banner grabbing. Service identification from port + banner. Respects `port_range`, `scan_speed`, `max_concurrent`, `timeout_seconds` from template params. Produces `Finding` dicts (open ports, outdated services, default creds) + `Asset` dicts (hosts, services). | Scan `localhost` or `scanme.nmap.org` → returns findings and assets. |
-
-### 3C. DNSScanEngine
-
-| # | Step | File | Action | Test |
-|---|---|---|---|---|
-| 3C.1 | ❌ | `server/apps/cybersecurity/engine/dns_scan.py` | Implement `DNSScanEngine(ScanEngine)`. Uses `dns.resolver` (dnspython). Queries A, AAAA, MX, NS, TXT, CNAME, SOA records. Subdomain brute-force (if `dns_brute_force=True`). Checks SPF/DKIM/DMARC records. Produces `Finding` dicts (missing SPF/DKIM/DMARC, zone transfer possible, etc.) + `Asset` dicts (DNS records, subdomains). | Scan any public domain → returns DNS findings and record assets. |
-
-### 3D. SSLScanEngine
+### 3A. Port Scanner
 
 | # | Step | File | Action | Test |
 |---|---|---|---|---|
-| 3D.1 | ❌ | `server/apps/cybersecurity/engine/ssl_scan.py` | Implement `SSLScanEngine(ScanEngine)`. Uses `ssl` + `socket` + `cryptography`. Certificate validation (expiry, hostname match, chain completeness, self-signed). Cipher enumeration. Protocol version detection (SSLv3, TLS 1.0/1.1/1.2/1.3). Produces `Finding` dicts (expired cert, weak cipher, old TLS) + `Asset` dicts (certificates). | Scan any HTTPS domain → returns SSL findings and certificate assets. |
+| 3A.1 | ❌ | `server/apps/cybersecurity/scanners/port_scanner.py` | Plain async function `async def scan_ports(target, params) -> dict`. TCP connect scan using `asyncio.open_connection()` with `asyncio.wait_for()` timeout. Banner grabbing: send minimal probe, read response. Service identification from port + banner. `asyncio.Semaphore(max_concurrent)` for concurrency control. Respects `port_range`, `scan_speed`, `timeout_seconds` from template params. Returns dict with `findings` (open ports, outdated services) + `assets` (hosts, services) + `errors` + `duration_seconds`. | Scan `scanme.nmap.org` → returns findings and assets. |
 
-### 3E. WebScanEngine
-
-| # | Step | File | Action | Test |
-|---|---|---|---|---|
-| 3E.1 | ❌ | `server/apps/cybersecurity/engine/web_scan.py` | Implement `WebScanEngine(ScanEngine)`. Uses `httpx`. Checks security headers: `Strict-Transport-Security`, `Content-Security-Policy`, `X-Frame-Options`, `X-Content-Type-Options`, `X-XSS-Protection`, `Referrer-Policy`, `Permissions-Policy`. Checks server info disclosure (`Server` header, `X-Powered-By`). Redirect analysis (HTTP→HTTPS). Produces `Finding` dicts (missing headers, info disclosure) + `Asset` dicts (technologies detected). | Scan any HTTP/HTTPS URL → returns web findings and technology assets. |
-
-### 3F. Orchestrator
+### 3B. DNS Scanner
 
 | # | Step | File | Action | Test |
 |---|---|---|---|---|
-| 3F.1 | ❌ | `server/apps/cybersecurity/engine/orchestrator.py` | Implement `ScanOrchestrator`. Steps: load job + template + target from DB → parse `scan_types` → instantiate engines → run engines (sequentially or `asyncio.gather`) → write findings + assets to DB → update job status + summary counts. Error handling: if one engine fails, continue others, mark job as `completed` with partial results (or `failed` if all fail). | Start a scan job via API → findings and assets appear in DB, job status updates correctly. |
-| 3F.2 | ❌ | `server/apps/cybersecurity/subrouters/scan_job_subrouter.py` | Update `POST /start` endpoint to call `ScanOrchestrator.execute()` as a background task (`asyncio.create_task` or FastAPI `BackgroundTasks`). | "Start Scan" creates job → returns immediately → scan runs in background → job status transitions pending → running → completed. |
+| 3B.1 | ❌ | `server/apps/cybersecurity/scanners/dns_scanner.py` | Plain async function `async def scan_dns(target, params) -> dict`. Uses `dns.resolver` (dnspython) via `asyncio.to_thread()`. Queries A, AAAA, MX, NS, TXT, CNAME, SOA records. Subdomain discovery via crt.sh API (pattern from BHR ch_02 `subdomains.rs`). Checks SPF/DKIM/DMARC in TXT records. Returns dict with `findings` (missing SPF/DKIM/DMARC, zone transfer possible) + `assets` (DNS records, discovered subdomains). | Scan any public domain → returns DNS findings and record assets. |
 
-**Phase 3 completion test:** Start a scan via frontend "Start Scan" button → job transitions through status lifecycle → findings and assets populated → severity summary counts correct. Each engine independently scannable via manual API call.
+### 3C. SSL Scanner
+
+| # | Step | File | Action | Test |
+|---|---|---|---|---|
+| 3C.1 | ❌ | `server/apps/cybersecurity/scanners/ssl_scanner.py` | Plain async function `async def scan_ssl(target, params) -> dict`. Uses `ssl` + `asyncio.open_connection()` with SSL context + `cryptography` for cert parsing. Certificate validation (expiry, hostname match, chain completeness, self-signed). Cipher enumeration via `SSLSocket.cipher()`. Protocol version detection (TLS 1.0/1.1/1.2/1.3). Returns dict with `findings` (expired cert, weak cipher, old TLS, missing HSTS) + `assets` (certificates with issuer, subject, validity dates). | Scan any HTTPS domain → returns SSL findings and certificate assets. |
+
+### 3D. Web Scanner
+
+| # | Step | File | Action | Test |
+|---|---|---|---|---|
+| 3D.1 | ❌ | `server/apps/cybersecurity/scanners/web_scanner.py` | Plain async function `async def scan_web(target, params) -> dict`. Uses `httpx.AsyncClient`. Security header checks: `Strict-Transport-Security`, `Content-Security-Policy`, `X-Frame-Options`, `X-Content-Type-Options`, `X-XSS-Protection`, `Referrer-Policy`, `Permissions-Policy`. Server info disclosure (`Server`, `X-Powered-By` headers). Redirect analysis (HTTP→HTTPS). Sensitive file checks (pattern from BHR ch_04): `/.git/HEAD`, `/.env`, `/.ds_store`, `/robots.txt` parsing. Returns dict with `findings` (missing headers, info disclosure, exposed files) + `assets` (technologies detected, server software). | Scan any HTTP/HTTPS URL → returns web findings and technology assets. |
+
+### 3E. Scanner Dispatcher (in scan_job_subrouter)
+
+| # | Step | File | Action | Test |
+|---|---|---|---|---|
+| 3E.1 | ❌ | `server/apps/cybersecurity/scanners/__init__.py` | Export scanner registry: `SCANNERS = {"port_scan": scan_ports, "dns_scan": scan_dns, "ssl_scan": scan_ssl, "web_scan": scan_web}`. Simple dict mapping scan_type string → async function. | Python imports without error. |
+| 3E.2 | ❌ | `server/apps/cybersecurity/subrouters/scan_job_subrouter.py` | `POST /start` endpoint: create ScanJob → `asyncio.create_task()` background task → iterate `scan_types` from template → call `SCANNERS[scan_type](target, params)` → `asyncio.gather()` all selected scanners → write findings + assets to DB → update job status + summary counts. If one scanner fails, continue others (partial results). | "Start Scan" creates job → returns immediately → scan runs in background → job status transitions pending → running → completed. |
+
+**Phase 3 completion test:** Start a scan via frontend "Start Scan" button → job transitions through status lifecycle → findings and assets populated → severity summary counts correct. Each scanner independently callable via `await scan_ports(target, params)`.
 
 ---
 

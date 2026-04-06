@@ -1,8 +1,8 @@
-"""Initial schema
+"""Intitial Accounts Migrations
 
-Revision ID: cf04e154378b
+Revision ID: bc7a06ee7c35
 Revises: 
-Create Date: 2026-03-03 16:36:02.914823
+Create Date: 2026-04-06 13:59:49.057973
 
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = 'cf04e154378b'
+revision: str = 'bc7a06ee7c35'
 down_revision: Union[str, Sequence[str], None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -59,25 +59,6 @@ def upgrade() -> None:
     sa.PrimaryKeyConstraint('id')
     )
     op.create_index(op.f('ix_accounts_audit_logs_id'), 'accounts_audit_logs', ['id'], unique=False)
-    op.create_table('ecommerce_connections',
-    sa.Column('id', sa.Integer(), nullable=False),
-    sa.Column('user_id', sa.Integer(), nullable=False),
-    sa.Column('organization_id', sa.Integer(), nullable=False),
-    sa.Column('platform', sa.Enum('SHOPIFY', 'WOOCOMMERCE', 'MAGENTO', name='platformtype'), nullable=False),
-    sa.Column('connection_name', sa.String(length=255), nullable=False),
-    sa.Column('db_host', sa.String(length=255), nullable=False),
-    sa.Column('db_name', sa.String(length=255), nullable=False),
-    sa.Column('db_user', sa.String(length=255), nullable=False),
-    sa.Column('db_password', sa.String(length=512), nullable=False),
-    sa.Column('db_port', sa.Integer(), nullable=False),
-    sa.Column('is_active', sa.Boolean(), nullable=False),
-    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
-    sa.Column('updated_at', sa.DateTime(timezone=True), nullable=True),
-    sa.ForeignKeyConstraint(['organization_id'], ['organizations.id'], ),
-    sa.ForeignKeyConstraint(['user_id'], ['users.id'], ),
-    sa.PrimaryKeyConstraint('id')
-    )
-    op.create_index(op.f('ix_ecommerce_connections_id'), 'ecommerce_connections', ['id'], unique=False)
     op.create_table('organization_invitations',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('organization_id', sa.Integer(), nullable=False),
@@ -139,63 +120,12 @@ def upgrade() -> None:
     )
     op.create_index(op.f('ix_tokens_id'), 'tokens', ['id'], unique=False)
     op.create_index(op.f('ix_tokens_refresh_token'), 'tokens', ['refresh_token'], unique=True)
-    op.create_table('api_usage_tracking',
-    sa.Column('id', sa.Integer(), nullable=False),
-    sa.Column('organization_id', sa.Integer(), nullable=False),
-    sa.Column('connection_id', sa.Integer(), nullable=False),
-    sa.Column('endpoint', sa.String(length=255), nullable=False),
-    sa.Column('timestamp', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
-    sa.Column('response_time_ms', sa.Integer(), nullable=True),
-    sa.Column('status_code', sa.Integer(), nullable=True),
-    sa.ForeignKeyConstraint(['connection_id'], ['ecommerce_connections.id'], ),
-    sa.ForeignKeyConstraint(['organization_id'], ['organizations.id'], ),
-    sa.PrimaryKeyConstraint('id')
-    )
-    op.create_index(op.f('ix_api_usage_tracking_id'), 'api_usage_tracking', ['id'], unique=False)
-    op.create_table('recommendation_analytics',
-    sa.Column('id', sa.Integer(), nullable=False),
-    sa.Column('connection_id', sa.Integer(), nullable=False),
-    sa.Column('recommendation_type', sa.Enum('BESTSELLER', 'CROSS_SELL', 'UP_SELL', 'SIMILAR', 'USER_BASED', name='recommendationtype'), nullable=False),
-    sa.Column('product_id', sa.String(length=255), nullable=False),
-    sa.Column('recommended_product_id', sa.String(length=255), nullable=False),
-    sa.Column('position', sa.Integer(), nullable=False),
-    sa.Column('event_type', sa.Enum('VIEW', 'CLICK', 'PURCHASE', name='eventtype'), nullable=False),
-    sa.Column('timestamp', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
-    sa.Column('user_agent', sa.Text(), nullable=True),
-    sa.Column('ip_address', sa.String(length=45), nullable=True),
-    sa.ForeignKeyConstraint(['connection_id'], ['ecommerce_connections.id'], ),
-    sa.PrimaryKeyConstraint('id')
-    )
-    op.create_index(op.f('ix_recommendation_analytics_id'), 'recommendation_analytics', ['id'], unique=False)
-    op.create_table('recommendation_settings',
-    sa.Column('id', sa.Integer(), nullable=False),
-    sa.Column('connection_id', sa.Integer(), nullable=False),
-    sa.Column('bestseller_method', sa.Enum('VOLUME', 'VALUE', 'BALANCED', name='bestsellermethod'), nullable=False),
-    sa.Column('bestseller_lookback_days', sa.Integer(), nullable=False),
-    sa.Column('crosssell_lookback_days', sa.Integer(), nullable=False),
-    sa.Column('max_recommendations', sa.Integer(), nullable=False),
-    sa.Column('min_price_increase_percent', sa.Integer(), nullable=False),
-    sa.Column('shop_base_url', sa.String(length=500), nullable=True),
-    sa.Column('product_url_template', sa.String(length=500), nullable=True),
-    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
-    sa.Column('updated_at', sa.DateTime(timezone=True), nullable=True),
-    sa.ForeignKeyConstraint(['connection_id'], ['ecommerce_connections.id'], ),
-    sa.PrimaryKeyConstraint('id'),
-    sa.UniqueConstraint('connection_id')
-    )
-    op.create_index(op.f('ix_recommendation_settings_id'), 'recommendation_settings', ['id'], unique=False)
     # ### end Alembic commands ###
 
 
 def downgrade() -> None:
     """Downgrade schema."""
     # ### commands auto generated by Alembic - please adjust! ###
-    op.drop_index(op.f('ix_recommendation_settings_id'), table_name='recommendation_settings')
-    op.drop_table('recommendation_settings')
-    op.drop_index(op.f('ix_recommendation_analytics_id'), table_name='recommendation_analytics')
-    op.drop_table('recommendation_analytics')
-    op.drop_index(op.f('ix_api_usage_tracking_id'), table_name='api_usage_tracking')
-    op.drop_table('api_usage_tracking')
     op.drop_index(op.f('ix_tokens_refresh_token'), table_name='tokens')
     op.drop_index(op.f('ix_tokens_id'), table_name='tokens')
     op.drop_table('tokens')
@@ -207,8 +137,6 @@ def downgrade() -> None:
     op.drop_table('organization_members')
     op.drop_index(op.f('ix_organization_invitations_id'), table_name='organization_invitations')
     op.drop_table('organization_invitations')
-    op.drop_index(op.f('ix_ecommerce_connections_id'), table_name='ecommerce_connections')
-    op.drop_table('ecommerce_connections')
     op.drop_index(op.f('ix_accounts_audit_logs_id'), table_name='accounts_audit_logs')
     op.drop_table('accounts_audit_logs')
     op.drop_index(op.f('ix_users_id'), table_name='users')

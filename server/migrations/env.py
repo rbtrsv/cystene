@@ -17,7 +17,7 @@ from core.db import Base
 
 # Import all models so they are registered with Base.metadata
 from apps.accounts.models import *
-from apps.ecommerce.models import *
+from apps.cybersecurity.models import *
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
