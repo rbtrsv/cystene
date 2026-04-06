@@ -897,7 +897,7 @@ The original plan used a full engine pattern with 5 components: (1) `base.py` �
 
 **Why no factory:** A factory decides which implementation to return based on input. Ecommerce needs this because it routes between 3 platforms × 2 connection methods × 1 ingest fallback = real complexity. We have a 1:1 mapping from scan_type string → scanner module.
 
-### 4.2 Scanner Modules (4)
+### 4.2 Scanner Modules (12)
 
 Each scanner is a single async function in its own file. Same input, same output — just convention, not enforced by inheritance.
 
@@ -991,51 +991,63 @@ for scan_type in template.scan_types.split(","):
 server/apps/cybersecurity/
 ├── __init__.py
 ├── router.py                          → Main router, ungated + gated split
-├── models/
-│   ├── __init__.py                    → Re-exports all models (nexotype pattern)
+├── models/                            → FISIERE pe domeniu (pattern nexotype — evita circular imports SQLAlchemy)
+│   ├── __init__.py                    → Re-exports all models: from .infrastructure_models import * etc.
 │   ├── mixin_models.py                → BaseMixin (imported from nexotype or local copy)
-│   ├── infrastructure_models.py       → Infrastructure
-│   ├── credential_models.py           → Credential (Fernet encrypted)
-│   ├── scan_target_models.py          → ScanTarget (FK to infrastructure)
-│   ├── scan_template_models.py        → ScanTemplate
-│   ├── scan_schedule_models.py        → ScanSchedule
-│   ├── scan_job_models.py             → ScanJob
-│   ├── finding_models.py              → Finding
-│   ├── asset_models.py                → Asset
-│   └── report_models.py              → Report
-├── schemas/
-│   ├── infrastructure_schemas.py      → Create, Update, Detail, ListResponse, Response
-│   ├── credential_schemas.py          → Create, Update, Detail, ListResponse, Response (encrypted_value never returned)
-│   ├── scan_target_schemas.py         → Create, Update, Detail, ListResponse, Response
-│   ├── scan_template_schemas.py
-│   ├── scan_schedule_schemas.py
-│   ├── scan_job_schemas.py
-│   ├── finding_schemas.py
-│   ├── asset_schemas.py
-│   └── report_schemas.py
-├── subrouters/
-│   ├── infrastructure_subrouter.py    → CRUD (list, detail, create, update, soft-delete)
-│   ├── credential_subrouter.py        → CRUD + verify connectivity (test SSH/API key works)
-│   ├── scan_target_subrouter.py       → CRUD + verify ownership
-│   ├── scan_template_subrouter.py     → CRUD
-│   ├── scan_schedule_subrouter.py     → CRUD + activate/deactivate
-│   ├── scan_job_subrouter.py          → Start scan, cancel scan, list/detail + calls scanners directly
-│   ├── finding_subrouter.py           → List/detail + update triage status
-│   ├── asset_subrouter.py             → List/detail (read-only)
-│   └── report_subrouter.py            → Generate, list, detail, delete
-├── scanners/                          → Plain async functions, no ABC, no orchestrator
-│   ├── port_scan.py                   → TCP connect, banner grabbing, service ID
-│   ├── dns_scan.py                    → DNS records, subdomain brute-force, SPF/DKIM/DMARC
-│   ├── ssl_scan.py                    → Certificate, ciphers, TLS versions, chain validation
-│   ├── web_scan.py                    → Security headers, server disclosure, directory/file discovery
-│   ├── vuln_scan.py                   → CVE matching against detected service versions
-│   ├── api_scan.py                    → JWT analysis, GraphQL, CORS, rate limiting
-│   ├── active_web_scan.py             → Detection-only: SQLi, XSS, LFI, cmd injection (requires consent)
-│   ├── password_audit_scan.py         → Brute force, default credentials, weak passwords
-│   ├── host_audit_scan.py             → Privilege escalation, SUID, cron, permissions via SSH
-│   ├── cloud_audit_scan.py            → S3 buckets, IAM, security groups via cloud API keys
-│   ├── ad_audit_scan.py               → AD enumeration, Kerberoasting via domain credentials
-│   └── mobile_scan.py                 → APK analysis (upload, scan, delete)
+│   ├── infrastructure_models.py       → Infrastructure + Credential + ScanTarget (3 clase cu FK intre ele)
+│   ├── execution_models.py            → ScanTemplate + ScanSchedule + ScanJob (3 clase cu FK intre ele)
+│   └── discovery_models.py            → Finding + Asset + Report (3 clase)
+│
+├── schemas/                           → SUBFOLDERE pe domeniu (pattern nexotype — fisiere separate per entitate)
+│   ├── infrastructure/
+│   │   ├── __init__.py
+│   │   ├── infrastructure_schemas.py  → Create, Update, Detail, ListResponse, Response
+│   │   ├── credential_schemas.py      → Create, Update, Detail (encrypted_value NEVER returned)
+│   │   └── scan_target_schemas.py     → Create, Update, Detail + TargetType, VerificationMethod enums
+│   ├── execution/
+│   │   ├── __init__.py
+│   │   ├── scan_template_schemas.py   → Create, Update, Detail + ScanType, PortRange, ScanSpeed enums
+│   │   ├── scan_schedule_schemas.py   → Create, Update, Detail + ScheduleFrequency enum
+│   │   └── scan_job_schemas.py        → Detail, ListResponse + JobStatus enum (no Create — jobs created via /start)
+│   └── discovery/
+│       ├── __init__.py
+│       ├── finding_schemas.py         → Detail, StatusUpdate + Severity, FindingStatus, FindingCategory enums
+│       ├── asset_schemas.py           → Detail + AssetType, AssetConfidence enums
+│       └── report_schemas.py          → Create, Detail + ReportType, ReportFormat enums
+│
+├── subrouters/                        → SUBFOLDERE pe domeniu (pattern nexotype — fisiere separate per entitate)
+│   ├── infrastructure/
+│   │   ├── __init__.py
+│   │   ├── infrastructure_subrouter.py → CRUD (list, detail, create, update, soft-delete)
+│   │   ├── credential_subrouter.py     → CRUD + POST /{id}/verify (test SSH/API key connectivity)
+│   │   └── scan_target_subrouter.py    → CRUD + POST /{id}/verify (target ownership verification)
+│   ├── execution/
+│   │   ├── __init__.py
+│   │   ├── scan_template_subrouter.py  → CRUD, filter by target_id
+│   │   ├── scan_schedule_subrouter.py  → CRUD + activate/deactivate
+│   │   └── scan_job_subrouter.py       → POST /start, POST /{id}/cancel, list/detail + scanner dispatcher
+│   └── discovery/
+│       ├── __init__.py
+│       ├── finding_subrouter.py        → List/detail + PATCH /{id}/status (triage). Filters: severity, category, status.
+│       ├── asset_subrouter.py          → List/detail (read-only). Filters: asset_type, scan_job_id.
+│       └── report_subrouter.py         → POST /generate, list, detail, DELETE (soft delete)
+├── scanners/                          → Plain async functions, organized by scan category
+│   ├── __init__.py                    → SCANNERS dict registry (all 12 scanners)
+│   ├── external/                      → Scanners that work from outside, no credentials needed
+│   │   ├── port_scan.py               → TCP connect, banner grabbing, service ID (Lesson 1, BHP Ch2-3, BHR Ch2-3)
+│   │   ├── dns_scan.py                → DNS records, subdomain brute-force, SPF/DKIM/DMARC (Lesson 1, 12)
+│   │   ├── ssl_scan.py                → Certificate, ciphers, TLS versions, chain validation (BHR Ch11)
+│   │   ├── web_scan.py                → Security headers, server disclosure, directory/file discovery (Lesson 1, BHP Ch5, BHR Ch4)
+│   │   ├── vuln_scan.py               → CVE matching against detected service versions (Lesson 5, BHR Ch6)
+│   │   ├── api_scan.py                → JWT analysis, GraphQL, CORS, rate limiting (Lesson 17, BHR Ch5-6)
+│   │   ├── active_web_scan.py         → Detection-only: SQLi, XSS, LFI, cmd injection (Lesson 2, BHP Ch5-6, BHR Ch6)
+│   │   └── password_audit_scan.py     → Brute force, default credentials, weak passwords (Lesson 6, BHP Ch5-6)
+│   ├── internal/                      → Scanners that need credentials (SSH, API keys, domain)
+│   │   ├── host_audit_scan.py         → Privilege escalation, SUID, cron, permissions via SSH (Lesson 4, 10, BHP Ch2, Ch10)
+│   │   ├── cloud_audit_scan.py        → S3 buckets, IAM, security groups via cloud API keys (Lesson 11)
+│   │   └── ad_audit_scan.py           → AD enumeration, Kerberoasting via domain credentials (Lesson 9)
+│   └── upload/                        → Scanners that analyze uploaded files
+│       └── mobile_scan.py             → APK analysis — upload, scan, delete immediately (Lesson 8)
 ├── surrealdb/                         → Graph layer — polyglot persistence (nexotype pattern)
 │   ├── db.py                          → SurrealDB connection management
 │   ├── sync_service.py                → PostgreSQL → SurrealDB entity + relationship sync
@@ -1043,9 +1055,26 @@ server/apps/cybersecurity/
 │       ├── discovery_subrouter.py     → Graph traversal queries (attack paths, blast radius)
 │       ├── sync_subrouter.py          → Manual full/incremental sync triggers
 │       └── health_subrouter.py        → Connection health + sync status
-└── utils/
-    ├── dependency_utils.py            → get_user_target(), require_active_subscription
-    └── subscription_utils.py          → Tier constants, limits, is_service_active()
+├── utils/
+│   ├── dependency_utils.py            → get_user_target(), require_active_subscription
+│   ├── subscription_utils.py          → Tier constants, limits, is_service_active()
+│   └── encryption_utils.py            → Fernet encrypt/decrypt for Credential.encrypted_value
+│                                        Same pattern as ecommerce/utils/encryption_utils.py:
+│                                        get_encryption_key() → SHA-256(SECRET_KEY)
+│                                        encrypt_value(plaintext) → Fernet encrypt → base64
+│                                        decrypt_value(encrypted) → base64 → Fernet decrypt
+│                                        Used by: credential_subrouter (encrypt on create/update),
+│                                        scanner dispatcher (decrypt before passing to internal scanners)
+└── rust/                              → Rust modules via PyO3 for heavy computing (future)
+    └── README.md                      → Architecture: Rust functions compiled as Python modules
+                                         via PyO3/maturin. Same function signature as Python scanners.
+                                         Candidates for Rust rewrite:
+                                         - Port scanning (asyncio.open_connection → tokio TcpStream)
+                                         - Password brute force (hash computation)
+                                         - Banner parsing (regex on large datasets)
+                                         Pattern: Python scanner calls Rust module if available,
+                                         falls back to pure Python if not compiled.
+                                         Reference: BHR Ch2-3 (rayon, tokio), domain-architecture §4D.
 ```
 
 ### 5.2 Frontend
@@ -1191,6 +1220,9 @@ router.include_router(gated)
 | ScanJob.execution_point | "cloud" (default) or "remote_agent" (future) | Prepares architecture for agent-based scanning (wireless Lesson 7, internal network). No agent infrastructure yet but DB schema is ready. |
 | Finding.remediation_script | Copiable fix command separate from remediation text | Remediation is explanation, remediation_script is actionable (chmod, nginx config, AWS CLI). User copies and applies directly. |
 | Mobile scan: upload, scan, delete | No permanent file storage | APK uploaded for analysis, findings extracted, file deleted immediately. Legal and storage simplicity — no user data retention. |
+| encryption_utils.py | Fernet (AES-128-CBC), key from SHA-256(SECRET_KEY) | Same exact pattern as ecommerce/utils/encryption_utils.py. Single encrypt/decrypt point. Credential subrouter encrypts on create/update, scanner dispatcher decrypts before passing to internal scanners. |
+| Scanner folder structure | external/ internal/ upload/ | Organized by scan category (needs no credentials, needs credentials, needs file upload). Not by lesson number. Clear separation of security boundaries. |
+| Rust via PyO3 (future) | Optional performance modules | Port scanning, password brute force, banner parsing — CPU/IO intensive. Rust module compiled via maturin, imported in Python. Same function signature. Python fallback if Rust not compiled. Reference: BHR Ch2-3 (rayon, tokio). |
 
 ---
 
@@ -1209,14 +1241,16 @@ Same architecture as `nexotype/surrealdb/` and `nexotype/neo4j/`:
 
 ### 8.2 Node Types (PostgreSQL entities → SurrealDB tables)
 
-Not all 7 entities become nodes. Only the ones that participate in graph relationships:
+Not all 9 entities become nodes. Only the ones that participate in graph relationships:
 
 | PostgreSQL Entity | SurrealDB Table | Why Node / Not Node |
 |---|---|---|
-| ScanTarget | `scan_target` | Node — root of the graph. All scans start from a target. |
+| Infrastructure | `infrastructure` | Node — business context anchor. Links technical findings to environment, criticality, owner. Enables "show me critical findings on production infrastructure" queries. |
+| ScanTarget | `scan_target` | Node — scan entry point. All scans start from a target. |
 | ScanJob | `scan_job` | Node — connects targets to their discovered findings/assets. |
 | Finding | `finding` | Node — vulnerabilities are the primary query subject in graph traversals. |
 | Asset | `asset` | Node — hosts, services, technologies, certs, DNS records form the infrastructure graph. |
+| Credential | — | **NEVER a node — sensitive data (encrypted keys, passwords) MUST NOT enter SurrealDB.** |
 | ScanTemplate | — | Not a node — configuration data, not part of the infrastructure graph. |
 | ScanSchedule | — | Not a node — scheduling metadata, not part of the infrastructure graph. |
 | Report | — | Not a node — generated output, not part of the infrastructure graph. |
@@ -1224,6 +1258,17 @@ Not all 7 entities become nodes. Only the ones that participate in graph relatio
 ### 8.3 Edge Types (Relationships between nodes)
 
 ```
+infrastructure ──OWNS_TARGET──→ scan_target
+    Properties: linked_at (DateTime)
+    Why: Visualize which scan targets belong to which piece of infrastructure.
+    Example: Infrastructure("Production Web Server") ──OWNS_TARGET──→ ScanTarget("cystene.com")
+
+finding ──CRITICAL_FOR──→ infrastructure
+    Properties: severity (String), environment (String), criticality (String)
+    Why: Direct correlation between a technical vulnerability and business impact.
+    Enables: "Show me all critical findings affecting production infrastructure owned by Backend Team"
+    Example: Finding("OpenSSH CVE-2016-6210") ──CRITICAL_FOR──→ Infrastructure("Production Web Server", critical, Backend Team)
+
 scan_target ──SCANNED_BY──→ scan_job
     Properties: triggered_at (DateTime)
 
@@ -1267,28 +1312,38 @@ finding ──LEADS_TO──→ finding
 ### 8.4 Graph Relationship Diagram
 
 ```
-                                    ┌──────────────┐
-                                    │  scan_target  │
-                                    └──────┬───────┘
-                                           │ SCANNED_BY
-                                           ▼
-                                    ┌──────────────┐
-                               ┌────│   scan_job    │────┐
-                               │    └──────────────┘     │
-                          FOUND │                         │ DISCOVERED
-                               ▼                         ▼
-                        ┌────────────┐            ┌────────────┐
-                   ┌────│  finding    │──AFFECTS──→│   asset     │────┐
-                   │    └────────────┘            └────────────┘     │
-              LEADS_TO                              │    │    │      │
-                   │                             RUNS  HAS_  HAS_   USES
-                   ▼                               │  CERT  RECORD   │
-                ┌────────────┐                     ▼    ▼     ▼      ▼
-                │  finding    │               ┌────────────────────────┐
-                └────────────┘               │   asset (subtypes)      │
-                                              │  host, service, tech,  │
-                                              │  certificate, dns_rec  │
-                                              └────────────────────────┘
+┌──────────────────┐
+│  infrastructure   │ ← business context (environment, criticality, owner)
+└────────┬─────────┘
+         │ OWNS_TARGET
+         ▼
+  ┌──────────────┐
+  │  scan_target  │
+  └──────┬───────┘
+         │ SCANNED_BY
+         ▼
+  ┌──────────────┐
+  │   scan_job    │
+  └──┬────────┬──┘
+     │        │
+FOUND│        │DISCOVERED
+     ▼        ▼
+┌────────┐  ┌────────┐
+│finding  │  │ asset   │
+└──┬──┬──┘  └──┬──┬──┘
+   │  │        │  │
+   │  │AFFECTS │  │RUNS/USES/HAS_CERT/HAS_RECORD
+   │  └───────→│  └──→ asset (subtypes: host, service, tech, cert, dns)
+   │           │
+   │LEADS_TO   │
+   └──→finding │
+               │
+   CRITICAL_FOR│
+   ┌───────────┘
+   ▼
+┌──────────────────┐
+│  infrastructure   │ ← finding loops back to business impact
+└──────────────────┘
 ```
 
 ### 8.5 Sync Service
@@ -1359,6 +1414,30 @@ class CyberSyncService:
         Compare findings across multiple scan_jobs for the same target.
         Identifies vulnerabilities that persist across scans (not being fixed).
         """
+
+    # --- Infrastructure-aware queries (business context) ---
+
+    async def get_critical_production_findings(self, organization_id: int) -> list:
+        """
+        Find all critical/high findings on production infrastructure.
+        Traversal: infrastructure(environment=production, criticality=critical)
+            ←CRITICAL_FOR← finding(severity=critical OR high)
+        This is the executive dashboard query — "what needs fixing NOW".
+        """
+
+    async def get_infrastructure_risk_map(self, organization_id: int) -> dict:
+        """
+        For each infrastructure item, count findings by severity.
+        Returns: {infrastructure_id: {name, environment, criticality, owner, findings: {critical: N, high: N, ...}}}
+        Enables risk heatmap visualization on dashboard.
+        """
+
+    async def get_owner_exposure(self, owner: str) -> list:
+        """
+        Find all findings affecting infrastructure owned by a specific team/person.
+        Traversal: infrastructure(owner=X) ──OWNS_TARGET──→ scan_target ──SCANNED_BY──→ scan_job ──FOUND──→ finding
+        Enables: "Backend Team has 12 critical findings across 3 servers"
+        """
 ```
 
 ### 8.6 Discovery Subrouter — Graph Query Endpoints
@@ -1380,13 +1459,24 @@ class CyberSyncService:
 
 # GET /cybersecurity/graph/recurring-findings/{target_id}
 #   → Findings that appear across multiple scans (not being remediated)
+
+# GET /cybersecurity/graph/critical-production
+#   → All critical/high findings on production infrastructure (executive dashboard)
+
+# GET /cybersecurity/graph/risk-map
+#   → Per-infrastructure findings count by severity (risk heatmap)
+
+# GET /cybersecurity/graph/owner-exposure/{owner}
+#   → All findings affecting infrastructure owned by a specific team/person
 ```
 
 ### 8.7 When SurrealDB Sync Happens
 
 | Event | Sync Action |
 |---|---|
-| Scan job completes | Sync new findings + assets + relationships to SurrealDB |
+| Infrastructure created/updated | Sync infrastructure node + OWNS_TARGET edges to SurrealDB |
+| ScanTarget linked to Infrastructure | Create/update OWNS_TARGET edge |
+| Scan job completes | Sync new findings + assets + relationships + CRITICAL_FOR edges to SurrealDB |
 | Finding triage status changes | Update finding node properties in SurrealDB |
 | Manual sync trigger (admin) | Full or incremental sync via sync_subrouter |
 | SurrealDB data loss/corruption | Full sync rebuilds everything from PostgreSQL |
@@ -1397,3 +1487,4 @@ class CyberSyncService:
 - **No CRUD operations** — creating/updating/deleting entities always goes through PostgreSQL subrouters first
 - **No scan execution** — scanners write to PostgreSQL, sync service propagates to SurrealDB
 - **No auth/user management** — graph queries are gated by the same subscription middleware as all other endpoints
+- **No Credential data** — encrypted credentials (SSH keys, API keys, passwords) MUST NEVER be synced to SurrealDB. Only Infrastructure metadata (name, type, environment, criticality, owner) is synced — never sensitive credential values.

@@ -128,105 +128,77 @@ No ungated routes in MVP (no external platform integrations, no public endpoints
 
 ## Phase 1: Backend Foundation (Models → Schemas → Subrouters → Router → main.py)
 
-**Goal:** Build all 8 entities following FK dependency order. Each entity = model + schema + subrouter. After each entity, test via FastAPI docs (`/docs`).
+**Goal:** Build 9 entities in 3 domain-grouped model files + schemas/subrouters in domain subfolders (nexotype pattern). Test via FastAPI docs (`/docs`) after each domain.
 
-**Reference files to read before each entity:**
-- Backend model: `server/apps/ecommerce/models.py` (BaseMixin usage, field patterns, comments, relationships)
-- Backend model: `server/apps/assetmanager/models/entity_models.py` (Infrastructure pattern — Entity with type, owner, business context)
-- Backend schema: `server/apps/nexotype/schemas/` (any schema file — Create, Update, Detail, ListResponse, Response patterns)
-- Backend subrouter: `server/apps/nexotype/subrouters/` (any subrouter file — CRUD pattern, two-tier except, audit logging)
-- Backend utils: `server/apps/ecommerce/utils/dependency_utils.py` (subscription gating pattern)
+**Reference files to read before implementing:**
+- Model pattern: `server/apps/nexotype/models/clinical_models.py` (multiple classes in one domain file, FK relationships between them)
+- Model re-export: `server/apps/nexotype/models/__init__.py` (from .clinical_models import * pattern)
+- Schema pattern: `server/apps/nexotype/schemas/clinical/` (subfolder with per-entity schema files)
+- Subrouter pattern: `server/apps/nexotype/subrouters/clinical/` (subfolder with per-entity subrouter files)
+- Utils: `server/apps/ecommerce/utils/dependency_utils.py` (subscription gating), `server/apps/ecommerce/utils/encryption_utils.py` (Fernet encrypt/decrypt)
+- Infrastructure pattern: `server/apps/assetmanager/models/entity_models.py` (Entity with type, owner, business context)
 
-### 1A. Infrastructure (Model → Schema → Subrouter)
+### Infrastructure Domain (Infrastructure + Credential + ScanTarget)
 
-| # | Step | File | Action | Test |
-|---|---|---|---|---|
-| 1A.1 | ❌ | `server/apps/cybersecurity/models/infrastructure_models.py` | Create `Infrastructure(BaseMixin, Base)` with all fields from `domain-architecture.md` §3.1. Include enums `InfraType`, `Environment`, `Criticality`. | Python imports without error. |
-| 1A.2 | ❌ | `server/apps/cybersecurity/models/__init__.py` | Add `from .infrastructure_models import Infrastructure` re-export. | `from apps.cybersecurity.models import Infrastructure` works. |
-| 1A.3 | ❌ | `server/apps/cybersecurity/schemas/infrastructure_schemas.py` | Create Pydantic 2 schemas: `InfrastructureCreate`, `InfrastructureUpdate`, `InfrastructureDetail`, `InfrastructureListResponse`, `InfrastructureResponse`. | Python imports without error. |
-| 1A.4 | ❌ | `server/apps/cybersecurity/subrouters/infrastructure_subrouter.py` | Standard CRUD subrouter: `GET /` (list), `GET /{id}` (detail), `POST /` (create), `PUT /{id}` (update), `DELETE /{id}` (soft delete). Filter by organization_id. | All 5 endpoints return correct responses in FastAPI docs. |
+**Model file:** `infrastructure_models.py` — 3 classes in one file (FK relations between them, avoids circular imports)
 
-### 1B. Credential (Model → Schema → Subrouter)
+| Step | File | Action | Test |
+|---|---|---|---|
+| ❌ | `models/infrastructure_models.py` | Create `Infrastructure(BaseMixin, Base)`, `Credential(BaseMixin, Base)`, `ScanTarget(BaseMixin, Base)` — all 3 classes with fields from §3.1, §3.2, §3.3. Include enums: InfraType, Environment, Criticality, CredentialType, TargetType, VerificationMethod. Fernet encryption on Credential.encrypted_value. FK chain: Infrastructure → Credential (SET NULL), Infrastructure → ScanTarget (SET NULL). | Python imports. `from apps.cybersecurity.models import Infrastructure, Credential, ScanTarget` works. |
+| ❌ | `models/__init__.py` | Add `from .infrastructure_models import *` re-export. | All 3 classes importable. |
+| ❌ | `schemas/infrastructure/__init__.py` | Create subfolder + init. | Directory exists. |
+| ❌ | `schemas/infrastructure/infrastructure_schemas.py` | Pydantic 2: Create, Update, Detail, ListResponse, Response. Include InfraType, Environment, Criticality enums. | Imports without error. |
+| ❌ | `schemas/infrastructure/credential_schemas.py` | Pydantic 2: Create, Update, Detail. **encrypted_value NEVER in responses** — only in Create/Update input. Include CredentialType enum. | Imports without error. |
+| ❌ | `schemas/infrastructure/scan_target_schemas.py` | Pydantic 2: Create, Update, Detail, ListResponse, Response. Include TargetType, VerificationMethod enums. | Imports without error. |
+| ❌ | `subrouters/infrastructure/__init__.py` | Create subfolder + init. | Directory exists. |
+| ❌ | `subrouters/infrastructure/infrastructure_subrouter.py` | CRUD: list, detail, create, update, soft-delete. Filter by organization_id. | All 5 endpoints work in /docs. |
+| ❌ | `subrouters/infrastructure/credential_subrouter.py` | CRUD + `POST /{id}/verify` (test SSH/API key connectivity). Encrypt on create/update via encryption_utils. | All 6 endpoints work. |
+| ❌ | `subrouters/infrastructure/scan_target_subrouter.py` | CRUD + `POST /{id}/verify` (target ownership verification). Two-tier except. Audit logging. | All 6 endpoints work. |
 
-| # | Step | File | Action | Test |
-|---|---|---|---|---|
-| 1B.1 | ❌ | `server/apps/cybersecurity/models/credential_models.py` | Create `Credential(BaseMixin, Base)` with all fields from `domain-architecture.md` §3.2. Fernet encryption for encrypted_value. Include enum `CredentialType`. | Python imports without error. |
-| 1B.2 | ❌ | `server/apps/cybersecurity/models/__init__.py` | Add `from .credential_models import Credential` re-export. | `from apps.cybersecurity.models import Credential` works. |
-| 1B.3 | ❌ | `server/apps/cybersecurity/schemas/credential_schemas.py` | Create Pydantic 2 schemas. **encrypted_value NEVER returned in responses** — only accepted in Create/Update. Include `CredentialType` enum. | Python imports without error. |
-| 1B.4 | ❌ | `server/apps/cybersecurity/subrouters/credential_subrouter.py` | CRUD subrouter + `POST /{id}/verify` (test connectivity — SSH connect, API key validate). Filter by organization_id. | All 6 endpoints return correct responses in FastAPI docs. |
+### Execution Domain (ScanTemplate + ScanSchedule + ScanJob)
 
-### 1C. ScanTarget (Model → Schema → Subrouter)
+**Model file:** `execution_models.py` — 3 classes in one file (ScanSchedule FK to ScanTemplate, ScanJob FK to both)
 
-| # | Step | File | Action | Test |
-|---|---|---|---|---|
-| 1B.1 | ❌ | `server/apps/cybersecurity/models/scan_target_models.py` | Create `ScanTarget(BaseMixin, Base)` with all fields from `domain-architecture.md` §3.2. FK to `infrastructure.id` (SET NULL, nullable). Include section separators, docstring, field comments, "Why:" comments. | Python imports without error. |
-| 1B.2 | ❌ | `server/apps/cybersecurity/models/__init__.py` | Add `from .scan_target_models import ScanTarget` re-export. | `from apps.cybersecurity.models import ScanTarget` works. |
-| 1B.3 | ❌ | `server/apps/cybersecurity/schemas/scan_target_schemas.py` | Create Pydantic 2 schemas: `ScanTargetCreate`, `ScanTargetUpdate`, `ScanTargetDetail`, `ScanTargetListResponse`, `ScanTargetResponse`, `MessageResponse`. All fields match model exactly. Include enum classes `TargetType`, `VerificationMethod`. | Python imports without error. |
-| 1B.4 | ❌ | `server/apps/cybersecurity/subrouters/scan_target_subrouter.py` | Standard CRUD subrouter: `GET /` (list), `GET /{id}` (detail), `POST /` (create), `PUT /{id}` (update), `DELETE /{id}` (soft delete). Plus `POST /{id}/verify` (target ownership verification stub). Two-tier except pattern. Audit logging. | All 6 endpoints return correct responses in FastAPI docs. |
+| Step | File | Action | Test |
+|---|---|---|---|
+| ❌ | `models/execution_models.py` | Create `ScanTemplate(BaseMixin, Base)`, `ScanSchedule(BaseMixin, Base)`, `ScanJob(BaseMixin, Base)` — all 3 with fields from §3.4, §3.5, §3.6. Include enums: ScanType, PortRange, ScanSpeed, ScheduleFrequency, JobStatus. ScanJob includes security_score + execution_point. | Python imports. All 3 classes importable. |
+| ❌ | `models/__init__.py` | Add `from .execution_models import *` re-export. | All 3 classes importable. |
+| ❌ | `schemas/execution/__init__.py` | Create subfolder + init. | Directory exists. |
+| ❌ | `schemas/execution/scan_template_schemas.py` | Pydantic 2: Create, Update, Detail. Include ScanType, PortRange, ScanSpeed enums. | Imports without error. |
+| ❌ | `schemas/execution/scan_schedule_schemas.py` | Pydantic 2: Create, Update, Detail. Include ScheduleFrequency enum. | Imports without error. |
+| ❌ | `schemas/execution/scan_job_schemas.py` | Pydantic 2: Detail, ListResponse (no Create — jobs created via /start). Include JobStatus enum. | Imports without error. |
+| ❌ | `subrouters/execution/__init__.py` | Create subfolder + init. | Directory exists. |
+| ❌ | `subrouters/execution/scan_template_subrouter.py` | CRUD. Filter by target_id. | All 5 endpoints work. |
+| ❌ | `subrouters/execution/scan_schedule_subrouter.py` | CRUD + activate/deactivate. | All 7 endpoints work. |
+| ❌ | `subrouters/execution/scan_job_subrouter.py` | POST /start, POST /{id}/cancel, list, detail. Calls scanner dispatcher. | All 4 endpoints work. |
 
-### 1D. ScanTemplate (Model → Schema → Subrouter)
+### Discovery Domain (Finding + Asset + Report)
 
-| # | Step | File | Action | Test |
-|---|---|---|---|---|
-| 1D.1 | ❌ | `server/apps/cybersecurity/models/scan_template_models.py` | Create `ScanTemplate(BaseMixin, Base)` with all fields from `domain-architecture.md` §3.3. FK to `scan_targets.id`. | Python imports without error. |
-| 1D.2 | ❌ | `server/apps/cybersecurity/models/__init__.py` | Add `from .scan_template_models import ScanTemplate` re-export. | Import works. |
-| 1D.3 | ❌ | `server/apps/cybersecurity/schemas/scan_template_schemas.py` | Create Pydantic 2 schemas. Include enum classes `ScanType`, `PortRange`, `ScanSpeed`. | Python imports without error. |
-| 1D.4 | ❌ | `server/apps/cybersecurity/subrouters/scan_template_subrouter.py` | Standard CRUD subrouter. Filter by target_id. | All 5 CRUD endpoints return correct responses in FastAPI docs. |
+**Model file:** `discovery_models.py` — 3 classes in one file (Finding/Asset FK to ScanJob, Report FK to ScanTarget + ScanJob)
 
-### 1E. ScanSchedule (Model → Schema → Subrouter)
+| Step | File | Action | Test |
+|---|---|---|---|
+| ❌ | `models/discovery_models.py` | Create `Finding(Base)` (NO BaseMixin), `Asset(Base)` (NO BaseMixin), `Report(BaseMixin, Base)` — all 3 with fields from §3.7, §3.8, §3.9. Finding includes: fingerprint, is_new, first_found_job_id, resolved_by, remediation_script, compliance metadata. Asset includes: service_metadata, UniqueConstraint. Include enums: Severity, FindingStatus, FindingCategory, AssetType, AssetConfidence, ReportType, ReportFormat. | Python imports. All 3 classes importable. |
+| ❌ | `models/__init__.py` | Add `from .discovery_models import *` re-export. | All 3 classes importable. |
+| ❌ | `schemas/discovery/__init__.py` | Create subfolder + init. | Directory exists. |
+| ❌ | `schemas/discovery/finding_schemas.py` | Pydantic 2: Detail + FindingStatusUpdate (triage). No Create/Update — scanner writes. Include Severity, FindingStatus, FindingCategory enums. | Imports without error. |
+| ❌ | `schemas/discovery/asset_schemas.py` | Pydantic 2: Detail only (read-only). Include AssetType, AssetConfidence enums. | Imports without error. |
+| ❌ | `schemas/discovery/report_schemas.py` | Pydantic 2: Create (generate), Detail. Include ReportType, ReportFormat enums. | Imports without error. |
+| ❌ | `subrouters/discovery/__init__.py` | Create subfolder + init. | Directory exists. |
+| ❌ | `subrouters/discovery/finding_subrouter.py` | List (filters: severity, category, status, scan_job_id), detail, PATCH /{id}/status (triage). | All 3 endpoints work. |
+| ❌ | `subrouters/discovery/asset_subrouter.py` | List (filters: asset_type, scan_job_id), detail. Read-only. | All 2 endpoints work. |
+| ❌ | `subrouters/discovery/report_subrouter.py` | POST /generate, list, detail, DELETE (soft delete). | All 4 endpoints work. |
 
-| # | Step | File | Action | Test |
-|---|---|---|---|---|
-| 1E.1 | ❌ | `server/apps/cybersecurity/models/scan_schedule_models.py` | Create `ScanSchedule(BaseMixin, Base)` with all fields from `domain-architecture.md` §3.4. FKs to `scan_targets.id` and `scan_templates.id`. | Python imports without error. |
-| 1E.2 | ❌ | `server/apps/cybersecurity/models/__init__.py` | Add `from .scan_schedule_models import ScanSchedule` re-export. | Import works. |
-| 1E.3 | ❌ | `server/apps/cybersecurity/schemas/scan_schedule_schemas.py` | Create Pydantic 2 schemas. Include enum class `ScheduleFrequency`. | Python imports without error. |
-| 1E.4 | ❌ | `server/apps/cybersecurity/subrouters/scan_schedule_subrouter.py` | CRUD subrouter. Plus `POST /{id}/activate` and `POST /{id}/deactivate` endpoints. | All 7 endpoints return correct responses in FastAPI docs. |
+### Router + Utils + Wiring
 
-### 1F. ScanJob (Model → Schema → Subrouter)
-
-| # | Step | File | Action | Test |
-|---|---|---|---|---|
-| 1F.1 | ❌ | `server/apps/cybersecurity/models/scan_job_models.py` | Create `ScanJob(BaseMixin, Base)` with all fields from `domain-architecture.md` §3.5. Includes security_score field. FKs to `scan_targets.id`, `scan_templates.id`, `scan_schedules.id` (SET NULL). | Python imports without error. |
-| 1F.2 | ❌ | `server/apps/cybersecurity/models/__init__.py` | Add `from .scan_job_models import ScanJob` re-export. | Import works. |
-| 1F.3 | ❌ | `server/apps/cybersecurity/schemas/scan_job_schemas.py` | Create Pydantic 2 schemas. Include enum class `JobStatus`. | Python imports without error. |
-| 1F.4 | ❌ | `server/apps/cybersecurity/subrouters/scan_job_subrouter.py` | Subrouter: `GET /` (list), `GET /{id}` (detail), `POST /start` (create + start scan), `POST /{id}/cancel` (cancel running scan). No update/delete — jobs are immutable once started. | All 4 endpoints return correct responses in FastAPI docs. |
-
-### 1G. Finding (Model → Schema → Subrouter)
-
-| # | Step | File | Action | Test |
-|---|---|---|---|---|
-| 1G.1 | ❌ | `server/apps/cybersecurity/models/finding_models.py` | Create `Finding(Base)` — NO BaseMixin. All fields from `domain-architecture.md` §3.6. FK to `scan_jobs.id`. Includes fingerprint, is_new, first_found_job_id, resolved_by fields. | Python imports without error. |
-| 1G.2 | ❌ | `server/apps/cybersecurity/models/__init__.py` | Add `from .finding_models import Finding` re-export. | Import works. |
-| 1G.3 | ❌ | `server/apps/cybersecurity/schemas/finding_schemas.py` | Create Pydantic 2 schemas. Include enum classes `Severity`, `FindingStatus`, `FindingCategory`. Detail schema only (no Create/Update — scanner writes findings). Plus `FindingStatusUpdate` schema for triage. | Python imports without error. |
-| 1G.4 | ❌ | `server/apps/cybersecurity/subrouters/finding_subrouter.py` | Subrouter: `GET /` (list with filters: severity, category, status, scan_job_id), `GET /{id}` (detail), `PATCH /{id}/status` (update triage status only). No create/delete — scanner writes, user triages. | All 3 endpoints return correct responses in FastAPI docs. |
-
-### 1H. Asset (Model → Schema → Subrouter)
-
-| # | Step | File | Action | Test |
-|---|---|---|---|---|
-| 1H.1 | ❌ | `server/apps/cybersecurity/models/asset_models.py` | Create `Asset(Base)` — NO BaseMixin. All fields from `domain-architecture.md` §3.7. FK to `scan_jobs.id`. UniqueConstraint. | Python imports without error. |
-| 1H.2 | ❌ | `server/apps/cybersecurity/models/__init__.py` | Add `from .asset_models import Asset` re-export. | Import works. |
-| 1H.3 | ❌ | `server/apps/cybersecurity/schemas/asset_schemas.py` | Create Pydantic 2 schemas. Include enum classes `AssetType`, `AssetConfidence`. Detail schema only (no Create/Update — scanner writes assets). | Python imports without error. |
-| 1G.4 | ❌ | `server/apps/cybersecurity/subrouters/asset_subrouter.py` | Subrouter: `GET /` (list with filters: asset_type, scan_job_id), `GET /{id}` (detail). Read-only — scanner writes, user views. | All 2 endpoints return correct responses in FastAPI docs. |
-
-### 1I. Report (Model → Schema → Subrouter)
-
-| # | Step | File | Action | Test |
-|---|---|---|---|---|
-| 1H.1 | ❌ | `server/apps/cybersecurity/models/report_models.py` | Create `Report(BaseMixin, Base)` with all fields from `domain-architecture.md` §3.8. FKs to `scan_targets.id`, `scan_jobs.id` (SET NULL). | Python imports without error. |
-| 1H.2 | ❌ | `server/apps/cybersecurity/models/__init__.py` | Add `from .report_models import Report` re-export. | Import works. |
-| 1H.3 | ❌ | `server/apps/cybersecurity/schemas/report_schemas.py` | Create Pydantic 2 schemas. Include enum classes `ReportType`, `ReportFormat`. | Python imports without error. |
-| 1H.4 | ❌ | `server/apps/cybersecurity/subrouters/report_subrouter.py` | Subrouter: `GET /` (list), `GET /{id}` (detail), `POST /generate` (generate report for target/job), `DELETE /{id}` (soft delete). | All 4 endpoints return correct responses in FastAPI docs. |
-
-### 1J. Router + Utils + Wiring
-
-| # | Step | File | Action | Test |
-|---|---|---|---|---|
-| 1J.1 | ❌ | `server/apps/cybersecurity/utils/dependency_utils.py` | Create `get_user_target()`, `require_active_subscription`, `enforce_rate_limit`, `get_user_organization_id()`. Pattern from `server/apps/ecommerce/utils/dependency_utils.py`. | Python imports without error. |
-| 1J.2 | ❌ | `server/apps/cybersecurity/utils/subscription_utils.py` | Create tier constants (`FREE`, `PRO`, `ENTERPRISE`), scan limits per tier, `is_service_active()`. Pattern from `server/apps/ecommerce/utils/subscription_utils.py`. | Python imports without error. |
-| 1J.3 | ❌ | `server/apps/cybersecurity/router.py` | Create main router. Prefix `/cybersecurity`. All subrouters gated behind `require_active_subscription` + `enforce_rate_limit`. Pattern from `server/apps/ecommerce/router.py`. | Python imports without error. |
-| 1J.4 | ❌ | `server/main.py` | Mount `cybersecurity_router`: `app.include_router(cybersecurity_router)`. | Server starts. `GET /docs` shows all `/cybersecurity/*` endpoints. |
-| 1J.5 | ❌ | `server/migrations/env.py` | Add `from apps.cybersecurity.models import *`. | `python manage.py makemigrations` detects all 9 new tables (user runs this). |
+| Step | File | Action | Test |
+|---|---|---|---|
+| ❌ | `utils/dependency_utils.py` | `get_user_target()`, `require_active_subscription`, `enforce_rate_limit`, `get_user_organization_id()`. Pattern from ecommerce. | Python imports. |
+| ❌ | `utils/subscription_utils.py` | Tier constants (FREE, PRO, ENTERPRISE), scan limits, `is_service_active()`. | Python imports. |
+| ❌ | `utils/encryption_utils.py` | Fernet encrypt/decrypt. Copy pattern from `ecommerce/utils/encryption_utils.py`. | `encrypt_value("test")` → encrypted. `decrypt_value(encrypted)` → "test". |
+| ❌ | `router.py` | Main router. Prefix `/cybersecurity`. Import all subrouters from 3 domain subfolders. Gate behind `require_active_subscription` + `enforce_rate_limit`. | Python imports. |
+| ❌ | `server/main.py` | Mount `cybersecurity_router`. | Server starts. `/docs` shows all endpoints. |
+| ❌ | `server/migrations/env.py` | `from apps.cybersecurity.models import *`. | `makemigrations` detects 9 new tables (user runs). |
 
 **Phase 1 completion test:** Server boots. All `/cybersecurity/*` endpoints visible in FastAPI docs. CRUD operations work for all 9 entities (after user runs migrations). Credential encrypted_value never returned in API responses. Subscription gating blocks unauthenticated/unsubscribed requests.
 
@@ -471,12 +443,19 @@ No ungated routes in MVP (no external platform integrations, no public endpoints
 | 4C.1 | ❌ | `client/src/app/(cybersecurity)/dashboard/page.tsx` | Summary dashboard: total targets, total scans, finding severity breakdown (chart), recent scan jobs, top vulnerabilities. | Dashboard renders with aggregated data. |
 | 4C.2 | ❌ | Backend dashboard endpoint | `GET /cybersecurity/dashboard/summary` — aggregated stats across all user targets. | Returns correct counts and breakdowns. |
 
-### 4D. Rust Engine (PyO3)
+### 4D. Rust Performance Modules (PyO3)
+
+**Location:** `server/apps/cybersecurity/rust/`
+**Build tool:** maturin (compiles Rust → Python module via PyO3)
+**Pattern:** Python scanner imports Rust module if available, falls back to pure Python if not compiled.
+**Reference:** BHR Ch2-3 (rayon threadpool, tokio async), `support/cystene/readings/BHRCode/`
 
 | # | Step | File | Action | Test |
 |---|---|---|---|---|
-| 4D.1 | ❌ | Rust port scanner module | Rewrite `PortScanEngine` core logic in Rust using PyO3. Expose as Python module. Rayon for parallel TCP connections. | Port scan performance 10-50x faster than pure Python. |
-| 4D.2 | ❌ | Python fallback | `PortScanEngine` tries Rust module first, falls back to Python if not available. | Scan works regardless of Rust module availability. |
+| — | ❌ | `rust/port_scan_rs/` | Rust port scanner: tokio TcpStream + rayon for parallel connections. Compiled as Python module. Same return type as Python port_scan.run(). | Port scan 10-50x faster than pure Python asyncio. |
+| — | ❌ | `rust/password_rs/` | Rust password brute force: hash computation (bcrypt, SHA, NTLM) in Rust. Called from password_audit_scan.py. | Hash cracking 100x+ faster than pure Python hashlib. |
+| — | ❌ | `rust/banner_rs/` | Rust banner parsing: regex matching on large banner datasets. Called from vuln_scan.py for CVE version matching. | Banner parsing on 10k+ services in milliseconds. |
+| — | ❌ | Python fallback | Each scanner checks `try: import cystene_rust_port_scan` → uses Rust if available, pure Python if not. | All scanners work without Rust compiled. Rust is optional performance boost. |
 
 ### 4E. External Tool Parsers
 
