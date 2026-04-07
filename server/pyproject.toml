@@ -16,6 +16,7 @@ dependencies = [
     "annotated-types==0.7.0",
     "anyio==4.10.0",
     "asyncpg==0.30.0",
+    "asyncssh>=2.22.0",
     "attrs==25.3.0",
     "bcrypt==4.3.0",
     "beautifulsoup4==4.13.5",
