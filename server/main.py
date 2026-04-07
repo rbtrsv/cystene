@@ -1,4 +1,5 @@
 import uvicorn
+from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from starlette.middleware.cors import CORSMiddleware
@@ -7,12 +8,31 @@ from core.config import settings
 from apps.main.router import router as main_router
 from apps.accounts.router import router as accounts_router
 from apps.cybersecurity.router import router as cybersecurity_router
+from apps.cybersecurity.utils.scan_scheduler import start_scan_scheduler, stop_scan_scheduler
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """
+    FastAPI lifespan — starts background tasks on startup, stops on shutdown.
+
+    Why lifespan over on_event: FastAPI recommends lifespan context manager over
+    deprecated @app.on_event("startup")/@app.on_event("shutdown") decorators.
+    """
+    # Startup — start background schedulers
+    scan_scheduler_task = await start_scan_scheduler()
+
+    yield
+
+    # Shutdown — stop background schedulers
+    await stop_scan_scheduler(scan_scheduler_task)
 
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
     version=settings.VERSION,
     description=settings.DESCRIPTION,
+    lifespan=lifespan,
 )
 
 # Mount static files

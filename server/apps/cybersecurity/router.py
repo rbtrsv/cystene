@@ -26,6 +26,7 @@ from .subrouters.execution_subrouters.scan_job_subrouter import router as scan_j
 from .subrouters.discovery_subrouters.finding_subrouter import router as finding_router
 from .subrouters.discovery_subrouters.asset_subrouter import router as asset_router
 from .subrouters.discovery_subrouters.report_subrouter import router as report_router
+from .subrouters.discovery_subrouters.dashboard_subrouter import router as dashboard_router
 
 
 router = APIRouter(prefix="/cybersecurity")
@@ -47,5 +48,6 @@ gated.include_router(scan_job_router, prefix="/scan-jobs")
 gated.include_router(finding_router, prefix="/findings")
 gated.include_router(asset_router, prefix="/assets")
 gated.include_router(report_router, prefix="/reports")
+gated.include_router(dashboard_router, prefix="/dashboard")
 
 router.include_router(gated)

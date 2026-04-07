@@ -224,110 +224,56 @@ Also done: `client/src/app/(ecommerce)` renamed to `_ecommerce` (disabled in Nex
 
 ---
 
-## Phase 2: Frontend Foundation (Schemas → Endpoints → Services → Stores → Providers → Hooks → Pages)
+## Phase 2: Frontend Foundation ✅ COMPLETE
 
-**Goal:** Build frontend modules for all 7 entities. Each entity follows the 7-layer frontend pipeline. After each entity: `tsc --noEmit` + `npm run build`.
+**Goal:** Build frontend modules for all 9 entities (Infrastructure, Credential, ScanTarget, ScanTemplate, ScanSchedule, ScanJob, Finding, Asset, Report) + Organizations + Dashboard. Pattern from assetmanager (7-layer pipeline per entity).
 
-**Reference files to read before each entity:**
-- Frontend schema: `client/src/modules/nexotype/schemas/` (any schema file — Zod patterns, JSDoc headers, snake_case fields)
-- Frontend endpoints: `client/src/modules/ecommerce/utils/api.endpoints.ts` or `client/src/modules/nexotype/utils/api.endpoints.ts`
-- Frontend service: `client/src/modules/nexotype/service/` (any service file — fetchClient, CRUD functions, JSDoc)
-- Frontend store: `client/src/modules/nexotype/store/` (any store file — Zustand + devtools + persist + immer)
-- Frontend provider: `client/src/modules/nexotype/providers/` (any provider file — React Context wrapping Zustand)
-- Frontend hook: `client/src/modules/nexotype/hooks/` (any hook file — combined context + store interface)
-- Frontend page: `client/src/app/(ecommerce)/` (any page file — uses hook, never imports store/service directly)
+### Module Layer (client/src/modules/cybersecurity/) ✅
 
-### 2.0 Setup
+| Layer | Files | Status |
+|---|---|---|
+| `utils/api.endpoints.ts` — URL constants for all 9 entities | 1 | ✅ |
+| `schemas/infrastructure/` — infrastructure, credentials, scan-targets | 3 | ✅ |
+| `schemas/execution/` — scan-templates, scan-schedules, scan-jobs | 3 | ✅ |
+| `schemas/discovery/` — findings, assets, reports | 3 | ✅ |
+| `service/infrastructure/` — CRUD + verify | 3 | ✅ |
+| `service/execution/` — CRUD + activate/deactivate + start/cancel | 3 | ✅ |
+| `service/discovery/` — list/detail + triage + generate/delete | 3 | ✅ |
+| `store/infrastructure/` — Zustand + devtools + persist + immer | 3 | ✅ |
+| `store/execution/` — including startScan, cancelScan, activate/deactivate | 3 | ✅ |
+| `store/discovery/` — including updateFindingStatus, generateReport | 3 | ✅ |
+| `providers/infrastructure/` — React Context + rehydrate + initialFetch | 3 | ✅ |
+| `providers/execution/` | 3 | ✅ |
+| `providers/discovery/` | 3 | ✅ |
+| `providers/cybersecurity-providers.tsx` — 9 providers nested | 1 | ✅ |
+| `hooks/infrastructure/` — context + store combined + helpers | 3 | ✅ |
+| `hooks/execution/` | 3 | ✅ |
+| `hooks/discovery/` | 3 | ✅ |
+| `components/cybersecurity-sidebar.tsx` — org switcher + 5 groups + footer | 1 | ✅ |
+| `components/cybersecurity-breadcrumb.tsx` — Cybersecurity root label | 1 | ✅ |
 
-| # | Step | File | Action | Test |
-|---|---|---|---|---|
-| 2.0.1 | ❌ | `client/src/modules/cybersecurity/utils/api.endpoints.ts` | Create URL constants for all 7 entities: `/cybersecurity/scan-targets`, `/cybersecurity/scan-templates`, `/cybersecurity/scan-schedules`, `/cybersecurity/scan-jobs`, `/cybersecurity/findings`, `/cybersecurity/assets`, `/cybersecurity/reports`. | `tsc --noEmit` passes. |
+**Total module files: 49**
 
-### 2A. ScanTarget (Frontend — 7 layers)
+### Pages (client/src/app/(cybersecurity)/) ✅
 
-| # | Step | File | Action | Test |
-|---|---|---|---|---|
-| 2A.1 | ❌ | `client/src/modules/cybersecurity/schemas/scan-targets.schemas.ts` | Zod schemas mirroring backend. Include `TargetType`, `VerificationMethod` enums. | `tsc --noEmit` passes. |
-| 2A.2 | ❌ | `client/src/modules/cybersecurity/service/scan-targets.service.ts` | Service functions: `getScanTargets()`, `getScanTarget(id)`, `createScanTarget()`, `updateScanTarget()`, `deleteScanTarget()`, `verifyScanTarget(id)`. | `tsc --noEmit` passes. |
-| 2A.3 | ❌ | `client/src/modules/cybersecurity/store/scan-targets.store.ts` | Zustand store with devtools + persist + immer. | `tsc --noEmit` passes. |
-| 2A.4 | ❌ | `client/src/modules/cybersecurity/providers/scan-targets-provider.tsx` | React Context wrapping Zustand store. | `tsc --noEmit` passes. |
-| 2A.5 | ❌ | `client/src/modules/cybersecurity/hooks/use-scan-targets.ts` | Combined context + store interface hook. | `tsc --noEmit` passes. |
-| 2A.6 | ❌ | `client/src/app/(cybersecurity)/scan-targets/page.tsx` | Page using hook. CRUD UI: list targets, create form, edit, delete. | `tsc --noEmit` + `npm run build` passes. |
+| Entity | list | new | [id]/details | special | Status |
+|---|---|---|---|---|---|
+| Root dashboard | page.tsx | — | — | security score, severity bars, recent scans | ✅ |
+| Organizations | page.tsx | new | [id]/details | [id]/subscription | ✅ |
+| Infrastructure | page.tsx | new | [id]/details (tabs: details+edit+danger) | — | ✅ |
+| Credentials | page.tsx | new | [id]/details (encrypted_value hidden) | — | ✅ |
+| Scan Targets | page.tsx | new | [id]/details + verify button | — | ✅ |
+| Scan Templates | page.tsx | new | [id]/details (scan type config) | — | ✅ |
+| Scan Schedules | page.tsx | new | [id]/details + activate/deactivate | — | ✅ |
+| Scan Jobs | page.tsx | — | [id]/details (status, score, cancel) | — | ✅ |
+| Findings | page.tsx | — | [id]/details (triage, compliance, evidence) | severity/status filters | ✅ |
+| Assets | page.tsx | — | [id]/details (service, banner, metadata) | — | ✅ |
+| Reports | page.tsx | — | [id]/details (content, delete) | — | ✅ |
+| Layout | layout.tsx | — | — | AccountsProviders → CybersecurityProviders → Sidebar | ✅ |
 
-### 2B. ScanTemplate (Frontend — 7 layers)
+**Total page files: 28 + 1 layout = 29**
 
-| # | Step | File | Action | Test |
-|---|---|---|---|---|
-| 2B.1 | ❌ | `client/src/modules/cybersecurity/schemas/scan-templates.schemas.ts` | Zod schemas. Include `ScanType`, `PortRange`, `ScanSpeed` enums. | `tsc --noEmit` passes. |
-| 2B.2 | ❌ | `client/src/modules/cybersecurity/service/scan-templates.service.ts` | Service functions: CRUD. | `tsc --noEmit` passes. |
-| 2B.3 | ❌ | `client/src/modules/cybersecurity/store/scan-templates.store.ts` | Zustand store. | `tsc --noEmit` passes. |
-| 2B.4 | ❌ | `client/src/modules/cybersecurity/providers/scan-templates-provider.tsx` | Provider. | `tsc --noEmit` passes. |
-| 2B.5 | ❌ | `client/src/modules/cybersecurity/hooks/use-scan-templates.ts` | Hook. | `tsc --noEmit` passes. |
-| 2B.6 | ❌ | `client/src/app/(cybersecurity)/scan-templates/page.tsx` | Page: list templates per target, create/edit with scan type checkboxes and parameter forms. | `tsc --noEmit` + `npm run build` passes. |
-
-### 2C. ScanSchedule (Frontend — 7 layers)
-
-| # | Step | File | Action | Test |
-|---|---|---|---|---|
-| 2C.1 | ❌ | `client/src/modules/cybersecurity/schemas/scan-schedules.schemas.ts` | Zod schemas. Include `ScheduleFrequency` enum. | `tsc --noEmit` passes. |
-| 2C.2 | ❌ | `client/src/modules/cybersecurity/service/scan-schedules.service.ts` | Service functions: CRUD + activate/deactivate. | `tsc --noEmit` passes. |
-| 2C.3 | ❌ | `client/src/modules/cybersecurity/store/scan-schedules.store.ts` | Zustand store. | `tsc --noEmit` passes. |
-| 2C.4 | ❌ | `client/src/modules/cybersecurity/providers/scan-schedules-provider.tsx` | Provider. | `tsc --noEmit` passes. |
-| 2C.5 | ❌ | `client/src/modules/cybersecurity/hooks/use-scan-schedules.ts` | Hook. | `tsc --noEmit` passes. |
-| 2C.6 | ❌ | `client/src/app/(cybersecurity)/scan-schedules/page.tsx` | Page: list schedules, create with frequency/cron, activate/deactivate toggle. | `tsc --noEmit` + `npm run build` passes. |
-
-### 2D. ScanJob (Frontend — 7 layers)
-
-| # | Step | File | Action | Test |
-|---|---|---|---|---|
-| 2D.1 | ❌ | `client/src/modules/cybersecurity/schemas/scan-jobs.schemas.ts` | Zod schemas. Include `JobStatus` enum. | `tsc --noEmit` passes. |
-| 2D.2 | ❌ | `client/src/modules/cybersecurity/service/scan-jobs.service.ts` | Service functions: `getScanJobs()`, `getScanJob(id)`, `startScan()`, `cancelScan(id)`. | `tsc --noEmit` passes. |
-| 2D.3 | ❌ | `client/src/modules/cybersecurity/store/scan-jobs.store.ts` | Zustand store. | `tsc --noEmit` passes. |
-| 2D.4 | ❌ | `client/src/modules/cybersecurity/providers/scan-jobs-provider.tsx` | Provider. | `tsc --noEmit` passes. |
-| 2D.5 | ❌ | `client/src/modules/cybersecurity/hooks/use-scan-jobs.ts` | Hook. | `tsc --noEmit` passes. |
-| 2D.6 | ❌ | `client/src/app/(cybersecurity)/scan-jobs/page.tsx` | Page: list jobs with status badges, "Start Scan" button, cancel running scans, severity summary bars. | `tsc --noEmit` + `npm run build` passes. |
-
-### 2E. Finding (Frontend — 7 layers)
-
-| # | Step | File | Action | Test |
-|---|---|---|---|---|
-| 2E.1 | ❌ | `client/src/modules/cybersecurity/schemas/findings.schemas.ts` | Zod schemas. Include `Severity`, `FindingStatus`, `FindingCategory` enums. | `tsc --noEmit` passes. |
-| 2E.2 | ❌ | `client/src/modules/cybersecurity/service/findings.service.ts` | Service functions: `getFindings()`, `getFinding(id)`, `updateFindingStatus(id, status)`. | `tsc --noEmit` passes. |
-| 2E.3 | ❌ | `client/src/modules/cybersecurity/store/findings.store.ts` | Zustand store. | `tsc --noEmit` passes. |
-| 2E.4 | ❌ | `client/src/modules/cybersecurity/providers/findings-provider.tsx` | Provider. | `tsc --noEmit` passes. |
-| 2E.5 | ❌ | `client/src/modules/cybersecurity/hooks/use-findings.ts` | Hook. | `tsc --noEmit` passes. |
-| 2E.6 | ❌ | `client/src/app/(cybersecurity)/findings/page.tsx` | Page: list findings with severity color coding, category filters, status dropdown for triage, detail expand. | `tsc --noEmit` + `npm run build` passes. |
-
-### 2F. Asset (Frontend — 7 layers)
-
-| # | Step | File | Action | Test |
-|---|---|---|---|---|
-| 2F.1 | ❌ | `client/src/modules/cybersecurity/schemas/assets.schemas.ts` | Zod schemas. Include `AssetType`, `AssetConfidence` enums. | `tsc --noEmit` passes. |
-| 2F.2 | ❌ | `client/src/modules/cybersecurity/service/assets.service.ts` | Service functions: `getAssets()`, `getAsset(id)`. Read-only. | `tsc --noEmit` passes. |
-| 2F.3 | ❌ | `client/src/modules/cybersecurity/store/assets.store.ts` | Zustand store. | `tsc --noEmit` passes. |
-| 2F.4 | ❌ | `client/src/modules/cybersecurity/providers/assets-provider.tsx` | Provider. | `tsc --noEmit` passes. |
-| 2F.5 | ❌ | `client/src/modules/cybersecurity/hooks/use-assets.ts` | Hook. | `tsc --noEmit` passes. |
-| 2F.6 | ❌ | `client/src/app/(cybersecurity)/assets/page.tsx` | Page: list discovered assets by type, filter by scan job, service details expand. | `tsc --noEmit` + `npm run build` passes. |
-
-### 2G. Report (Frontend — 7 layers)
-
-| # | Step | File | Action | Test |
-|---|---|---|---|---|
-| 2G.1 | ❌ | `client/src/modules/cybersecurity/schemas/reports.schemas.ts` | Zod schemas. Include `ReportType`, `ReportFormat` enums. | `tsc --noEmit` passes. |
-| 2G.2 | ❌ | `client/src/modules/cybersecurity/service/reports.service.ts` | Service functions: `getReports()`, `getReport(id)`, `generateReport()`, `deleteReport(id)`. | `tsc --noEmit` passes. |
-| 2G.3 | ❌ | `client/src/modules/cybersecurity/store/reports.store.ts` | Zustand store. | `tsc --noEmit` passes. |
-| 2G.4 | ❌ | `client/src/modules/cybersecurity/providers/reports-provider.tsx` | Provider. | `tsc --noEmit` passes. |
-| 2G.5 | ❌ | `client/src/modules/cybersecurity/hooks/use-reports.ts` | Hook. | `tsc --noEmit` passes. |
-| 2G.6 | ❌ | `client/src/app/(cybersecurity)/reports/page.tsx` | Page: list reports, "Generate Report" button, severity summary, view/download. | `tsc --noEmit` + `npm run build` passes. |
-
-### 2H. Layout + Providers + Sidebar
-
-| # | Step | File | Action | Test |
-|---|---|---|---|---|
-| 2H.1 | ❌ | `client/src/app/(cybersecurity)/layout.tsx` | Create layout with `CybersecurityProviders` (nesting all 7 providers) + sidebar + breadcrumbs. Pattern from ecommerce layout. | `tsc --noEmit` + `npm run build` passes. |
-| 2H.2 | ❌ | Sidebar component | Cybersecurity sidebar: Scan Targets, Scan Templates, Scan Schedules, Scan Jobs, Findings, Assets, Reports, Dashboard (Phase 4). | Sidebar renders with correct links. |
-
-**Phase 2 completion test:** `tsc --noEmit` passes. `npm run build` succeeds. All 7 entity pages render. Navigation between pages works. CRUD operations work end-to-end (frontend → backend → database → response → UI update).
+**Phase 2 Result:** 49 module files + 29 page files = 78 frontend files. Sidebar with org switcher, 5 groups (Organizations, Dashboard, Infrastructure, Scanning, Results). Dashboard with stat cards, security score circle, severity breakdown bars, recent scans. All CRUD entities have list + create + detail/edit + delete pages. Read-only entities (findings, assets, scan-jobs) have list + detail pages.
 
 ---
 

@@ -16,6 +16,7 @@ from ...schemas.discovery_schemas.report_schemas import (
 )
 from ...utils.dependency_utils import get_user_organization_id
 from ...utils.audit_utils import log_audit, model_to_dict
+from ...services.report_generation_service import generate_report_content
 from apps.accounts.models import User
 from apps.accounts.utils.auth_utils import get_current_user
 from core.db import get_session
@@ -93,11 +94,31 @@ async def generate_report(
         if not target:
             raise HTTPException(status_code=404, detail="Scan target not found")
 
-        # TODO: Actual report generation logic (aggregate findings, build HTML/PDF content)
+        # Generate report content via service (aggregates findings + assets)
+        report_data = await generate_report_content(
+            target_id=payload.target_id,
+            scan_job_id=payload.scan_job_id,
+            report_type=payload.report_type or "full",
+            format=payload.format or "html",
+            session=db,
+        )
+
         item = Report(
+            target_id=payload.target_id,
+            scan_job_id=payload.scan_job_id,
+            name=payload.name,
+            report_type=payload.report_type or "full",
+            format=payload.format or "html",
+            content=report_data["content"],
+            summary=report_data["summary"],
+            total_findings=report_data["total_findings"],
+            critical_count=report_data["critical_count"],
+            high_count=report_data["high_count"],
+            medium_count=report_data["medium_count"],
+            low_count=report_data["low_count"],
+            info_count=report_data["info_count"],
             generated_by=user.id,
             created_by=user.id,
-            **payload.model_dump(),
         )
         db.add(item)
         await db.commit()
