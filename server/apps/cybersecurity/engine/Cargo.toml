@@ -1,0 +1,39 @@
+[package]
+name = "engine"
+version = "0.1.0"
+edition = "2024"
+description = "High-performance Rust engine for Cystene cybersecurity scanners"
+
+[lib]
+name = "engine"
+crate-type = ["cdylib"]
+
+[dependencies]
+# PyO3 — Python bindings (maturin generated version)
+pyo3 = "0.27.0"
+
+# Async runtime — for port scanning and HTTP probing
+# Why tokio: Multi-threaded async runtime. Thousands of concurrent TCP connections.
+# Pattern: BHR Ch3 — tokio::net::TcpStream::connect with bounded concurrency
+tokio = { version = "1", features = ["full"] }
+
+# Parallel processing — for hash cracking, DNS resolution, banner matching
+# Why rayon: Data parallelism across CPU cores. Zero-cost thread pool.
+# Pattern: BHR Ch2 — rayon::prelude::par_iter for port scanning and subdomain resolution
+rayon = "1.10"
+
+# Hash algorithms — for hash cracking
+# Why these 3: SHA-1 (legacy websites), SHA-256 (Linux /etc/shadow), MD5 (old systems)
+# Pattern: BHR Ch1 — sha1_cracker with wordlist dictionary attack
+sha1 = "0.10"
+sha2 = "0.10"
+md-5 = "0.10"
+hex = "0.4"
+
+# Regex — for bulk banner matching
+# Why: Rust regex is 10-50x faster than Python re for bulk operations
+regex = "1"
+
+# HTTP client — for parallel HTTP probing
+# Why reqwest: De facto Rust HTTP client. Async with tokio. TLS support.
+reqwest = { version = "0.12", features = ["rustls-tls"], default-features = false }

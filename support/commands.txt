@@ -116,3 +116,7 @@ https://admin.shopify.com/store/nudgio-dev-store/apps/nudgio
 https://dev.shopify.com/dashboard/
 https://partners.shopify.com/4786160/
 Shopify Partners → Apps → Nudgio → Test your app
+
+maturin new --bindings pyo3 engine
+În folderul server/apps/cybersecurity/engine:
+maturin develop --release
