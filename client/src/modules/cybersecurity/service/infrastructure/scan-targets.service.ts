@@ -42,6 +42,7 @@ export interface ListScanTargetsParams {
  */
 export const getScanTargets = async (params?: ListScanTargetsParams): Promise<ScanTargetsResponse> => {
   try {
+    // Build query string
     const queryParams = new URLSearchParams();
     if (params?.target_type) queryParams.append('target_type', params.target_type);
     if (params?.infrastructure_id) queryParams.append('infrastructure_id', params.infrastructure_id.toString());
@@ -50,12 +51,14 @@ export const getScanTargets = async (params?: ListScanTargetsParams): Promise<Sc
 
     const url = `${SCAN_TARGET_ENDPOINTS.LIST}${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
 
+    // FastAPI returns full response wrapper {success, data, error}
     const response = await fetchClient<ScanTargetsResponse>(url, {
       method: 'GET'
     });
 
     return response;
   } catch (error) {
+    // Clear tokens on 401 errors
     if ((error as FetchError)?.status === 401) {
       const { clearAuthCookies } = await import('../../../accounts/utils/token.client.utils');
       clearAuthCookies();
@@ -76,12 +79,14 @@ export const getScanTargets = async (params?: ListScanTargetsParams): Promise<Sc
  */
 export const getScanTarget = async (id: number): Promise<ScanTargetResponse> => {
   try {
+    // FastAPI returns full response wrapper {success, data, error}
     const response = await fetchClient<ScanTargetResponse>(SCAN_TARGET_ENDPOINTS.DETAIL(id), {
       method: 'GET'
     });
 
     return response;
   } catch (error) {
+    // Clear tokens on 401 errors
     if ((error as FetchError)?.status === 401) {
       const { clearAuthCookies } = await import('../../../accounts/utils/token.client.utils');
       clearAuthCookies();
@@ -101,9 +106,11 @@ export const getScanTarget = async (id: number): Promise<ScanTargetResponse> => 
  * @returns Promise with scan target response
  */
 export const createScanTarget = async (data: CreateScanTarget): Promise<ScanTargetResponse> => {
+  // Validate request data
   CreateScanTargetSchema.parse(data);
 
   try {
+    // FastAPI returns full response wrapper {success, data, error}
     const response = await fetchClient<ScanTargetResponse>(SCAN_TARGET_ENDPOINTS.CREATE, {
       method: 'POST',
       body: data as unknown as Record<string, unknown>
@@ -126,9 +133,11 @@ export const createScanTarget = async (data: CreateScanTarget): Promise<ScanTarg
  * @returns Promise with scan target response
  */
 export const updateScanTarget = async (id: number, data: UpdateScanTarget): Promise<ScanTargetResponse> => {
+  // Validate request data
   UpdateScanTargetSchema.parse(data);
 
   try {
+    // FastAPI returns full response wrapper {success, data, error}
     const response = await fetchClient<ScanTargetResponse>(SCAN_TARGET_ENDPOINTS.UPDATE(id), {
       method: 'PUT',
       body: data as unknown as Record<string, unknown>
@@ -151,6 +160,7 @@ export const updateScanTarget = async (id: number, data: UpdateScanTarget): Prom
  */
 export const deleteScanTarget = async (id: number): Promise<{ success: boolean; message?: string; error?: string }> => {
   try {
+    // FastAPI returns {success: bool, message?: string, error?: string}
     const response = await fetchClient<{ success: boolean; message?: string; error?: string }>(
       SCAN_TARGET_ENDPOINTS.DELETE(id),
       {

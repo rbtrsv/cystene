@@ -41,6 +41,7 @@ export interface ListInfrastructureParams {
  */
 export const getInfrastructures = async (params?: ListInfrastructureParams): Promise<InfrastructuresResponse> => {
   try {
+    // Build query string
     const queryParams = new URLSearchParams();
     if (params?.infra_type) queryParams.append('infra_type', params.infra_type);
     if (params?.limit) queryParams.append('limit', params.limit.toString());
@@ -76,12 +77,14 @@ export const getInfrastructures = async (params?: ListInfrastructureParams): Pro
  */
 export const getInfrastructure = async (id: number): Promise<InfrastructureResponse> => {
   try {
+    // FastAPI returns full response wrapper {success, data, error}
     const response = await fetchClient<InfrastructureResponse>(INFRASTRUCTURE_ENDPOINTS.DETAIL(id), {
       method: 'GET'
     });
 
     return response;
   } catch (error) {
+    // Clear tokens on 401 errors
     if ((error as FetchError)?.status === 401) {
       const { clearAuthCookies } = await import('../../../accounts/utils/token.client.utils');
       clearAuthCookies();
@@ -105,6 +108,7 @@ export const createInfrastructure = async (data: CreateInfrastructure): Promise<
   CreateInfrastructureSchema.parse(data);
 
   try {
+    // FastAPI returns full response wrapper {success, data, error}
     const response = await fetchClient<InfrastructureResponse>(INFRASTRUCTURE_ENDPOINTS.CREATE, {
       method: 'POST',
       body: data as unknown as Record<string, unknown>
@@ -131,6 +135,7 @@ export const updateInfrastructure = async (id: number, data: UpdateInfrastructur
   UpdateInfrastructureSchema.parse(data);
 
   try {
+    // FastAPI returns full response wrapper {success, data, error}
     const response = await fetchClient<InfrastructureResponse>(INFRASTRUCTURE_ENDPOINTS.UPDATE(id), {
       method: 'PUT',
       body: data as unknown as Record<string, unknown>
@@ -153,6 +158,7 @@ export const updateInfrastructure = async (id: number, data: UpdateInfrastructur
  */
 export const deleteInfrastructure = async (id: number): Promise<{ success: boolean; message?: string; error?: string }> => {
   try {
+    // FastAPI returns {success: bool, message?: string, error?: string}
     const response = await fetchClient<{ success: boolean; message?: string; error?: string }>(
       INFRASTRUCTURE_ENDPOINTS.DELETE(id),
       {

@@ -40,6 +40,7 @@ export interface ListScanTemplatesParams {
  */
 export const getScanTemplates = async (params?: ListScanTemplatesParams): Promise<ScanTemplatesResponse> => {
   try {
+    // Build query string
     const queryParams = new URLSearchParams();
     if (params?.target_id) queryParams.append('target_id', params.target_id.toString());
     if (params?.limit) queryParams.append('limit', params.limit.toString());
@@ -47,12 +48,14 @@ export const getScanTemplates = async (params?: ListScanTemplatesParams): Promis
 
     const url = `${SCAN_TEMPLATE_ENDPOINTS.LIST}${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
 
+    // FastAPI returns full response wrapper {success, data, error}
     const response = await fetchClient<ScanTemplatesResponse>(url, {
       method: 'GET'
     });
 
     return response;
   } catch (error) {
+    // Clear tokens on 401 errors
     if ((error as FetchError)?.status === 401) {
       const { clearAuthCookies } = await import('../../../accounts/utils/token.client.utils');
       clearAuthCookies();
@@ -73,12 +76,14 @@ export const getScanTemplates = async (params?: ListScanTemplatesParams): Promis
  */
 export const getScanTemplate = async (id: number): Promise<ScanTemplateResponse> => {
   try {
+    // FastAPI returns full response wrapper {success, data, error}
     const response = await fetchClient<ScanTemplateResponse>(SCAN_TEMPLATE_ENDPOINTS.DETAIL(id), {
       method: 'GET'
     });
 
     return response;
   } catch (error) {
+    // Clear tokens on 401 errors
     if ((error as FetchError)?.status === 401) {
       const { clearAuthCookies } = await import('../../../accounts/utils/token.client.utils');
       clearAuthCookies();
@@ -98,9 +103,11 @@ export const getScanTemplate = async (id: number): Promise<ScanTemplateResponse>
  * @returns Promise with scan template response
  */
 export const createScanTemplate = async (data: CreateScanTemplate): Promise<ScanTemplateResponse> => {
+  // Validate request data
   CreateScanTemplateSchema.parse(data);
 
   try {
+    // FastAPI returns full response wrapper {success, data, error}
     const response = await fetchClient<ScanTemplateResponse>(SCAN_TEMPLATE_ENDPOINTS.CREATE, {
       method: 'POST',
       body: data as unknown as Record<string, unknown>
@@ -123,9 +130,11 @@ export const createScanTemplate = async (data: CreateScanTemplate): Promise<Scan
  * @returns Promise with scan template response
  */
 export const updateScanTemplate = async (id: number, data: UpdateScanTemplate): Promise<ScanTemplateResponse> => {
+  // Validate request data
   UpdateScanTemplateSchema.parse(data);
 
   try {
+    // FastAPI returns full response wrapper {success, data, error}
     const response = await fetchClient<ScanTemplateResponse>(SCAN_TEMPLATE_ENDPOINTS.UPDATE(id), {
       method: 'PUT',
       body: data as unknown as Record<string, unknown>
@@ -148,6 +157,7 @@ export const updateScanTemplate = async (id: number, data: UpdateScanTemplate): 
  */
 export const deleteScanTemplate = async (id: number): Promise<{ success: boolean; message?: string; error?: string }> => {
   try {
+    // FastAPI returns {success: bool, message?: string, error?: string}
     const response = await fetchClient<{ success: boolean; message?: string; error?: string }>(
       SCAN_TEMPLATE_ENDPOINTS.DELETE(id),
       {
