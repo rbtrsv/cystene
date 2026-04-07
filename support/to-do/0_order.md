@@ -107,22 +107,22 @@ No ungated routes in MVP (no external platform integrations, no public endpoints
 
 ---
 
-## Phase 0: Cleanup (Remove Ecommerce from Boot Path)
+## Phase 0: Cleanup (Remove Ecommerce from Boot Path) ✅ COMPLETE
 
 **Goal:** Remove ecommerce from `main.py`, `env.py`, and `config.py` so the server boots clean with only accounts. Keep ecommerce directory as reference (do not delete).
 
 | # | Step | File | Action | Test |
 |---|---|---|---|---|
-| 0.1 | ❌ | `server/main.py` | Remove `ecommerce_router` import and `app.include_router(ecommerce_router)`. Remove ecommerce sync scheduler import + lifespan usage. Remove ecommerce static mount. Keep accounts router + main router. | Server starts with `python manage.py runserver`. `GET /ping` returns 200. No import errors. |
-| 0.2 | ❌ | `server/migrations/env.py` | Remove `from apps.ecommerce.models import *`. Add placeholder comment for future cybersecurity import. | `python manage.py makemigrations` runs without import errors (user runs this). |
-| 0.3 | ❌ | `server/core/config.py` | Remove Shopify-specific settings (`SHOPIFY_API_KEY`, `SHOPIFY_API_SECRET`, `SHOPIFY_SCOPES`, `SHOPIFY_APP_URL`). Keep Stripe settings (reusable). Keep JWT, Google OAuth, email settings. | Server starts. No missing env var errors. |
-| 0.4 | ❌ | `server/main.py` | Verify port is 8003 (line 50). | `uvicorn` starts on port 8003. |
-| 0.5 | ❌ | `client/package.json` | Verify dev port is 3003. | `npm run dev` starts on port 3003. |
-| 0.6 | ❌ | `client/src/modules/accounts/utils/api.endpoints.ts` | Verify `API_BASE_URL` fallback is `http://127.0.0.1:8003`. | Frontend connects to correct backend port. |
-| 0.7 | ❌ | Create `server/apps/cybersecurity/__init__.py` | Empty `__init__.py` to establish the app directory. | Directory exists, importable. |
-| 0.8 | ❌ | Create `server/apps/cybersecurity/models/__init__.py` | Empty `__init__.py` with docstring placeholder. | Directory exists, importable. |
+| 0.1 | ✅ | `server/main.py` | Removed ecommerce_router, sync scheduler, ecommerce static mount. | Server boots clean. |
+| 0.2 | ✅ | `server/migrations/env.py` | Replaced ecommerce import with cybersecurity. | Migrations work. |
+| 0.3 | ✅ | `server/core/config.py` | Removed Shopify settings. | No missing env var errors. |
+| 0.4 | ✅ | `server/main.py` | Port 8003 confirmed. | ✅ |
+| 0.5 | ✅ | `client/package.json` | Port 3003 confirmed. | ✅ |
+| 0.6 | ✅ | `client/src/modules/accounts/utils/api.endpoints.ts` | API_BASE_URL = 8003. | ✅ |
+| 0.7 | ✅ | `server/apps/cybersecurity/__init__.py` | Created. | ✅ |
+| 0.8 | ✅ | `server/apps/cybersecurity/models/__init__.py` | Created. | ✅ |
 
-**Phase 0 completion test:** Server boots cleanly (`python manage.py runserver`), `GET /ping` returns 200, `GET /accounts/me` returns 401 (auth works), no ecommerce references in boot path.
+Also done: `client/src/app/(ecommerce)` renamed to `_ecommerce` (disabled in Next.js routing). Stripe env keys updated to Cystene account (`acct_1TFIscCgafRZki0X`). Old ecommerce migration files deleted.
 
 ---
 
@@ -138,73 +138,77 @@ No ungated routes in MVP (no external platform integrations, no public endpoints
 - Utils: `server/apps/ecommerce/utils/dependency_utils.py` (subscription gating), `server/apps/ecommerce/utils/encryption_utils.py` (Fernet encrypt/decrypt)
 - Infrastructure pattern: `server/apps/assetmanager/models/entity_models.py` (Entity with type, owner, business context)
 
-### Infrastructure Domain (Infrastructure + Credential + ScanTarget)
+### Infrastructure Domain ✅ COMPLETE
 
-**Model file:** `infrastructure_models.py` — 3 classes in one file (FK relations between them, avoids circular imports)
+| Step | Status |
+|---|---|
+| `models/mixin_models.py` — BaseMixin | ✅ |
+| `models/infrastructure_models.py` — Infrastructure + Credential + ScanTarget | ✅ |
+| `models/__init__.py` — re-exports all | ✅ |
+| `schemas/infrastructure_schemas/` — 3 schema files (infrastructure, credential, scan_target) | ✅ |
+| `subrouters/infrastructure_subrouters/` — 3 subrouter files (CRUD + verify endpoints) | ✅ |
 
-| Step | File | Action | Test |
-|---|---|---|---|
-| ❌ | `models/infrastructure_models.py` | Create `Infrastructure(BaseMixin, Base)`, `Credential(BaseMixin, Base)`, `ScanTarget(BaseMixin, Base)` — all 3 classes with fields from §3.1, §3.2, §3.3. Include enums: InfraType, Environment, Criticality, CredentialType, TargetType, VerificationMethod. Fernet encryption on Credential.encrypted_value. FK chain: Infrastructure → Credential (SET NULL), Infrastructure → ScanTarget (SET NULL). | Python imports. `from apps.cybersecurity.models import Infrastructure, Credential, ScanTarget` works. |
-| ❌ | `models/__init__.py` | Add `from .infrastructure_models import *` re-export. | All 3 classes importable. |
-| ❌ | `schemas/infrastructure/__init__.py` | Create subfolder + init. | Directory exists. |
-| ❌ | `schemas/infrastructure/infrastructure_schemas.py` | Pydantic 2: Create, Update, Detail, ListResponse, Response. Include InfraType, Environment, Criticality enums. | Imports without error. |
-| ❌ | `schemas/infrastructure/credential_schemas.py` | Pydantic 2: Create, Update, Detail. **encrypted_value NEVER in responses** — only in Create/Update input. Include CredentialType enum. | Imports without error. |
-| ❌ | `schemas/infrastructure/scan_target_schemas.py` | Pydantic 2: Create, Update, Detail, ListResponse, Response. Include TargetType, VerificationMethod enums. | Imports without error. |
-| ❌ | `subrouters/infrastructure/__init__.py` | Create subfolder + init. | Directory exists. |
-| ❌ | `subrouters/infrastructure/infrastructure_subrouter.py` | CRUD: list, detail, create, update, soft-delete. Filter by organization_id. | All 5 endpoints work in /docs. |
-| ❌ | `subrouters/infrastructure/credential_subrouter.py` | CRUD + `POST /{id}/verify` (test SSH/API key connectivity). Encrypt on create/update via encryption_utils. | All 6 endpoints work. |
-| ❌ | `subrouters/infrastructure/scan_target_subrouter.py` | CRUD + `POST /{id}/verify` (target ownership verification). Two-tier except. Audit logging. | All 6 endpoints work. |
+### Execution Domain ✅ COMPLETE
 
-### Execution Domain (ScanTemplate + ScanSchedule + ScanJob)
+| Step | Status |
+|---|---|
+| `models/execution_models.py` — ScanTemplate + ScanSchedule + ScanJob | ✅ |
+| `schemas/execution_schemas/` — 3 schema files (scan_template, scan_schedule, scan_job) | ✅ |
+| `subrouters/execution_subrouters/` — 3 subrouter files (CRUD + start/cancel + activate/deactivate) | ✅ |
 
-**Model file:** `execution_models.py` — 3 classes in one file (ScanSchedule FK to ScanTemplate, ScanJob FK to both)
+### Discovery Domain ✅ COMPLETE
 
-| Step | File | Action | Test |
-|---|---|---|---|
-| ❌ | `models/execution_models.py` | Create `ScanTemplate(BaseMixin, Base)`, `ScanSchedule(BaseMixin, Base)`, `ScanJob(BaseMixin, Base)` — all 3 with fields from §3.4, §3.5, §3.6. Include enums: ScanType, PortRange, ScanSpeed, ScheduleFrequency, JobStatus. ScanTemplate includes credential_id FK (SET NULL, nullable) — direct link to Credential for internal scanners. ScanJob includes security_score + execution_point. | Python imports. All 3 classes importable. |
-| ❌ | `models/__init__.py` | Add `from .execution_models import *` re-export. | All 3 classes importable. |
-| ❌ | `schemas/execution/__init__.py` | Create subfolder + init. | Directory exists. |
-| ❌ | `schemas/execution/scan_template_schemas.py` | Pydantic 2: Create, Update, Detail. Include ScanType, PortRange, ScanSpeed enums. | Imports without error. |
-| ❌ | `schemas/execution/scan_schedule_schemas.py` | Pydantic 2: Create, Update, Detail. Include ScheduleFrequency enum. | Imports without error. |
-| ❌ | `schemas/execution/scan_job_schemas.py` | Pydantic 2: Detail, ListResponse (no Create — jobs created via /start). Include JobStatus enum. | Imports without error. |
-| ❌ | `subrouters/execution/__init__.py` | Create subfolder + init. | Directory exists. |
-| ❌ | `subrouters/execution/scan_template_subrouter.py` | CRUD. Filter by target_id. | All 5 endpoints work. |
-| ❌ | `subrouters/execution/scan_schedule_subrouter.py` | CRUD + activate/deactivate. | All 7 endpoints work. |
-| ❌ | `subrouters/execution/scan_job_subrouter.py` | POST /start, POST /{id}/cancel, list, detail. Calls scanner dispatcher. | All 4 endpoints work. |
+| Step | Status |
+|---|---|
+| `models/discovery_models.py` — Finding (NO BaseMixin) + Asset (NO BaseMixin) + Report | ✅ |
+| `models/audit_models.py` — CybersecurityAuditLog (NO BaseMixin, immutable) | ✅ |
+| `schemas/discovery_schemas/` — 3 schema files (finding, asset, report) | ✅ |
+| `subrouters/discovery_subrouters/` — 3 subrouter files (findings triage, assets read-only, reports generate) | ✅ |
 
-### Discovery Domain (Finding + Asset + Report)
+### Utils ✅ COMPLETE
 
-**Model file:** `discovery_models.py` — 3 classes in one file (Finding/Asset FK to ScanJob, Report FK to ScanTarget + ScanJob)
+| Step | Status |
+|---|---|
+| `utils/subscription_utils.py` — TIER_LIMITS, get_org_tier, is_service_active, credit counting | ✅ |
+| `utils/rate_limiting_utils.py` — DragonflyDB sliding window, memory/dragonfly backends | ✅ |
+| `utils/dependency_utils.py` — require_active_subscription, enforce_rate_limit, enforce_scan_credits | ✅ |
+| `utils/encryption_utils.py` — Fernet encrypt/decrypt | ✅ |
+| `utils/audit_utils.py` — model_to_dict, log_audit, query functions | ✅ |
 
-| Step | File | Action | Test |
-|---|---|---|---|
-| ❌ | `models/discovery_models.py` | Create `Finding(Base)` (NO BaseMixin), `Asset(Base)` (NO BaseMixin), `Report(BaseMixin, Base)` — all 3 with fields from §3.7, §3.8, §3.9. Finding includes: fingerprint, is_new, first_found_job_id, resolved_by, remediation_script, compliance metadata. Asset includes: service_metadata, UniqueConstraint. Include enums: Severity, FindingStatus, FindingCategory, AssetType, AssetConfidence, ReportType, ReportFormat. | Python imports. All 3 classes importable. |
-| ❌ | `models/__init__.py` | Add `from .discovery_models import *` re-export. | All 3 classes importable. |
-| ❌ | `schemas/discovery/__init__.py` | Create subfolder + init. | Directory exists. |
-| ❌ | `schemas/discovery/finding_schemas.py` | Pydantic 2: Detail + FindingStatusUpdate (triage). No Create/Update — scanner writes. Include Severity, FindingStatus, FindingCategory enums. | Imports without error. |
-| ❌ | `schemas/discovery/asset_schemas.py` | Pydantic 2: Detail only (read-only). Include AssetType, AssetConfidence enums. | Imports without error. |
-| ❌ | `schemas/discovery/report_schemas.py` | Pydantic 2: Create (generate), Detail. Include ReportType, ReportFormat enums. | Imports without error. |
-| ❌ | `subrouters/discovery/__init__.py` | Create subfolder + init. | Directory exists. |
-| ❌ | `subrouters/discovery/finding_subrouter.py` | List (filters: severity, category, status, scan_job_id), detail, PATCH /{id}/status (triage). | All 3 endpoints work. |
-| ❌ | `subrouters/discovery/asset_subrouter.py` | List (filters: asset_type, scan_job_id), detail. Read-only. | All 2 endpoints work. |
-| ❌ | `subrouters/discovery/report_subrouter.py` | POST /generate, list, detail, DELETE (soft delete). | All 4 endpoints work. |
+### Router + Wiring ✅ COMPLETE
 
-### Router + Utils + Wiring
+| Step | Status |
+|---|---|
+| `router.py` — Main router, gated behind subscription + rate limiting | ✅ |
+| `server/main.py` — cybersecurity_router mounted | ✅ |
+| `server/migrations/env.py` — cybersecurity models imported | ✅ |
+| Migrations created + applied (`2026_04_07_0045-5df0fe077132_add_cybersecurity_models.py`) | ✅ |
 
-| Step | File | Action | Test |
-|---|---|---|---|
-| ❌ | `models/audit_models.py` | Create `CybersecurityAuditLog(Base)` — NO BaseMixin, immutable. Same pattern as `nexotype/models/audit_models.py`. Fields: id, organization_id, user_id, table_name, record_id, action, old_data (JSON), new_data (JSON), timestamp, ip_address. Loose coupling to accounts (no FKs). | Python imports. |
-| ❌ | `models/__init__.py` | Add `from .audit_models import *` re-export. | CybersecurityAuditLog importable. |
-| ❌ | `utils/subscription_utils.py` | TIER_LIMITS dict (FREE/PRO/ENTERPRISE), get_org_tier, is_service_active, get_monthly_scan_credits_used, is_scan_type_allowed. Pattern from `ecommerce/utils/subscription_utils.py`. See domain-architecture §10.1 for tier values. | Python imports. |
-| ❌ | `utils/rate_limiting_utils.py` | DragonflyDB sliding window (per-minute + per-hour). Copy exact pattern from `ecommerce/utils/rate_limiting_utils.py`. Dual backend: memory (dev) / dragonfly (prod). | Python imports. |
-| ❌ | `utils/dependency_utils.py` | require_active_subscription (blocks all when inactive, 7-day grace), enforce_rate_limit, enforce_scan_credit_limit (blocks POST /start if over), enforce_scan_type_access (blocks if scan_type not in tier), get_user_organization_id, get_user_target. Pattern from ecommerce + assetmanager. | Python imports. |
-| ❌ | `utils/encryption_utils.py` | Fernet encrypt/decrypt. Copy pattern from `ecommerce/utils/encryption_utils.py`. | `encrypt_value("test")` → encrypted. `decrypt_value(encrypted)` → "test". |
-| ❌ | `utils/audit_utils.py` | model_to_dict, log_audit, get_record_audit_logs, get_organization_audit_logs. Copy pattern from `assetmanager/utils/audit_utils.py`. Used by infrastructure/credential/scan_target subrouters. | Python imports. |
-| ❌ | `router.py` | Main router. Prefix `/cybersecurity`. Import all subrouters from 3 domain subfolders. Gate behind `require_active_subscription` + `enforce_rate_limit`. | Python imports. |
-| ❌ | `server/main.py` | Mount `cybersecurity_router`. | Server starts. `/docs` shows all endpoints. |
-| ❌ | `server/migrations/env.py` | `from apps.cybersecurity.models import *`. | `makemigrations` detects all domain tables + cybersecurity_audit_logs (user runs). |
+### Stripe Setup ✅ COMPLETE
 
-**Phase 1 completion test:** Server boots. All `/cybersecurity/*` endpoints visible in FastAPI docs. CRUD operations work for all 9 domain entities + audit log (after user runs migrations). Credential encrypted_value never returned in API responses. Subscription gating blocks unauthenticated/unsubscribed requests. Audit log populated on infrastructure/credential CRUD operations.
+| Step | Status |
+|---|---|
+| Stripe CLI login to Cystene account (`acct_1TFIscCgafRZki0X`) | ✅ |
+| Products created (Pro $49/mo, Enterprise $199/mo) — test + live | ✅ |
+| Metadata set (tier=PRO/ENTERPRISE, tier_order, features) | ✅ |
+| Webhooks created (test + live) — `server.cystene.com/accounts/subscriptions/webhook` | ✅ |
+| Customer Portal configured (switch plans, prorate, cancel) | ✅ |
+| .env updated with Cystene test keys + webhook secret | ✅ |
+| .env.production updated with Cystene live keys + webhook secret | ✅ |
+
+**Phase 1 Result:** Server boots with 41 cybersecurity endpoints. `/ping` returns 200. All models, schemas, subrouters, utils functional. Stripe configured.
+
+### Phase 3 — First Scanner ✅ STARTED
+
+| Step | Status |
+|---|---|
+| `scanners/__init__.py` — SCANNERS dict registry | ✅ |
+| `scanners/external/common_ports.py` — TOP_100 + TOP_1000 port lists | ✅ |
+| `scanners/external/service_signatures.py` — port→service mapping, banner probes, version extraction | ✅ |
+| `scanners/external/port_scan.py` — TCP connect, banner grabbing, service ID, asyncio.Semaphore concurrency | ✅ |
+| Tested on scanme.nmap.org — 2 findings (SSH + HTTP), 3 assets, 1.3s | ✅ |
+
+**Remaining scanners (11):** dns_scan, ssl_scan, web_scan, vuln_scan, api_scan, active_web_scan, password_audit, host_audit, cloud_audit, ad_audit, mobile_scan
 
 ---
 
