@@ -59,7 +59,7 @@ export default function FindingDetailsPage() {
   // Handle triage status change
   const handleStatusChange = async (newStatus: string) => {
     setIsUpdatingStatus(true);
-    const success = await updateFindingStatus(id, { status: newStatus as FindingStatus });
+    const success = await updateFindingStatus(id, newStatus as FindingStatus);
     setIsUpdatingStatus(false);
     if (success) {
       // Refresh item after status update

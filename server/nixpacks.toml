@@ -1,5 +1,7 @@
 [phases.setup]
-nixPkgs = ["rustc", "cargo", "gcc"]
+# Why explicit nixPkgs: Adding Rust toolchain for PyO3 engine compilation.
+# Must include python313 because specifying nixPkgs overrides nixpacks' auto-detected packages.
+nixPkgs = ["python313", "rustc", "cargo", "gcc"]
 
 [phases.build]
 cmd = "./build.sh"
