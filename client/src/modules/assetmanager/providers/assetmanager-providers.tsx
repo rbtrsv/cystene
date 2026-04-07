@@ -8,9 +8,7 @@ import { FundingRoundProvider } from './captable/funding-round-provider';
 import { SecurityProvider } from './captable/security-provider';
 import { SecurityTransactionProvider } from './captable/security-transaction-provider';
 import { StakeholderProvider } from './entity/stakeholder-provider';
-import { SyndicateProvider } from './entity/syndicate-provider';
-import { SyndicateMembersProvider } from './entity/syndicate-member-provider';
-import { SyndicateTransactionsProvider } from './entity/syndicate-transaction-provider';
+import { CommitmentProvider } from './captable/commitment-provider';
 import { FeeProvider } from './captable/fee-provider';
 import { EntityDealProfileProvider } from './deal/entity-deal-profile-provider';
 import { DealProvider } from './deal/deal-provider';
@@ -27,6 +25,7 @@ import { HoldingCashFlowProvider } from './holding/holding-cash-flow-provider';
 import { HoldingPerformanceProvider } from './holding/holding-performance-provider';
 import { ValuationProvider } from './holding/valuation-provider';
 import { PerformanceComputedProvider } from './holding/performance-computed-provider';
+import { StakeholderPositionProvider } from './captable/stakeholder-position-provider';
 
 /**
  * AssetManagerProviders props
@@ -49,12 +48,11 @@ export function AssetManagerProviders({ children }: AssetManagerProvidersProps) 
       <EntityOrganizationMembersProvider initialFetch={false}>
         <EntityOrganizationInvitationsProvider initialFetch={false}>
           <StakeholderProvider initialFetch={false}>
-            <SyndicateProvider initialFetch={false}>
-              <SyndicateMembersProvider initialFetch={false}>
-                <SyndicateTransactionsProvider initialFetch={false}>
                   <FundingRoundProvider initialFetch={false}>
                   <SecurityProvider initialFetch={false}>
                     <SecurityTransactionProvider initialFetch={false}>
+                      <StakeholderPositionProvider>
+                      <CommitmentProvider initialFetch={false}>
                       <FeeProvider initialFetch={false}>
                         <EntityDealProfileProvider initialFetch={false}>
                           <DealProvider initialFetch={false}>
@@ -88,12 +86,11 @@ export function AssetManagerProviders({ children }: AssetManagerProvidersProps) 
                           </DealProvider>
                         </EntityDealProfileProvider>
                       </FeeProvider>
+                      </CommitmentProvider>
+                      </StakeholderPositionProvider>
                     </SecurityTransactionProvider>
                   </SecurityProvider>
                 </FundingRoundProvider>
-                </SyndicateTransactionsProvider>
-              </SyndicateMembersProvider>
-            </SyndicateProvider>
           </StakeholderProvider>
         </EntityOrganizationInvitationsProvider>
       </EntityOrganizationMembersProvider>

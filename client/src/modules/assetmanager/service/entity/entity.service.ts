@@ -8,6 +8,8 @@ import {
   CreateEntitySchema,
   UpdateEntitySchema,
   EntityType,
+  EntityDiscoveryResult,
+  EntityDiscoveryResponse,
 } from '../../schemas/entity/entity.schemas';
 import { ENTITY_ENDPOINTS } from '../../utils/api.endpoints';
 import { fetchClient } from '../../../accounts/utils/fetch.client';
@@ -166,5 +168,93 @@ export const deleteEntity = async (id: number): Promise<{ success: boolean; mess
       success: false,
       error: error instanceof Error ? error.message : `Failed to delete entity with ID ${id}`
     };
+  }
+};
+
+/**
+ * Search for discoverable entities across the platform
+ * Why: enables cross-org stakeholder creation via discovery search
+ * @param q Search query (min 2 chars)
+ * @param entityType Optional entity type filter
+ * @returns Promise with list of minimal entity results
+ */
+/**
+ * Generate an invite code for an entity
+ * @param entityId Entity ID
+ * @returns Promise with entity response (includes invite_code)
+ */
+export const generateInviteCode = async (entityId: number): Promise<EntityResponse> => {
+  try {
+    const response = await fetchClient<EntityResponse>(ENTITY_ENDPOINTS.GENERATE_INVITE_CODE(entityId), {
+      method: 'POST',
+      body: {} as Record<string, unknown>,
+    });
+    return response;
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to generate invite code',
+      data: undefined,
+    };
+  }
+};
+
+/**
+ * Revoke the invite code for an entity
+ * @param entityId Entity ID
+ * @returns Promise with entity response
+ */
+export const revokeInviteCode = async (entityId: number): Promise<EntityResponse> => {
+  try {
+    const response = await fetchClient<EntityResponse>(ENTITY_ENDPOINTS.REVOKE_INVITE_CODE(entityId), {
+      method: 'DELETE',
+    });
+    return response;
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to revoke invite code',
+      data: undefined,
+    };
+  }
+};
+
+/**
+ * Join an entity using an invite code
+ * @param code Invite code
+ * @param organizationId Organization requesting access
+ * @returns Promise with success response
+ */
+export const joinByInviteCode = async (code: string, organizationId: number): Promise<{ success: boolean; message?: string; error?: string }> => {
+  try {
+    const response = await fetchClient<{ success: boolean; message?: string; error?: string }>(
+      ENTITY_ENDPOINTS.JOIN_BY_INVITE_CODE(code),
+      {
+        method: 'POST',
+        body: { code, organization_id: organizationId } as unknown as Record<string, unknown>,
+      }
+    );
+    return response;
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to join entity',
+    };
+  }
+};
+
+export const discoverEntities = async (q: string, organizationId: number, entityType?: string): Promise<EntityDiscoveryResult[]> => {
+  try {
+    const queryParams = new URLSearchParams();
+    queryParams.append('q', q);
+    queryParams.append('organization_id', organizationId.toString());
+    if (entityType) queryParams.append('entity_type', entityType);
+
+    const url = `${ENTITY_ENDPOINTS.DISCOVER}?${queryParams.toString()}`;
+    const response = await fetchClient<EntityDiscoveryResponse>(url, { method: 'GET' });
+
+    return response.data || [];
+  } catch {
+    return [];
   }
 };

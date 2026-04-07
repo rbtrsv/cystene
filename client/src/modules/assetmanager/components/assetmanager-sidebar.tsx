@@ -10,16 +10,15 @@ import {
   Building,
   Building2,
   Users,
-  Network,
   CircleDollarSign,
   Shield,
   ArrowLeftRight,
   HandCoins,
   Handshake,
+  UserCheck,
   Receipt,
   TrendingUp,
   TrendingUpDown,
-  PieChart,
   ChevronsUpDown,
   Check,
   FileBarChart,
@@ -28,6 +27,9 @@ import {
   Settings,
   Gauge,
   Wallet,
+  Eye,
+  Banknote,
+  Search,
 } from "lucide-react"
 import { usePathname, useRouter } from "next/navigation"
 import Link from "next/link"
@@ -103,10 +105,12 @@ export function AssetManagerSidebar({ ...props }: React.ComponentProps<typeof Si
     setHasMounted(true)
   }, [])
 
-  // Fetch entities when active organization changes
+  // Fetch all entities when active organization changes
+  // Why: store holds ALL accessible entities across all user's orgs
+  // Sidebar filters client-side via getEntitiesByOrganization() below
   useEffect(() => {
     if (activeOrganization) {
-      fetchEntities({ organization_id: activeOrganization.id })
+      fetchEntities()
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeOrganization])
@@ -347,18 +351,10 @@ export function AssetManagerSidebar({ ...props }: React.ComponentProps<typeof Si
                 </SidebarMenuButton>
               </SidebarMenuItem>
               <SidebarMenuItem>
-                <SidebarMenuButton asChild isActive={isActive("/stakeholders")} tooltip="Stakeholders">
-                  <Link href="/stakeholders">
-                    <Users className="h-4 w-4" />
-                    <span>Stakeholders</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-              <SidebarMenuItem>
-                <SidebarMenuButton asChild isActive={isActive("/syndicates")} tooltip="Syndicates">
-                  <Link href="/syndicates">
-                    <Network className="h-4 w-4" />
-                    <span>Syndicates</span>
+                <SidebarMenuButton asChild isActive={isActive("/entities/discover")} tooltip="Discover Entities">
+                  <Link href="/entities/discover">
+                    <Search className="h-4 w-4" />
+                    <span>Discover Entities</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
@@ -373,6 +369,14 @@ export function AssetManagerSidebar({ ...props }: React.ComponentProps<typeof Si
           <SidebarGroupLabel>Cap Table</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild isActive={isActive("/stakeholders")} tooltip="Stakeholders">
+                  <Link href="/stakeholders">
+                    <Users className="h-4 w-4" />
+                    <span>Stakeholders</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
               <SidebarMenuItem>
                 <SidebarMenuButton asChild isActive={isActive("/funding-rounds")} tooltip="Funding Rounds">
                   <Link href="/funding-rounds">
@@ -398,10 +402,10 @@ export function AssetManagerSidebar({ ...props }: React.ComponentProps<typeof Si
                 </SidebarMenuButton>
               </SidebarMenuItem>
               <SidebarMenuItem>
-                <SidebarMenuButton asChild isActive={isActive("/cap-table")} tooltip="Cap Table">
-                  <Link href="/cap-table">
-                    <PieChart className="h-4 w-4" />
-                    <span>Cap Table</span>
+                <SidebarMenuButton asChild isActive={isActive("/commitments-sent")} tooltip="Commitments Sent">
+                  <Link href="/commitments-sent">
+                    <UserCheck className="h-4 w-4" />
+                    <span>Commitments Sent</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
@@ -419,9 +423,60 @@ export function AssetManagerSidebar({ ...props }: React.ComponentProps<typeof Si
 
         <SidebarSeparator />
 
-        {/* Deals */}
+        {/* Portfolio */}
         <SidebarGroup>
-          <SidebarGroupLabel>Deals</SidebarGroupLabel>
+          <SidebarGroupLabel>Portfolio</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild isActive={isActive("/deal-pipeline")} tooltip="Deal Pipeline">
+                  <Link href="/deal-pipeline">
+                    <Handshake className="h-4 w-4" />
+                    <span>Deal Pipeline</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild isActive={isActive("/holdings")} tooltip="Holdings">
+                  <Link href="/holdings">
+                    <Wallet className="h-4 w-4" />
+                    <span>Holdings</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild isActive={isActive("/holding-cash-flows")} tooltip="Holding Cash Flows">
+                  <Link href="/holding-cash-flows">
+                    <ArrowLeftRight className="h-4 w-4" />
+                    <span>Holding Cash Flows</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild isActive={isActive("/holding-performance")} tooltip="Holding Performance">
+                  <Link href="/holding-performance">
+                    <TrendingUp className="h-4 w-4" />
+                    <span>Holding Performance</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild isActive={isActive("/valuations")} tooltip="Valuations">
+                  <Link href="/valuations">
+                    <TrendingUpDown className="h-4 w-4" />
+                    <span>Valuations</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        <SidebarSeparator />
+
+        {/* Fundraising */}
+        <SidebarGroup>
+          <SidebarGroupLabel>Fundraising</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               <SidebarMenuItem>
@@ -454,9 +509,44 @@ export function AssetManagerSidebar({ ...props }: React.ComponentProps<typeof Si
 
         <SidebarSeparator />
 
-        {/* Financial */}
+        {/* Stakeholder Relations */}
         <SidebarGroup>
-          <SidebarGroupLabel>Financial</SidebarGroupLabel>
+          <SidebarGroupLabel>Stakeholder Relations</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild isActive={isActive("/commitments-received")} tooltip="Commitments Received">
+                  <Link href="/commitments-received">
+                    <HandCoins className="h-4 w-4" />
+                    <span>Commitments Received</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild isActive={isActive("/stakeholder-positions")} tooltip="Positions">
+                  <Link href="/stakeholder-positions">
+                    <Eye className="h-4 w-4" />
+                    <span>Positions</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild isActive={isActive("/distributions")} tooltip="Distributions">
+                  <Link href="/distributions">
+                    <Banknote className="h-4 w-4" />
+                    <span>Distributions</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        <SidebarSeparator />
+
+        {/* Financials */}
+        <SidebarGroup>
+          <SidebarGroupLabel>Financials</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               <SidebarMenuItem>
@@ -504,57 +594,6 @@ export function AssetManagerSidebar({ ...props }: React.ComponentProps<typeof Si
                   <Link href="/kpi-values">
                     <BarChart3 className="h-4 w-4" />
                     <span>KPI Values</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-
-        <SidebarSeparator />
-
-        {/* Holding */}
-        <SidebarGroup>
-          <SidebarGroupLabel>Holding</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              <SidebarMenuItem>
-                <SidebarMenuButton asChild isActive={isActive("/deal-pipeline")} tooltip="Deal Pipeline">
-                  <Link href="/deal-pipeline">
-                    <Handshake className="h-4 w-4" />
-                    <span>Deal Pipeline</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-              <SidebarMenuItem>
-                <SidebarMenuButton asChild isActive={isActive("/holdings")} tooltip="Holdings">
-                  <Link href="/holdings">
-                    <Wallet className="h-4 w-4" />
-                    <span>Holdings</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-              <SidebarMenuItem>
-                <SidebarMenuButton asChild isActive={isActive("/holding-cash-flows")} tooltip="Holding Cash Flows">
-                  <Link href="/holding-cash-flows">
-                    <ArrowLeftRight className="h-4 w-4" />
-                    <span>Holding Cash Flows</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-              <SidebarMenuItem>
-                <SidebarMenuButton asChild isActive={isActive("/holding-performance")} tooltip="Holding Performance">
-                  <Link href="/holding-performance">
-                    <TrendingUp className="h-4 w-4" />
-                    <span>Holding Performance</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-              <SidebarMenuItem>
-                <SidebarMenuButton asChild isActive={isActive("/valuations")} tooltip="Valuations">
-                  <Link href="/valuations">
-                    <TrendingUpDown className="h-4 w-4" />
-                    <span>Valuations</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>

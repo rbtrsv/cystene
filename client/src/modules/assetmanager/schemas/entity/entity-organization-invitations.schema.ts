@@ -6,6 +6,9 @@ import { z } from 'zod';
 export const InvitationStatusEnum = z.enum(['PENDING', 'ACCEPTED', 'REJECTED', 'CANCELLED']);
 export type InvitationStatus = z.infer<typeof InvitationStatusEnum>;
 
+export const InvitationTypeEnum = z.enum(['invite', 'request']);
+export type InvitationType = z.infer<typeof InvitationTypeEnum>;
+
 // ==========================================
 // Entity Schemas
 // ==========================================
@@ -17,6 +20,7 @@ export const EntityOrganizationInvitationSchema = z.object({
   invited_by_id: z.number(),
   invited_at: z.string(),
   status: z.string(),
+  invitation_type: InvitationTypeEnum.default('invite'),
 });
 
 // ==========================================
@@ -26,12 +30,16 @@ export const CreateEntityOrganizationInvitationSchema = z.object({
   entity_id: z.number(),
   organization_id: z.number(),
   role: z.string().default('VIEWER'),
-  invited_by_id: z.number(),
 });
 
 export const UpdateEntityOrganizationInvitationSchema = z.object({
   role: z.string().optional(),
   status: z.string().optional(),
+});
+
+export const RequestEntityAccessSchema = z.object({
+  entity_id: z.number(),
+  organization_id: z.number(),
 });
 
 // ==========================================
@@ -55,5 +63,6 @@ export const EntityOrganizationInvitationsResponseSchema = z.object({
 export type EntityOrganizationInvitation = z.infer<typeof EntityOrganizationInvitationSchema>;
 export type CreateEntityOrganizationInvitation = z.infer<typeof CreateEntityOrganizationInvitationSchema>;
 export type UpdateEntityOrganizationInvitation = z.infer<typeof UpdateEntityOrganizationInvitationSchema>;
+export type RequestEntityAccess = z.infer<typeof RequestEntityAccessSchema>;
 export type EntityOrganizationInvitationResponse = z.infer<typeof EntityOrganizationInvitationResponseSchema>;
 export type EntityOrganizationInvitationsResponse = z.infer<typeof EntityOrganizationInvitationsResponseSchema>;

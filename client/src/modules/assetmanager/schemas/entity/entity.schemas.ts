@@ -20,7 +20,7 @@ import { z } from 'zod';
  * Entity type options - matches backend EntityType enum
  * Backend: class EntityType(str, Enum)
  */
-export const EntityTypeEnum = z.enum(['fund', 'company', 'individual']);
+export const EntityTypeEnum = z.enum(['fund', 'company', 'individual', 'syndicate']);
 
 /**
  * Entity role options - matches backend EntityRole enum
@@ -43,9 +43,9 @@ export const EntitySchema = z.object({
   name: z.string().min(1, 'Name is required').max(255, 'Name must be less than 255 characters'),
   entity_type: EntityTypeEnum,
   parent_id: z.number().nullable(),
-  current_valuation: z.number().nullable(),
   organization_id: z.number(),
-  cash_balance: z.number().default(0),
+  is_discoverable: z.boolean().default(false),
+  invite_code: z.string().nullable(),
   created_at: z.string(), // ISO datetime string from backend
   updated_at: z.string().nullable(),
 });
@@ -64,9 +64,8 @@ export const CreateEntitySchema = z.object({
   name: z.string().min(1, 'Name is required').max(255, 'Name must be less than 255 characters'),
   entity_type: EntityTypeEnum,
   parent_id: z.number().nullable().optional(),
-  current_valuation: z.number().nullable().optional(),
   organization_id: z.number(),
-  cash_balance: z.number().default(0).optional(),
+  is_discoverable: z.boolean().default(false).optional(),
 });
 
 /**
@@ -79,8 +78,7 @@ export const UpdateEntitySchema = z.object({
   name: z.string().min(1, 'Name is required').max(255, 'Name must be less than 255 characters').optional(),
   entity_type: EntityTypeEnum.optional(),
   parent_id: z.number().nullable().optional(),
-  current_valuation: z.number().nullable().optional(),
-  cash_balance: z.number().optional(),
+  is_discoverable: z.boolean().optional(),
 });
 
 // ==========================================
@@ -102,6 +100,7 @@ export const ENTITY_TYPE_LABELS: Record<EntityType, string> = {
   fund: 'Fund',
   company: 'Company',
   individual: 'Individual',
+  syndicate: 'Syndicate',
 };
 
 /**
@@ -135,4 +134,30 @@ export type EntitiesResponse = {
   success: boolean;
   data?: Entity[];
   error?: string;
+};
+
+// ==========================================
+// Discovery Schemas
+// ==========================================
+
+/**
+ * Minimal entity info from discovery search
+ * Why: returns only public info — no sensitive data like valuation or cash balance
+ * Backend equivalent: class EntityDiscoveryResult(BaseModel)
+ */
+export const EntityDiscoveryResultSchema = z.object({
+  id: z.number(),
+  name: z.string(),
+  entity_type: EntityTypeEnum,
+});
+
+export type EntityDiscoveryResult = z.infer<typeof EntityDiscoveryResultSchema>;
+
+/**
+ * Response from discovery search
+ * Backend equivalent: class EntityDiscoveryResponse(BaseModel)
+ */
+export type EntityDiscoveryResponse = {
+  success: boolean;
+  data: EntityDiscoveryResult[];
 };

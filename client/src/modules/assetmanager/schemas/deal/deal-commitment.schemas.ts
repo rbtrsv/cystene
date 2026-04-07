@@ -39,10 +39,14 @@ export const DealCommitmentSchema = z.object({
   id: z.number(),
   deal_id: z.number(),
   entity_id: z.number(),
-  syndicate_id: z.number().nullable(),
   commitment_type: CommitmentTypeEnum,
   amount: z.number(),
   notes: z.string().nullable(),
+
+  // Why transaction_id: Shows whether this commitment has been converted
+  // to a SecurityTransaction during deal execution (non-null = executed).
+  transaction_id: z.number().nullable(),
+
   created_at: z.string(), // ISO datetime string from backend
   updated_at: z.string().nullable(), // ISO datetime string from backend
 });
@@ -60,7 +64,6 @@ export const DealCommitmentSchema = z.object({
 export const CreateDealCommitmentSchema = z.object({
   deal_id: z.number(),
   entity_id: z.number(),
-  syndicate_id: z.number().nullable().optional(),
   commitment_type: CommitmentTypeEnum.default('soft'),
   amount: z.number().gt(0),
   notes: z.string().nullable().optional(),
@@ -75,7 +78,6 @@ export const CreateDealCommitmentSchema = z.object({
 export const UpdateDealCommitmentSchema = z.object({
   deal_id: z.number().optional(),
   entity_id: z.number().optional(),
-  syndicate_id: z.number().nullable().optional(),
   commitment_type: CommitmentTypeEnum.optional(),
   amount: z.number().gt(0).optional(),
   notes: z.string().nullable().optional(),

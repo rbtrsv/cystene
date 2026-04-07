@@ -7,6 +7,7 @@ import {
   EntityOrganizationInvitation,
   CreateEntityOrganizationInvitation,
   UpdateEntityOrganizationInvitation,
+  RequestEntityAccess,
 } from '../../schemas/entity/entity-organization-invitations.schema';
 import {
   getEntityOrganizationInvitations,
@@ -16,6 +17,7 @@ import {
   deleteEntityOrganizationInvitation as apiDeleteEntityOrganizationInvitation,
   acceptEntityOrganizationInvitation as apiAcceptEntityOrganizationInvitation,
   rejectEntityOrganizationInvitation as apiRejectEntityOrganizationInvitation,
+  requestEntityAccess as apiRequestEntityAccess,
   ListEntityOrganizationInvitationsParams
 } from '../../service/entity/entity-organization-invitations.service';
 
@@ -37,6 +39,7 @@ export interface EntityOrganizationInvitationsState {
   updateInvitation: (id: number, data: UpdateEntityOrganizationInvitation) => Promise<boolean>;
   acceptInvitation: (id: number) => Promise<boolean>;
   rejectInvitation: (id: number) => Promise<boolean>;
+  requestAccess: (data: RequestEntityAccess) => Promise<boolean>;
   deleteInvitation: (id: number) => Promise<boolean>;
   clearError: () => void;
   reset: () => void;
@@ -271,6 +274,36 @@ export const useEntityOrganizationInvitationsStore = create<EntityOrganizationIn
             set({
               isLoading: false,
               error: response.error || `Failed to reject entity organization invitation with ID ${id}`
+            });
+            return false;
+          }
+        } catch (error) {
+          set({
+            isLoading: false,
+            error: error instanceof Error ? error.message : 'An unexpected error occurred'
+          });
+          return false;
+        }
+      },
+
+      /**
+       * Request access to a discoverable entity (claim flow — reverse direction)
+       * @param data Request entity access data (entity_id, organization_id)
+       * @returns Success status
+       */
+      requestAccess: async (data) => {
+        set({ isLoading: true, error: null });
+
+        try {
+          const response = await apiRequestEntityAccess(data);
+
+          if (response.success && response.data) {
+            set({ isLoading: false });
+            return true;
+          } else {
+            set({
+              isLoading: false,
+              error: response.error || 'Failed to request entity access'
             });
             return false;
           }

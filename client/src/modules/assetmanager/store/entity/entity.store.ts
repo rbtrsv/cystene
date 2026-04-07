@@ -7,6 +7,7 @@ import {
   Entity,
   CreateEntity,
   UpdateEntity,
+  EntityDiscoveryResult,
 } from '../../schemas/entity/entity.schemas';
 import {
   getEntities,
@@ -14,6 +15,10 @@ import {
   createEntity as apiCreateEntity,
   updateEntity as apiUpdateEntity,
   deleteEntity as apiDeleteEntity,
+  discoverEntities as apiDiscoverEntities,
+  generateInviteCode as apiGenerateInviteCode,
+  revokeInviteCode as apiRevokeInviteCode,
+  joinByInviteCode as apiJoinByInviteCode,
   ListEntitiesParams
 } from '../../service/entity/entity.service';
 
@@ -35,6 +40,10 @@ export interface EntityState {
   createEntity: (data: CreateEntity) => Promise<boolean>;
   updateEntity: (id: number, data: UpdateEntity) => Promise<boolean>;
   deleteEntity: (id: number) => Promise<boolean>;
+  discoverEntities: (q: string, organizationId: number, entityType?: string) => Promise<EntityDiscoveryResult[]>;
+  generateInviteCode: (entityId: number) => Promise<boolean>;
+  revokeInviteCode: (entityId: number) => Promise<boolean>;
+  joinByInviteCode: (code: string, organizationId: number) => Promise<{ success: boolean; message?: string; error?: string }>;
   setActiveEntity: (entityId: number | null) => void;
   clearError: () => void;
   reset: () => void;
@@ -253,6 +262,58 @@ export const useEntityStore = create<EntityState>()(
           });
           return false;
         }
+      },
+
+      /**
+       * Search for discoverable entities across the platform (cross-org)
+       * Why: enables cross-org stakeholder creation via discovery search
+       * @param q Search query (min 2 chars)
+       * @param entityType Optional entity type filter
+       * @returns List of minimal entity results (id, name, entity_type)
+       */
+      discoverEntities: async (q, organizationId, entityType) => {
+        return await apiDiscoverEntities(q, organizationId, entityType);
+      },
+
+      /**
+       * Generate an invite code for an entity
+       */
+      generateInviteCode: async (entityId) => {
+        const response = await apiGenerateInviteCode(entityId);
+        if (response.success && response.data) {
+          // Update entity in store with new invite_code
+          set((state) => {
+            const idx = state.entities.findIndex(e => e.id === entityId);
+            if (idx !== -1) state.entities[idx] = response.data!;
+          });
+          return true;
+        }
+        set({ error: response.error || 'Failed to generate invite code' });
+        return false;
+      },
+
+      /**
+       * Revoke the invite code for an entity
+       */
+      revokeInviteCode: async (entityId) => {
+        const response = await apiRevokeInviteCode(entityId);
+        if (response.success && response.data) {
+          // Update entity in store with null invite_code
+          set((state) => {
+            const idx = state.entities.findIndex(e => e.id === entityId);
+            if (idx !== -1) state.entities[idx] = response.data!;
+          });
+          return true;
+        }
+        set({ error: response.error || 'Failed to revoke invite code' });
+        return false;
+      },
+
+      /**
+       * Join an entity using an invite code
+       */
+      joinByInviteCode: async (code, organizationId) => {
+        return await apiJoinByInviteCode(code, organizationId);
       },
 
       /**

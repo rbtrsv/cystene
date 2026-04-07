@@ -42,10 +42,9 @@ export const StakeholderTypeEnum = z.enum([
 export const StakeholderSchema = z.object({
   id: z.number(),
   // Core fields
-  name: z.string().min(1, 'Name is required').max(255, 'Name must be less than 255 characters'),
   type: StakeholderTypeEnum,
-  entity_id: z.number().nullable(),
-  source_syndicate_id: z.number().nullable(),
+  entity_id: z.number(),
+  source_entity_id: z.number(),
   // Investment Rights
   carried_interest_percentage: z.number().nullable(),
   preferred_return_rate: z.number().nullable(),
@@ -77,10 +76,9 @@ export const StakeholderSchema = z.object({
  */
 export const CreateStakeholderSchema = z.object({
   // Core fields
-  name: z.string().min(1, 'Name is required').max(255, 'Name must be less than 255 characters'),
   type: StakeholderTypeEnum,
-  entity_id: z.number().nullable().optional(),
-  source_syndicate_id: z.number().nullable().optional(),
+  entity_id: z.number(),
+  source_entity_id: z.number(),
   // Investment Rights
   carried_interest_percentage: z.number().nullable().optional(),
   preferred_return_rate: z.number().nullable().optional(),
@@ -104,10 +102,9 @@ export const CreateStakeholderSchema = z.object({
  * Backend equivalent: class UpdateStakeholder(BaseModel)
  */
 export const UpdateStakeholderSchema = z.object({
-  name: z.string().min(1, 'Name is required').max(255, 'Name must be less than 255 characters').optional(),
   type: StakeholderTypeEnum.optional(),
-  entity_id: z.number().nullable().optional(),
-  source_syndicate_id: z.number().nullable().optional(),
+  entity_id: z.number().optional(),
+  source_entity_id: z.number().optional(),
   carried_interest_percentage: z.number().nullable().optional(),
   preferred_return_rate: z.number().nullable().optional(),
   distribution_tier: z.number().optional(),

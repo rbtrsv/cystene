@@ -8,6 +8,8 @@ import {
   type CreateDeal,
   type UpdateDeal,
   type DealType,
+  type DealStatus,
+  type DealExecuteInput,
 } from '../../schemas/deal/deal.schemas';
 import { ListDealsParams } from '../../service/deal/deal.service';
 
@@ -51,6 +53,8 @@ export function useDeals() {
     createDeal,
     updateDeal,
     deleteDeal,
+    updateDealStatus,
+    executeDeal,
     error: storeError,
     isLoading: storeLoading,
     clearError: clearStoreError,
@@ -84,6 +88,8 @@ export function useDeals() {
     createDeal,
     updateDeal,
     deleteDeal,
+    updateDealStatus,
+    executeDeal,
     setActiveDeal,
     initialize,
     clearError,

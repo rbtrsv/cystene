@@ -7,7 +7,8 @@ import {
   type Entity,
   type CreateEntity,
   type UpdateEntity,
-  type EntityType
+  type EntityType,
+  type EntityDiscoveryResult
 } from '../../schemas/entity/entity.schemas';
 import { ListEntitiesParams } from '../../service/entity/entity.service';
 
@@ -51,6 +52,10 @@ export function useEntities() {
     createEntity,
     updateEntity,
     deleteEntity,
+    discoverEntities,
+    generateInviteCode,
+    revokeInviteCode,
+    joinByInviteCode,
     error: storeError,
     isLoading: storeLoading,
     clearError: clearStoreError
@@ -84,6 +89,10 @@ export function useEntities() {
     createEntity,
     updateEntity,
     deleteEntity,
+    discoverEntities,
+    generateInviteCode,
+    revokeInviteCode,
+    joinByInviteCode,
     setActiveEntity,
     initialize,
     clearError,

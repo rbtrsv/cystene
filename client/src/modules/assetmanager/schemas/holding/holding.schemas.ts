@@ -35,6 +35,83 @@ export const ListingStatusEnum = z.enum([
   'public',
 ]);
 
+/**
+ * Investment type options
+ * Source: v7capital portfolio-investment.schemas.ts
+ */
+export const InvestmentTypeEnum = z.enum([
+  'equity',
+  'debt',
+  'convertible',
+  'warrant',
+  'option',
+  'cash',
+]);
+
+/**
+ * Company/entity type options for holdings (not the same as Entity.entity_type)
+ * Describes the type of investment vehicle or company
+ * Source: v7capital companyTypeEnum
+ */
+export const CompanyTypeEnum = z.enum([
+  'venture_capital',
+  'private_equity',
+  'public',
+  'cash',
+]);
+
+/**
+ * Sector options
+ * Source: v7capital sectorTypeEnum
+ */
+export const SectorEnum = z.enum([
+  'fintech',
+  'healthtech',
+  'ecommerce',
+  'saas',
+  'ai_ml',
+  'blockchain',
+  'cleantech',
+  'edtech',
+  'enterprise',
+  'consumer',
+  'other',
+]);
+
+// ==========================================
+// Dropdown Options (for UI Select components)
+// ==========================================
+
+export const INVESTMENT_TYPE_OPTIONS = [
+  { value: 'equity', label: 'Equity' },
+  { value: 'debt', label: 'Debt' },
+  { value: 'convertible', label: 'Convertible' },
+  { value: 'warrant', label: 'Warrant' },
+  { value: 'option', label: 'Option' },
+  { value: 'cash', label: 'Cash' },
+] as const;
+
+export const COMPANY_TYPE_OPTIONS = [
+  { value: 'venture_capital', label: 'Venture Capital' },
+  { value: 'private_equity', label: 'Private Equity' },
+  { value: 'public', label: 'Public' },
+  { value: 'cash', label: 'Cash' },
+] as const;
+
+export const SECTOR_OPTIONS = [
+  { value: 'fintech', label: 'Fintech' },
+  { value: 'healthtech', label: 'Healthtech' },
+  { value: 'ecommerce', label: 'Ecommerce' },
+  { value: 'saas', label: 'SaaS' },
+  { value: 'ai_ml', label: 'AI/ML' },
+  { value: 'blockchain', label: 'Blockchain' },
+  { value: 'cleantech', label: 'Cleantech' },
+  { value: 'edtech', label: 'Edtech' },
+  { value: 'enterprise', label: 'Enterprise' },
+  { value: 'consumer', label: 'Consumer' },
+  { value: 'other', label: 'Other' },
+] as const;
+
 // ==========================================
 // Holding Schema (Full Representation)
 // ==========================================
@@ -58,7 +135,7 @@ export const HoldingSchema = z.object({
   investment_type: z.string(),
   investment_round: z.string().nullable(),
   investment_status: z.string(),
-  sector: z.string(),
+  sector: z.string().nullable(),
   listing_status: z.string(),
   original_investment_date: z.string().nullable(),
 
@@ -104,7 +181,7 @@ export const CreateHoldingSchema = z.object({
   investment_name: z.string(),
   entity_type: z.string(),
   investment_type: z.string(),
-  sector: z.string(),
+  sector: z.string().nullable().optional(),
   investment_status: InvestmentStatusEnum.default('active'),
   listing_status: ListingStatusEnum.default('private'),
   export_functionality: z.boolean().optional(),
@@ -187,6 +264,9 @@ export const UpdateHoldingSchema = z.object({
 
 export type InvestmentStatus = z.infer<typeof InvestmentStatusEnum>;
 export type ListingStatus = z.infer<typeof ListingStatusEnum>;
+export type InvestmentType = z.infer<typeof InvestmentTypeEnum>;
+export type CompanyType = z.infer<typeof CompanyTypeEnum>;
+export type Sector = z.infer<typeof SectorEnum>;
 export type Holding = z.infer<typeof HoldingSchema>;
 export type CreateHolding = z.infer<typeof CreateHoldingSchema>;
 export type UpdateHolding = z.infer<typeof UpdateHoldingSchema>;

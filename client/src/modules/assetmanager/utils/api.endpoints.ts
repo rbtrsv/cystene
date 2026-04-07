@@ -19,6 +19,10 @@ export const ENTITY_ENDPOINTS = {
   CREATE: `${API_BASE_URL}/assetmanager/entities/`,
   UPDATE: (id: number) => `${API_BASE_URL}/assetmanager/entities/${id}`,
   DELETE: (id: number) => `${API_BASE_URL}/assetmanager/entities/${id}`,
+  DISCOVER: `${API_BASE_URL}/assetmanager/entities/discover`,
+  GENERATE_INVITE_CODE: (id: number) => `${API_BASE_URL}/assetmanager/entities/${id}/generate-invite-code`,
+  REVOKE_INVITE_CODE: (id: number) => `${API_BASE_URL}/assetmanager/entities/${id}/invite-code`,
+  JOIN_BY_INVITE_CODE: (code: string) => `${API_BASE_URL}/assetmanager/entities/join/${code}`,
 };
 
 /**
@@ -45,6 +49,7 @@ export const ENTITY_ORGANIZATION_INVITATION_ENDPOINTS = {
   DELETE: (id: number) => `${API_BASE_URL}/assetmanager/entity-organization-invitations/${id}`,
   ACCEPT: (id: number) => `${API_BASE_URL}/assetmanager/entity-organization-invitations/${id}/accept`,
   REJECT: (id: number) => `${API_BASE_URL}/assetmanager/entity-organization-invitations/${id}/reject`,
+  REQUEST_ACCESS: `${API_BASE_URL}/assetmanager/entity-organization-invitations/request-access`,
 };
 
 /**
@@ -57,42 +62,6 @@ export const STAKEHOLDER_ENDPOINTS = {
   CREATE: `${API_BASE_URL}/assetmanager/stakeholders/`,
   UPDATE: (id: number) => `${API_BASE_URL}/assetmanager/stakeholders/${id}`,
   DELETE: (id: number) => `${API_BASE_URL}/assetmanager/stakeholders/${id}`,
-};
-
-/**
- * API endpoints for syndicates
- * Backend: /server/apps/assetmanager/subrouters/entity_subrouters/syndicate_subrouter.py
- */
-export const SYNDICATE_ENDPOINTS = {
-  LIST: `${API_BASE_URL}/assetmanager/syndicates/`,
-  DETAIL: (id: number) => `${API_BASE_URL}/assetmanager/syndicates/${id}`,
-  CREATE: `${API_BASE_URL}/assetmanager/syndicates/`,
-  UPDATE: (id: number) => `${API_BASE_URL}/assetmanager/syndicates/${id}`,
-  DELETE: (id: number) => `${API_BASE_URL}/assetmanager/syndicates/${id}`,
-};
-
-/**
- * API endpoints for syndicate members
- * Backend: /server/apps/assetmanager/subrouters/entity_subrouters/syndicate_member_subrouter.py
- */
-export const SYNDICATE_MEMBER_ENDPOINTS = {
-  LIST: `${API_BASE_URL}/assetmanager/syndicate-members/`,
-  DETAIL: (id: number) => `${API_BASE_URL}/assetmanager/syndicate-members/${id}`,
-  CREATE: `${API_BASE_URL}/assetmanager/syndicate-members/`,
-  UPDATE: (id: number) => `${API_BASE_URL}/assetmanager/syndicate-members/${id}`,
-  DELETE: (id: number) => `${API_BASE_URL}/assetmanager/syndicate-members/${id}`,
-};
-
-/**
- * API endpoints for syndicate transactions
- * Backend: /server/apps/assetmanager/subrouters/entity_subrouters/syndicate_transaction_subrouter.py
- */
-export const SYNDICATE_TRANSACTION_ENDPOINTS = {
-  LIST: `${API_BASE_URL}/assetmanager/syndicate-transactions/`,
-  DETAIL: (id: number) => `${API_BASE_URL}/assetmanager/syndicate-transactions/${id}`,
-  CREATE: `${API_BASE_URL}/assetmanager/syndicate-transactions/`,
-  UPDATE: (id: number) => `${API_BASE_URL}/assetmanager/syndicate-transactions/${id}`,
-  DELETE: (id: number) => `${API_BASE_URL}/assetmanager/syndicate-transactions/${id}`,
 };
 
 /**
@@ -129,6 +98,21 @@ export const SECURITY_TRANSACTION_ENDPOINTS = {
   CREATE: `${API_BASE_URL}/assetmanager/security-transactions/`,
   UPDATE: (id: number) => `${API_BASE_URL}/assetmanager/security-transactions/${id}`,
   DELETE: (id: number) => `${API_BASE_URL}/assetmanager/security-transactions/${id}`,
+  NEXT_REFERENCE: `${API_BASE_URL}/assetmanager/security-transactions/next-reference`,
+};
+
+/**
+ * API endpoints for commitments
+ * Backend: /server/apps/assetmanager/subrouters/captable_subrouters/commitment_subrouter.py
+ */
+export const COMMITMENT_ENDPOINTS = {
+  LIST: `${API_BASE_URL}/assetmanager/commitments/`,
+  DETAIL: (id: number) => `${API_BASE_URL}/assetmanager/commitments/${id}`,
+  CREATE: `${API_BASE_URL}/assetmanager/commitments/`,
+  RESPOND: (id: number) => `${API_BASE_URL}/assetmanager/commitments/${id}/respond`,
+  REVIEW: (id: number) => `${API_BASE_URL}/assetmanager/commitments/${id}/review`,
+  GENERATE_TRANSACTION: (id: number) => `${API_BASE_URL}/assetmanager/commitments/${id}/generate-transaction`,
+  DELETE: (id: number) => `${API_BASE_URL}/assetmanager/commitments/${id}`,
 };
 
 /**
@@ -165,6 +149,10 @@ export const DEAL_ENDPOINTS = {
   CREATE: `${API_BASE_URL}/assetmanager/deals/`,
   UPDATE: (id: number) => `${API_BASE_URL}/assetmanager/deals/${id}`,
   DELETE: (id: number) => `${API_BASE_URL}/assetmanager/deals/${id}`,
+  // Why STATUS: Separate endpoint for status transitions (not part of general PUT update)
+  STATUS: (id: number) => `${API_BASE_URL}/assetmanager/deals/${id}/status`,
+  // Why EXECUTE: Triggers the deal-to-captable bridge — creates FundingRound + Security + Transactions
+  EXECUTE: (id: number) => `${API_BASE_URL}/assetmanager/deals/${id}/execute`,
 };
 
 /**
@@ -319,4 +307,17 @@ export const PERFORMANCE_ENDPOINTS = {
   ENTITY: (entityId: number) => `${API_BASE_URL}/assetmanager/performance/entity/${entityId}`,
   HOLDINGS: (entityId: number) => `${API_BASE_URL}/assetmanager/performance/holdings/${entityId}`,
   STAKEHOLDERS: (entityId: number) => `${API_BASE_URL}/assetmanager/performance/stakeholders/${entityId}`,
+};
+
+/**
+ * API endpoints for computed stakeholder positions (read-only, investor side)
+ * Backend: /server/apps/assetmanager/subrouters/captable_subrouters/stakeholder_position_subrouter.py
+ */
+export const STAKEHOLDER_POSITION_ENDPOINTS = {
+  LIST: (sourceEntityId: number) =>
+    `${API_BASE_URL}/assetmanager/stakeholder-positions/?source_entity_id=${sourceEntityId}`,
+  DETAIL: (entityId: number, sourceEntityId: number) =>
+    `${API_BASE_URL}/assetmanager/stakeholder-positions/${entityId}?source_entity_id=${sourceEntityId}`,
+  TRACK_AS_HOLDING: (entityId: number, sourceEntityId: number) =>
+    `${API_BASE_URL}/assetmanager/stakeholder-positions/${entityId}/track-as-holding?source_entity_id=${sourceEntityId}`,
 };

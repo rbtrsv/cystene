@@ -1,33 +1,33 @@
 'use client';
 
 import React, { createContext, useEffect, useMemo } from 'react';
-import { useSyndicateStore } from '../../store/entity/syndicate.store';
-import { type Syndicate } from '../../schemas/entity/syndicate.schemas';
+import { useCommitmentStore } from '../../store/captable/commitment.store';
+import { type CommitmentDetail } from '../../schemas/captable/commitment.schemas';
 
 /**
- * Context type for the syndicates provider
+ * Context type for the commitments provider
  */
-export interface SyndicateContextType {
+export interface CommitmentContextType {
   // State
-  syndicates: Syndicate[];
-  activeSyndicateId: number | null;
+  commitments: CommitmentDetail[];
+  activeCommitmentId: number | null;
   isLoading: boolean;
   error: string | null;
   isInitialized: boolean;
 
   // Actions
   initialize: () => Promise<void>;
-  setActiveSyndicate: (syndicateId: number | null) => void;
+  setActiveCommitment: (commitmentId: number | null) => void;
   clearError: () => void;
 }
 
 // Create the context
-export const SyndicateContext = createContext<SyndicateContextType | null>(null);
+export const CommitmentContext = createContext<CommitmentContextType | null>(null);
 
 /**
- * Provider component for syndicate-related state and actions
+ * Provider component for commitment related state and actions
  */
-export function SyndicateProvider({
+export function CommitmentProvider({
   children,
   initialFetch = true
 }: {
@@ -36,29 +36,29 @@ export function SyndicateProvider({
 }) {
   // Get state and actions from the store
   const {
-    syndicates,
-    activeSyndicateId,
+    commitments,
+    activeCommitmentId,
     isLoading,
     error,
     isInitialized,
     initialize,
-    setActiveSyndicate,
+    setActiveCommitment,
     clearError
-  } = useSyndicateStore();
+  } = useCommitmentStore();
 
   // Rehydrate zustand store after React hydration to prevent SSR mismatch
   useEffect(() => {
-    useSyndicateStore.persist.rehydrate();
+    useCommitmentStore.persist.rehydrate();
   }, []);
 
-  // Initialize syndicates on mount if initialFetch is true
+  // Initialize commitments on mount if initialFetch is true
   useEffect(() => {
     let isMounted = true;
 
     if (initialFetch && !isInitialized) {
       initialize().catch(error => {
         if (isMounted) {
-          console.error('Error initializing syndicates:', error);
+          console.error('Error initializing commitments:', error);
         }
       });
     }
@@ -69,34 +69,34 @@ export function SyndicateProvider({
   }, [initialFetch, isInitialized, initialize]);
 
   // Memoize context value to prevent unnecessary re-renders
-  const contextValue = useMemo<SyndicateContextType>(() => ({
-    syndicates,
-    activeSyndicateId,
+  const contextValue = useMemo<CommitmentContextType>(() => ({
+    commitments,
+    activeCommitmentId,
     isLoading,
     error,
     isInitialized,
     initialize,
-    setActiveSyndicate,
+    setActiveCommitment,
     clearError
   }), [
-    syndicates,
-    activeSyndicateId,
+    commitments,
+    activeCommitmentId,
     isLoading,
     error,
     isInitialized,
     initialize,
-    setActiveSyndicate,
+    setActiveCommitment,
     clearError
   ]);
 
   return (
-    <SyndicateContext.Provider value={contextValue}>
+    <CommitmentContext.Provider value={contextValue}>
       {children}
-    </SyndicateContext.Provider>
+    </CommitmentContext.Provider>
   );
 }
 
 /**
  * Default export
  */
-export default SyndicateProvider;
+export default CommitmentProvider;

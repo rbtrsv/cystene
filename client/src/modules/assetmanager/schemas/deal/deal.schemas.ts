@@ -27,6 +27,19 @@ export const DealTypeEnum = z.enum([
   'debt',
 ]);
 
+/**
+ * Deal lifecycle status options - matches backend DealStatus enum
+ * Why: Mirrors the 5 lifecycle states on the backend Deal.status field.
+ * Backend: class DealStatus(str, Enum)
+ */
+export const DealStatusEnum = z.enum([
+  'draft',
+  'active',
+  'closed',
+  'executed',
+  'cancelled',
+]);
+
 // ==========================================
 // Deal Schema (Full Representation)
 // ==========================================
@@ -42,6 +55,13 @@ export const DealSchema = z.object({
   entity_id: z.number(),
   name: z.string(),
   deal_type: DealTypeEnum,
+
+  // Why status: Frontend needs to display lifecycle state and determine
+  // which action buttons to show (activate, close, execute, cancel).
+  status: DealStatusEnum,
+
+  // Why funding_round_id: Frontend can link to the created FundingRound after execution.
+  funding_round_id: z.number().nullable(),
 
   // Financial Terms
   pre_money_valuation: z.number().nullable(),
@@ -234,14 +254,43 @@ export const UpdateDealSchema = z.object({
   deal_structure: z.string().nullable().optional(),
 });
 
+/**
+ * Schema for updating deal status via PUT /{deal_id}/status
+ * Why: Status transitions are separate from general deal updates
+ * to enforce allowed transitions on the backend.
+ *
+ * Backend equivalent: class DealStatusUpdate(BaseModel)
+ */
+export const DealStatusUpdateSchema = z.object({
+  status: DealStatusEnum,
+});
+
+/**
+ * Schema for executing a fundraising deal via POST /{deal_id}/execute
+ * Why: Admin must specify round type, security details, and stakeholder type
+ * at execution time — these can't be inferred from the Deal record alone.
+ *
+ * Backend equivalent: class DealExecuteInput(BaseModel)
+ */
+export const DealExecuteInputSchema = z.object({
+  round_type: z.string().min(1).max(20),
+  security_name: z.string().min(1).max(255),
+  security_code: z.string().min(1).max(20),
+  security_type: z.string().min(1).max(50),
+  stakeholder_type: z.string().max(20).default('limited_partner'),
+});
+
 // ==========================================
 // Type Exports
 // ==========================================
 
 export type DealType = z.infer<typeof DealTypeEnum>;
+export type DealStatus = z.infer<typeof DealStatusEnum>;
 export type Deal = z.infer<typeof DealSchema>;
 export type CreateDeal = z.infer<typeof CreateDealSchema>;
 export type UpdateDeal = z.infer<typeof UpdateDealSchema>;
+export type DealStatusUpdate = z.infer<typeof DealStatusUpdateSchema>;
+export type DealExecuteInput = z.infer<typeof DealExecuteInputSchema>;
 
 // ==========================================
 // Label Helpers
@@ -262,6 +311,24 @@ export const DEAL_TYPE_LABELS: Record<DealType, string> = {
  */
 export const getDealTypeLabel = (type: string): string => {
   return DEAL_TYPE_LABELS[type as DealType] || type;
+};
+
+/** Human-readable labels for deal statuses */
+export const DEAL_STATUS_LABELS: Record<DealStatus, string> = {
+  draft: 'Draft',
+  active: 'Active',
+  closed: 'Closed',
+  executed: 'Executed',
+  cancelled: 'Cancelled',
+};
+
+/**
+ * Get human-readable label for a deal status
+ * @param status Deal status enum value
+ * @returns Display label string
+ */
+export const getDealStatusLabel = (status: string): string => {
+  return DEAL_STATUS_LABELS[status as DealStatus] || status;
 };
 
 // ==========================================
@@ -285,5 +352,21 @@ export type DealResponse = {
 export type DealsResponse = {
   success: boolean;
   data?: Deal[];
+  error?: string;
+};
+
+/**
+ * Response from deal execution endpoint
+ * Why: Execution creates multiple records — response provides summary counts.
+ * Backend equivalent: class DealExecuteResponse(BaseModel)
+ */
+export type DealExecuteResponse = {
+  success: boolean;
+  funding_round_id: number;
+  security_id: number;
+  stakeholders_created: number;
+  transactions_created: number;
+  total_amount: number;
+  message: string;
   error?: string;
 };

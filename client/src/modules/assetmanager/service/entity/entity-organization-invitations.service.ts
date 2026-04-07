@@ -5,8 +5,10 @@ import {
   EntityOrganizationInvitationsResponse,
   CreateEntityOrganizationInvitation,
   UpdateEntityOrganizationInvitation,
+  RequestEntityAccess,
   CreateEntityOrganizationInvitationSchema,
   UpdateEntityOrganizationInvitationSchema,
+  RequestEntityAccessSchema,
   InvitationStatus,
 } from '../../schemas/entity/entity-organization-invitations.schema';
 import { ENTITY_ORGANIZATION_INVITATION_ENDPOINTS } from '../../utils/api.endpoints';
@@ -125,6 +127,37 @@ export const createEntityOrganizationInvitation = async (
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Failed to create entity organization invitation',
+      data: undefined
+    };
+  }
+};
+
+/**
+ * Request access to a discoverable entity (claim flow — reverse direction)
+ * @param data Request entity access data (entity_id, organization_id)
+ * @returns Promise with entity organization invitation response
+ */
+export const requestEntityAccess = async (
+  data: RequestEntityAccess
+): Promise<EntityOrganizationInvitationResponse> => {
+  // Validate request data
+  RequestEntityAccessSchema.parse(data);
+
+  try {
+    // FastAPI returns full response wrapper {success, data, error}
+    const response = await fetchClient<EntityOrganizationInvitationResponse>(
+      ENTITY_ORGANIZATION_INVITATION_ENDPOINTS.REQUEST_ACCESS,
+      {
+        method: 'POST',
+        body: data as unknown as Record<string, unknown>
+      }
+    );
+
+    return response;
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to request entity access',
       data: undefined
     };
   }

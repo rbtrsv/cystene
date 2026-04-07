@@ -3,10 +3,15 @@
 import {
   DealResponse,
   DealsResponse,
+  DealExecuteResponse,
   CreateDeal,
   UpdateDeal,
+  DealStatus,
+  DealExecuteInput,
   CreateDealSchema,
   UpdateDealSchema,
+  DealStatusUpdateSchema,
+  DealExecuteInputSchema,
   DealType,
 } from '../../schemas/deal/deal.schemas';
 import { DEAL_ENDPOINTS } from '../../utils/api.endpoints';
@@ -154,6 +159,59 @@ export const deleteDeal = async (id: number): Promise<{ success: boolean; messag
     return {
       success: false,
       error: error instanceof Error ? error.message : `Failed to delete deal with ID ${id}`,
+    };
+  }
+};
+
+/**
+ * Update deal status via dedicated status transition endpoint
+ * @param id Deal ID
+ * @param status New deal status
+ * @returns Promise with deal response
+ */
+export const updateDealStatus = async (id: number, status: DealStatus): Promise<DealResponse> => {
+  DealStatusUpdateSchema.parse({ status });
+
+  try {
+    const response = await fetchClient<DealResponse>(DEAL_ENDPOINTS.STATUS(id), {
+      method: 'PUT',
+      body: { status } as unknown as Record<string, unknown>,
+    });
+    return response;
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : `Failed to update deal status for ID ${id}`,
+      data: undefined,
+    };
+  }
+};
+
+/**
+ * Execute a fundraising deal — creates cap table impact
+ * @param id Deal ID
+ * @param data Execution input (round_type, security details, stakeholder_type)
+ * @returns Promise with execution response
+ */
+export const executeDeal = async (id: number, data: DealExecuteInput): Promise<DealExecuteResponse> => {
+  DealExecuteInputSchema.parse(data);
+
+  try {
+    const response = await fetchClient<DealExecuteResponse>(DEAL_ENDPOINTS.EXECUTE(id), {
+      method: 'POST',
+      body: data as unknown as Record<string, unknown>,
+    });
+    return response;
+  } catch (error) {
+    return {
+      success: false,
+      funding_round_id: 0,
+      security_id: 0,
+      stakeholders_created: 0,
+      transactions_created: 0,
+      total_amount: 0,
+      message: '',
+      error: error instanceof Error ? error.message : `Failed to execute deal with ID ${id}`,
     };
   }
 };

@@ -23,7 +23,6 @@ interface FetchError extends Error {
 export interface ListStakeholdersParams {
   entity_id?: number;
   stakeholder_type?: StakeholderType;
-  source_syndicate_id?: number;
   limit?: number;
   offset?: number;
 }
@@ -39,7 +38,6 @@ export const getStakeholders = async (params?: ListStakeholdersParams): Promise<
     const queryParams = new URLSearchParams();
     if (params?.entity_id) queryParams.append('entity_id', params.entity_id.toString());
     if (params?.stakeholder_type) queryParams.append('stakeholder_type', params.stakeholder_type);
-    if (params?.source_syndicate_id) queryParams.append('source_syndicate_id', params.source_syndicate_id.toString());
     if (params?.limit) queryParams.append('limit', params.limit.toString());
     if (params?.offset) queryParams.append('offset', params.offset.toString());
 

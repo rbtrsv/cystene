@@ -92,18 +92,11 @@ export function useStakeholders() {
     getStakeholderById: (id: number) => {
       return stakeholders.find((stakeholder: Stakeholder) => stakeholder.id === id);
     },
-    getStakeholderName: (id: number) => {
-      const stakeholder = stakeholders.find((s: Stakeholder) => s.id === id);
-      return stakeholder ? stakeholder.name : 'Unknown Stakeholder';
-    },
     getStakeholdersByType: (stakeholderType: StakeholderType) => {
       return stakeholders.filter((s: Stakeholder) => s.type === stakeholderType);
     },
     getStakeholdersByEntity: (entityId: number) => {
       return stakeholders.filter((s: Stakeholder) => s.entity_id === entityId);
-    },
-    getStakeholdersBySyndicate: (syndicateId: number) => {
-      return stakeholders.filter((s: Stakeholder) => s.source_syndicate_id === syndicateId);
     },
 
     // Convenience wrapper functions

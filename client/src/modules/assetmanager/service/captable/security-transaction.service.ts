@@ -163,6 +163,32 @@ export const updateSecurityTransaction = async (id: number, data: UpdateSecurity
  * @param id Security transaction ID
  * @returns Promise with success response
  */
+/**
+ * Get next sequential transaction reference (global)
+ * Format: {PREFIX}-{YYYYMMDD}-{NNN} (e.g. ISS-20260330-001)
+ * @param transactionType Optional transaction type for prefix
+ * @returns Promise with the next reference string
+ */
+export const getNextTransactionReference = async (transactionType?: string): Promise<string> => {
+  try {
+    const queryParams = new URLSearchParams();
+    if (transactionType) queryParams.append('transaction_type', transactionType);
+
+    const url = `${SECURITY_TRANSACTION_ENDPOINTS.NEXT_REFERENCE}${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+
+    const response = await fetchClient<{ success: boolean; data: string }>(url, {
+      method: 'GET'
+    });
+
+    return response.data;
+  } catch {
+    // Fallback: generate client-side
+    const today = new Date().toISOString().split('T')[0].replace(/-/g, '');
+    const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+    return `TXN-${today}-${random}`;
+  }
+};
+
 export const deleteSecurityTransaction = async (id: number): Promise<{ success: boolean; message?: string; error?: string }> => {
   try {
     // FastAPI returns {success: bool, message?: string, error?: string}

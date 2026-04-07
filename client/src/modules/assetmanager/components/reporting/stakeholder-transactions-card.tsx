@@ -14,6 +14,7 @@ import React, { useMemo } from 'react';
 import type { SecurityTransaction } from '../../schemas/captable/security-transaction.schemas';
 import { getTransactionTypeLabel } from '../../schemas/captable/security-transaction.schemas';
 import type { Stakeholder } from '../../schemas/entity/stakeholder.schemas';
+import { useEntities } from '../../hooks/entity/use-entities';
 import {
   Card,
   CardContent,
@@ -83,15 +84,17 @@ export default function StakeholderTransactionsCard({
   stakeholders,
   isLoading,
 }: StakeholderTransactionsCardProps) {
+  const { getEntityName } = useEntities();
+
   // ===== DERIVED STATE =====
-  // Build stakeholder lookup map
+  // Build stakeholder lookup map (derives name from source entity)
   const stakeholderMap = useMemo(() => {
     const map = new Map<number, string>();
     stakeholders.forEach((s) => {
-      map.set(s.id, s.name);
+      map.set(s.id, getEntityName(s.source_entity_id));
     });
     return map;
-  }, [stakeholders]);
+  }, [stakeholders, getEntityName]);
 
   // Sort transactions by date descending
   const sortedTransactions = useMemo(() => {

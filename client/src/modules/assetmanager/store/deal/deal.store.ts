@@ -7,6 +7,9 @@ import {
   Deal,
   CreateDeal,
   UpdateDeal,
+  DealStatus,
+  DealExecuteInput,
+  DealExecuteResponse,
 } from '../../schemas/deal/deal.schemas';
 import {
   getDeals,
@@ -14,6 +17,8 @@ import {
   createDeal as apiCreateDeal,
   updateDeal as apiUpdateDeal,
   deleteDeal as apiDeleteDeal,
+  updateDealStatus as apiUpdateDealStatus,
+  executeDeal as apiExecuteDeal,
   ListDealsParams,
 } from '../../service/deal/deal.service';
 
@@ -35,6 +40,8 @@ export interface DealState {
   createDeal: (data: CreateDeal) => Promise<boolean>;
   updateDeal: (id: number, data: UpdateDeal) => Promise<boolean>;
   deleteDeal: (id: number) => Promise<boolean>;
+  updateDealStatus: (id: number, status: DealStatus) => Promise<boolean>;
+  executeDeal: (id: number, data: DealExecuteInput) => Promise<DealExecuteResponse | null>;
   setActiveDeal: (dealId: number | null) => void;
   clearError: () => void;
   reset: () => void;
@@ -252,6 +259,48 @@ export const useDealStore = create<DealState>()(
             error: error instanceof Error ? error.message : 'An unexpected error occurred'
           });
           return false;
+        }
+      },
+
+      /**
+       * Update deal status via dedicated status transition endpoint
+       */
+      updateDealStatus: async (id, status) => {
+        set({ isLoading: true, error: null });
+        try {
+          const response = await apiUpdateDealStatus(id, status);
+          if (response.success && response.data) {
+            await get().fetchDeals();
+            set({ isLoading: false });
+            return true;
+          } else {
+            set({ isLoading: false, error: response.error || `Failed to update status for deal with ID ${id}` });
+            return false;
+          }
+        } catch (error) {
+          set({ isLoading: false, error: error instanceof Error ? error.message : 'An unexpected error occurred' });
+          return false;
+        }
+      },
+
+      /**
+       * Execute a fundraising deal — creates cap table impact
+       */
+      executeDeal: async (id, data) => {
+        set({ isLoading: true, error: null });
+        try {
+          const response = await apiExecuteDeal(id, data);
+          if (response.success) {
+            await get().fetchDeals();
+            set({ isLoading: false });
+            return response;
+          } else {
+            set({ isLoading: false, error: response.error || `Failed to execute deal with ID ${id}` });
+            return null;
+          }
+        } catch (error) {
+          set({ isLoading: false, error: error instanceof Error ? error.message : 'An unexpected error occurred' });
+          return null;
         }
       },
 
