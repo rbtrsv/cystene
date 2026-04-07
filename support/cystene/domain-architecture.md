@@ -924,7 +924,7 @@ Each scanner is a single async function in its own file. Same input, same output
 | `password_audit_scan.run()` | `password_audit` | `asyncssh`, `httpx` | Brute force on detected services (SSH, FTP, HTTP login), default credentials check (admin/admin, root/root), weak password detection. Tests against common wordlist. | Lesson 6, hash_cracker.py, BHP Ch5-6 |
 | `host_audit_scan.run()` | `host_audit` | `asyncssh` | Connects via SSH (Credential entity). Checks: SUID binaries, weak file permissions, cron jobs, sudo config, exposed credentials in config/env/history, SIP status (macOS), FileVault (macOS), LaunchAgents (macOS). OS-aware (Linux vs macOS). | Lesson 4, 10, privesc_scanner.py, BHP Ch2, Ch10 |
 | `cloud_audit_scan.run()` | `cloud_audit` | `boto3` (AWS), `azure-mgmt` (Azure) | Uses cloud API keys (Credential entity). Checks: S3 bucket exposure, IAM overprivileged roles, security groups, metadata service (IMDSv1), unencrypted storage, public snapshots, stale access keys. | Lesson 11 |
-| `ad_audit_scan.run()` | `ad_audit` | `ldap3`, `impacket` | Uses domain credentials (Credential entity). Checks: Kerberoastable accounts, ASREPRoastable, unconstrained delegation, stale accounts, weak trust configs, password policy. | Lesson 9, BHP Ch10 |
+| `ad_audit_scan.run()` | `ad_audit` | `ldap3` | Uses domain credentials (Credential entity). 11 LDAP checks: Kerberoastable accounts (SPN), ASREPRoastable (no preauth), unconstrained delegation, constrained delegation to sensitive services, stale accounts (90+ days), disabled accounts, privileged group membership, password policy, password never expires, orphaned admins (adminCount=1), reversible encryption. No impacket — detection only via LDAP queries, no Kerberos ticket attacks. | Lesson 9, BHP Ch10 |
 | `mobile_scan.run()` | `mobile_scan` | `androguard` | User uploads APK. Analyzes: hardcoded credentials, insecure data storage, missing SSL pinning, exported components, manifest permissions, debuggable flag. **File deleted immediately after scan.** | Lesson 8, apk_analyzer.py |
 
 ### 4.3 Scanner Function Signature
@@ -952,44 +952,51 @@ async def run(target: str, params: dict) -> dict:
     ...
 ```
 
-### 4.4 How scan_job_subrouter Calls Scanners
+### 4.4 How scan_job_subrouter Calls Scanners (IMPLEMENTED)
 
-No orchestrator class. The subrouter imports scanner modules and calls them directly:
+No orchestrator class. Scanner registry in `scanners/__init__.py`, dispatcher in `scan_job_subrouter.py`.
 
+**Scanner registry** (`scanners/__init__.py`):
 ```python
-# server/apps/cybersecurity/subrouters/scan_job_subrouter.py
+from .external import port_scan, dns_scan, ssl_scan, web_scan, vuln_scan, api_scan, active_web_scan, password_audit_scan
+from .internal import host_audit_scan, cloud_audit_scan, ad_audit_scan
+from .upload import mobile_scan
 
-from cybersecurity.scanners import (
-    port_scan, dns_scan, ssl_scan, web_scan, vuln_scan, api_scan,
-    active_web_scan, password_audit_scan, host_audit_scan,
-    cloud_audit_scan, ad_audit_scan, mobile_scan,
-)
-
-# Simple dict mapping — replaces factory + strategy pattern + orchestrator
-scanner_map = {
-    # External scanners (no credentials needed)
-    "port_scan": port_scan.run,
-    "dns_enum": dns_scan.run,
-    "ssl_check": ssl_scan.run,
-    "web_scan": web_scan.run,
-    "vuln_scan": vuln_scan.run,
-    "api_scan": api_scan.run,
-    "active_web_scan": active_web_scan.run,        # requires active_scan_consent
-    "password_audit": password_audit_scan.run,
-    # Internal scanners (require Credential entity)
-    "host_audit": host_audit_scan.run,              # requires SSH credential
-    "cloud_audit": cloud_audit_scan.run,            # requires cloud API key credential
-    "ad_audit": ad_audit_scan.run,                  # requires domain credential
-    # Upload scanner
-    "mobile_scan": mobile_scan.run,                 # requires APK file upload
+SCANNERS = {
+    "port_scan": port_scan.run, "dns_enum": dns_scan.run, "ssl_check": ssl_scan.run,
+    "web_scan": web_scan.run, "vuln_scan": vuln_scan.run, "api_scan": api_scan.run,
+    "active_web_scan": active_web_scan.run, "password_audit": password_audit_scan.run,
+    "host_audit": host_audit_scan.run, "cloud_audit": cloud_audit_scan.run,
+    "ad_audit": ad_audit_scan.run, "mobile_scan": mobile_scan.run,
 }
+```
 
-# In the "start scan" endpoint:
-for scan_type in template.scan_types.split(","):
-    scanner = scanner_map[scan_type.strip()]
-    result = await scanner(target.target_value, params)
-    # write result["findings"] + result["assets"] to DB
-    # update ScanJob summary counts
+**Dispatcher** (`scan_job_subrouter.py` → `run_scan_job(job_id)`):
+```
+POST /start → create ScanJob(status=pending) → asyncio.create_task(run_scan_job(job.id)) → return immediately
+
+run_scan_job(job_id):
+  1. Open own DB session (async_session() — not the request session)
+  2. Load job + template + target + credential
+  3. Set status = "running", started_at = now
+  4. Parse scan_types (comma-separated) from template
+  5. Build params dict: template fields + engine_params JSON + credential params
+  6. Credential → params mapping (build_credential_params):
+     - ssh_password → {ssh_username, ssh_password, ssh_port}
+     - api_key → {aws_access_key_id, aws_secret_access_key, aws_region}
+     - domain_credentials → {domain, dc_host, username, password, use_ssl}
+  7. Pre-flight checks per scanner:
+     - active_web_scan blocked without active_scan_consent=True
+     - host_audit/cloud_audit/ad_audit blocked without Credential
+     - mobile_scan: supports apk_file_path (upload) + apk_url (URL download)
+  8. asyncio.gather(*tasks, return_exceptions=True) — parallel, partial results
+  9. Fingerprint deduplication: query existing fingerprints for target →
+     set is_new=False + first_found_job_id for recurring findings
+  10. Bulk insert Finding + Asset rows
+  11. Compute security_score (100 - penalties: critical=-15, high=-10, medium=-5, low=-2)
+  12. Update severity counts + total_assets + duration_seconds
+  13. Set status = "completed" (or "failed" if all scanners errored)
+  14. Cleanup: delete temp APK file if downloaded from URL
 ```
 
 ---

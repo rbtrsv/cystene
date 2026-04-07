@@ -73,7 +73,7 @@ Fiecare lectie din `infosec-research/` e bazata pe capitole din **Black Hat Pyth
 | **Lesson 6: Password Attacks** | BHP Ch5 (HTML form brute-forcing), BHP Ch6 (website content → password lists), BHR Ch1 (SHA-1 hash cracker), BHR Ch11 (cryptography, hash functions, block ciphers) | ✅ | password_audit_scan — brute force pe servicii detectate (SSH, FTP, HTTP login), weak password detection, default credentials check, weak hash detection | User-ul vrea sa stie daca serviciile lui au parole slabe. Pattern din hash_cracker.py. BHR Ch11 crypto concepts folosite in ssl_scan. |
 | **Lesson 7: Wireless Security** | — (nu e in BHP/BHR) | ⏳ Future | Necesita agent fizic (Raspberry Pi sau masina in reteaua clientului cu adaptor WiFi). Nu poti scana WiFi din cloud. | Pregatim arhitectura: `ScanJob.execution_point` = "cloud" sau "remote_agent". |
 | **Lesson 8: Mobile Attacks** | — (nu e in BHP/BHR) | ✅ | mobile_scan — user uploadeaza APK, analizam server-side: hardcoded credentials, insecure storage, missing SSL pinning, exposed components, manifest analysis. Fisierul se sterge imediat dupa scanare. | User uploadeaza fisierul, noi il analizam. Pattern din apk_analyzer.py. |
-| **Lesson 9: Active Directory** | BHP Ch10 (Windows privilege escalation — concepte de AD in contextul Windows) | ✅ | ad_audit_scan — AD enumeration, Kerberoastable accounts, weak permissions, stale accounts, delegation issues. Necesita credentiale de domain (Credential entity). | Daca user-ul da credentiale de domain, auditem AD. Enterprise feature esential. |
+| **Lesson 9: Active Directory** | BHP Ch10 (Windows privilege escalation — concepte de AD in contextul Windows) | ✅ | ad_audit_scan — 11 LDAP checks: Kerberoastable (SPN), ASREPRoastable (no preauth), unconstrained delegation, constrained delegation to sensitive services, stale accounts (90+ days), disabled accounts, privileged group membership, password policy, password never expires, orphaned admins (adminCount=1), reversible encryption. Uses ldap3 (no impacket — detection only). Necesita credentiale de domain (Credential entity). | Daca user-ul da credentiale de domain, auditem AD. Enterprise feature esential. |
 | **Lesson 10: macOS Security** | BHP Ch10 (privilege escalation — adaptat macOS: SUID, LaunchAgents vs Windows services) | ✅ | host_audit_scan (acelasi scanner ca Lesson 4) — SIP status, TCC audit, FileVault status, SUID binaries, LaunchAgents suspect. Se conecteaza prin SSH (Credential entity). | macOS audit = subset de host audit prin SSH. Nu e un scanner separat, e acelasi host_audit cu detectie de OS. |
 | **Lesson 11: Cloud Security** | — (nu e in BHP/BHR) | ✅ | cloud_audit_scan — S3 bucket exposure, IAM audit, security groups, metadata service, unencrypted storage, public snapshots. Necesita cloud API keys (Credential entity). | User-ul da API keys, noi auditem cloud-ul. Infrastructure.infra_type = "cloud_account". |
 | **Lesson 12: Social Engineering** | BHR Ch5 (web crawling for OSINT, search engines, IoT/Shodan), BHR Ch9 (phishing with WebAssembly — concepte, nu implementare) | ✅ partial | dns_scan preia subdomain enumeration (crt.sh, OSINT pasiv). web_scan preia exposed info detection. | Partea automatizabila (OSINT pasiv din BHR Ch5). Phishing (BHR Ch9) e manual — nu le automatizam. |
@@ -157,7 +157,7 @@ Fiecare lectie din `infosec-research/` e bazata pe capitole din **Black Hat Pyth
 | 9 | `host_audit_scan.py` | Intern (SSH) | Lesson 4, 10 | privesc_scanner.py | Credential (SSH key/password) |
 | 10 | `cloud_audit_scan.py` | Intern (API) | Lesson 11 | — | Credential (cloud API keys) |
 | 11 | `ad_audit_scan.py` | Intern (domain) | Lesson 9 | — | Credential (domain credentials) |
-| 12 | `mobile_scan.py` | Upload | Lesson 8 | apk_analyzer.py | APK file upload (scan & delete) |
+| 12 | `mobile_scan.py` | Upload | Lesson 8 | apk_analyzer.py | APK file upload OR URL download (scan & delete) |
 
 ### Categorii de scanare
 
@@ -174,4 +174,6 @@ Fiecare lectie din `infosec-research/` e bazata pe capitole din **Black Hat Pyth
 | Cloud infrastructure | **Infrastructure.infra_type** = "cloud_account" | S3/IAM/security groups nu sunt pe un IP, ci pe un cont cloud intreg |
 | Scan execution context | **ScanJob.execution_point** = "cloud" / "remote_agent" | Pregateste arhitectura pt wireless (future agent fizic) |
 | Remediation actionable | **Finding.remediation_script** | Comanda/snippet copiabil de fix (chmod 600, nginx config, AWS CLI) |
-| Mobile file handling | Scanare temporara | APK uploadat → analizat → sters imediat. Nu stocam permanent fisiere mobile. |
+| Mobile file handling | Scanare temporara | APK uploadat sau descarcat de la URL → analizat → sters imediat. Nu stocam permanent fisiere mobile. |
+| Scanner Dispatcher | **scan_job_subrouter.py** → `run_scan_job()` | Background task: asyncio.gather (parallel, partial results), fingerprint dedup, credential decrypt, security_score (0-100), severity counts. POST /start → return imediat → scan ruleaza in background. |
+| Credential mapping | **build_credential_params()** | SSH → ssh_username/password/port. Cloud → aws_access_key_id/secret/region. AD → domain/dc_host/username/password/use_ssl. |

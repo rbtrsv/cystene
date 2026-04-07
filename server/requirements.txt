@@ -21,8 +21,12 @@ aiosignal==1.4.0
 aiosmtplib==4.0.2
     # via server (pyproject.toml)
 alembic==1.16.4
-    # via server (pyproject.toml)
+    # via
+    #   server (pyproject.toml)
+    #   dataset
 alpaca-py==0.42.1
+    # via server (pyproject.toml)
+androguard==4.1.3
     # via server (pyproject.toml)
 annotated-types==0.7.0
     # via
@@ -34,6 +38,12 @@ anyio==4.10.0
     #   httpx
     #   starlette
     #   watchfiles
+apkinspector==1.3.6
+    # via androguard
+asn1crypto==1.5.1
+    # via androguard
+asttokens==3.0.1
+    # via stack-data
 asyncpg==0.30.0
     # via server (pyproject.toml)
 asyncssh==2.22.0
@@ -42,12 +52,20 @@ attrs==25.3.0
     # via
     #   server (pyproject.toml)
     #   aiohttp
+banal==1.0.6
+    # via dataset
 bcrypt==4.3.0
     # via server (pyproject.toml)
 beautifulsoup4==4.13.5
     # via
     #   server (pyproject.toml)
     #   yfinance
+boto3==1.42.84
+    # via server (pyproject.toml)
+botocore==1.42.84
+    # via
+    #   boto3
+    #   s3transfer
 cachetools==5.5.2
     # via
     #   server (pyproject.toml)
@@ -77,12 +95,18 @@ charset-normalizer==3.4.3
 click==8.2.1
     # via
     #   server (pyproject.toml)
+    #   androguard
     #   rich-toolkit
     #   typer
     #   uvicorn
+colorama==0.4.6
+    # via androguard
+contourpy==1.3.3
+    # via matplotlib
 cryptography==46.0.5
     # via
     #   server (pyproject.toml)
+    #   androguard
     #   asyncssh
 cssselect==1.3.0
     # via
@@ -97,6 +121,12 @@ curl-cffi==0.13.0
     # via
     #   server (pyproject.toml)
     #   yfinance
+cycler==0.12.1
+    # via matplotlib
+dataset==1.5.2
+    # via androguard
+decorator==5.2.1
+    # via ipython
 dnspython==2.7.0
     # via
     #   server (pyproject.toml)
@@ -107,12 +137,18 @@ email-validator==2.2.0
     #   pydantic
 emails==0.6
     # via server (pyproject.toml)
+executing==2.2.1
+    # via stack-data
 fastapi==0.116.1
     # via server (pyproject.toml)
 fastapi-cli==0.0.8
     # via server (pyproject.toml)
 fastapi-cloud-cli==0.1.5
     # via server (pyproject.toml)
+fonttools==4.62.1
+    # via matplotlib
+frida==17.9.1
+    # via androguard
 frozendict==2.4.6
     # via
     #   server (pyproject.toml)
@@ -181,13 +217,30 @@ idna==3.10
     #   httpx
     #   requests
     #   yarl
+ipython==9.12.0
+    # via androguard
+ipython-pygments-lexers==1.1.1
+    # via ipython
+jedi==0.19.2
+    # via ipython
 jinja2==3.1.6
     # via server (pyproject.toml)
+jmespath==1.1.0
+    # via
+    #   boto3
+    #   botocore
+kiwisolver==1.5.0
+    # via matplotlib
 kuzu==0.11.2
     # via server (pyproject.toml)
+ldap3==2.9.1
+    # via server (pyproject.toml)
+loguru==0.7.3
+    # via androguard
 lxml==6.0.1
     # via
     #   server (pyproject.toml)
+    #   androguard
     #   emails
     #   premailer
 mako==1.3.10
@@ -203,6 +256,10 @@ markupsafe==3.0.2
     #   server (pyproject.toml)
     #   jinja2
     #   mako
+matplotlib==3.10.8
+    # via androguard
+matplotlib-inline==0.2.1
+    # via ipython
 mdurl==0.1.2
     # via
     #   server (pyproject.toml)
@@ -224,16 +281,22 @@ multitasking==0.0.12
     # via
     #   server (pyproject.toml)
     #   yfinance
+mutf8==1.0.6
+    # via androguard
 neo4j==5.28.2
     # via server (pyproject.toml)
 nest-asyncio==1.6.0
     # via
     #   server (pyproject.toml)
     #   ib-async
+networkx==3.6.1
+    # via androguard
 numpy==2.3.3
     # via
     #   server (pyproject.toml)
     #   aeventkit
+    #   contourpy
+    #   matplotlib
     #   pandas
     #   ta
     #   yfinance
@@ -245,16 +308,23 @@ packaging==25.0
     # via
     #   server (pyproject.toml)
     #   gunicorn
+    #   matplotlib
 pandas==2.3.2
     # via
     #   server (pyproject.toml)
     #   alpaca-py
     #   ta
     #   yfinance
+parso==0.8.6
+    # via jedi
 peewee==3.18.2
     # via
     #   server (pyproject.toml)
     #   yfinance
+pexpect==4.9.0
+    # via ipython
+pillow==12.2.0
+    # via matplotlib
 platformdirs==4.4.0
     # via
     #   server (pyproject.toml)
@@ -263,6 +333,8 @@ premailer==3.10.0
     # via
     #   server (pyproject.toml)
     #   emails
+prompt-toolkit==3.0.52
+    # via ipython
 propcache==0.3.2
     # via
     #   server (pyproject.toml)
@@ -281,9 +353,14 @@ protobuf==6.32.0
     #   yfinance
 psycopg2-binary==2.9.10
     # via server (pyproject.toml)
+ptyprocess==0.7.0
+    # via pexpect
+pure-eval==0.2.3
+    # via stack-data
 pyasn1==0.6.1
     # via
     #   server (pyproject.toml)
+    #   ldap3
     #   pyasn1-modules
     #   rsa
 pyasn1-modules==0.4.2
@@ -308,9 +385,14 @@ pydantic-core==2.33.2
     #   surrealdb
 pydantic-settings==2.10.1
     # via server (pyproject.toml)
+pydot==4.0.1
+    # via androguard
 pygments==2.19.2
     # via
     #   server (pyproject.toml)
+    #   androguard
+    #   ipython
+    #   ipython-pygments-lexers
     #   rich
 pyjwt==2.10.1
     # via server (pyproject.toml)
@@ -322,10 +404,14 @@ pyparsing==3.2.3
     # via
     #   server (pyproject.toml)
     #   httplib2
+    #   matplotlib
+    #   pydot
 python-dateutil==2.9.0.post0
     # via
     #   server (pyproject.toml)
+    #   botocore
     #   emails
+    #   matplotlib
     #   pandas
 python-dotenv==1.1.1
     # via
@@ -343,6 +429,7 @@ pytz==2025.2
 pyyaml==6.0.2
     # via
     #   server (pyproject.toml)
+    #   androguard
     #   uvicorn
 redis==7.2.1
     # via server (pyproject.toml)
@@ -379,6 +466,8 @@ rsa==4.9.1
     # via
     #   server (pyproject.toml)
     #   google-auth
+s3transfer==0.16.0
+    # via boto3
 sentry-sdk==2.35.0
     # via
     #   server (pyproject.toml)
@@ -403,10 +492,13 @@ sqlalchemy==2.0.43
     # via
     #   server (pyproject.toml)
     #   alembic
+    #   dataset
 sseclient-py==1.8.0
     # via
     #   server (pyproject.toml)
     #   alpaca-py
+stack-data==0.6.3
+    # via ipython
 starlette==0.47.3
     # via
     #   server (pyproject.toml)
@@ -417,6 +509,10 @@ surrealdb==1.0.8
     # via server (pyproject.toml)
 ta==0.11.0
     # via server (pyproject.toml)
+traitlets==5.14.3
+    # via
+    #   ipython
+    #   matplotlib-inline
 typer==0.16.1
     # via
     #   server (pyproject.toml)
@@ -452,6 +548,7 @@ uritemplate==4.2.0
 urllib3==2.5.0
     # via
     #   server (pyproject.toml)
+    #   botocore
     #   requests
     #   sentry-sdk
 uvicorn==0.35.0
@@ -467,6 +564,8 @@ watchfiles==1.1.0
     # via
     #   server (pyproject.toml)
     #   uvicorn
+wcwidth==0.6.0
+    # via prompt-toolkit
 websockets==15.0.1
     # via
     #   server (pyproject.toml)

@@ -1,0 +1,105 @@
+name: cystene-scanner-targets
+
+# Test targets for all Cystene scanners.
+# Start:   docker-compose -f support/docker/docker-compose-scanner-targets.yml up -d
+# Stop:    docker-compose -f support/docker/docker-compose-scanner-targets.yml down
+# Restart: docker-compose -f support/docker/docker-compose-scanner-targets.yml down && docker-compose -f support/docker/docker-compose-scanner-targets.yml up -d
+# Logs:    docker-compose -f support/docker/docker-compose-scanner-targets.yml logs
+
+# What each container tests:
+#   ssh-target  → port_scan, password_audit, host_audit, vuln_scan
+#   dvwa        → web_scan, active_web_scan, api_scan, vuln_scan (Apache)
+#   ftp-target  → port_scan, password_audit (anonymous FTP)
+#
+# Credentials:
+#   SSH target:  admin/admin on localhost:2222
+#   DVWA:        admin/password on localhost:8081
+#   FTP target:  testuser/testpass on localhost:2121
+#
+# First time setup (only once — data persists in volume):
+#   1. Start containers: docker-compose -f support/docker/docker-compose-scanner-targets.yml up -d
+#   2. Wait ~15 seconds for MariaDB to start
+#   3. Open http://localhost:8081 → click "Create / Reset Database"
+#   4. Login with admin / password
+
+services:
+
+  # ==========================================
+  # SSH Target — Ubuntu with weak SSH config
+  # ==========================================
+  # Credentials: root/root
+  # Ports: 2222 (SSH)
+  # Why: Tests port_scan (banner grabbing), password_audit (default creds),
+  #       host_audit (SUID, permissions, cron), vuln_scan (old OpenSSH)
+  ssh-target:
+    image: lscr.io/linuxserver/openssh-server:latest
+    container_name: cystene-ssh-target
+    platform: linux/arm64
+    ports:
+      - "2222:2222"
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - USER_NAME=admin
+      - USER_PASSWORD=admin
+      - PASSWORD_ACCESS=true
+      - SUDO_ACCESS=true
+    restart: unless-stopped
+
+  # ==========================================
+  # DVWA — Damn Vulnerable Web Application
+  # ==========================================
+  # Credentials: admin/password (web login)
+  # Ports: 8081 (HTTP)
+  # Why: Tests web_scan (missing headers, file exposure, directory listing),
+  #       active_web_scan (SQLi, XSS, command injection, LFI — all built-in),
+  #       api_scan (CORS, no rate limiting), vuln_scan (Apache 2.4.25 — old)
+  # Setup after first start: go to http://localhost:8081, click "Create / Reset Database"
+  dvwa:
+    image: ghcr.io/digininja/dvwa:latest
+    container_name: cystene-dvwa
+    platform: linux/arm64
+    ports:
+      - "8081:80"
+    environment:
+      - DB_SERVER=dvwa-db
+    depends_on:
+      - dvwa-db
+    restart: unless-stopped
+
+  dvwa-db:
+    image: mariadb:10
+    container_name: cystene-dvwa-db
+    platform: linux/arm64
+    environment:
+      - MYSQL_ROOT_PASSWORD=dvwa
+      - MYSQL_DATABASE=dvwa
+      - MYSQL_USER=dvwa
+      - MYSQL_PASSWORD=p@ssw0rd
+    volumes:
+      - dvwa_db_data:/var/lib/mysql
+    restart: unless-stopped
+
+  # ==========================================
+  # FTP Target — vsftpd with anonymous access
+  # ==========================================
+  # Credentials: anonymous (no password)
+  # Ports: 2121 (FTP control), 21000-21010 (passive data)
+  # Why: Tests port_scan (FTP banner), password_audit (anonymous access detection)
+  ftp-target:
+    image: delfer/alpine-ftp-server:latest
+    container_name: cystene-ftp-target
+    platform: linux/arm64
+    ports:
+      - "2121:21"
+      - "21000-21010:21000-21010"
+    environment:
+      - USERS=testuser|testpass
+      - MIN_PORT=21000
+      - MAX_PORT=21010
+      - ADDRESS=127.0.0.1
+    restart: unless-stopped
+
+volumes:
+  dvwa_db_data:
+    driver: local
