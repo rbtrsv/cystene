@@ -3,10 +3,10 @@ import {
   Globe,
   ShieldCheck,
   Bug,
-  BarChart3,
+  Gauge,
   CalendarClock,
-  FileBarChart,
-  Server,
+  FileCheck,
+  Radar,
 } from 'lucide-react';
 
 const features = [
@@ -14,7 +14,7 @@ const features = [
     id: 1,
     icon: Network,
     title: 'Port Scanning',
-    description: 'Discover open ports and running services across your infrastructure with TCP connect and SYN scans.',
+    description: 'Discover open ports, running services, and software versions across your targets. Banner grabbing identifies what\'s exposed.',
   },
   {
     id: 2,
@@ -32,13 +32,13 @@ const features = [
     id: 4,
     icon: Bug,
     title: 'Web Security',
-    description: 'Detect misconfigurations, exposed headers, and common web vulnerabilities across your applications.',
+    description: 'Detect misconfigurations, exposed headers, directory listings, and sensitive file exposure across your applications.',
   },
   {
     id: 5,
-    icon: BarChart3,
-    title: 'Analytics Dashboard',
-    description: 'Track scan results, vulnerability trends, and security posture over time in real time.',
+    icon: Gauge,
+    title: 'Security Score Tracking',
+    description: 'Each scan generates a 0-100 security score. Track trends across targets and spot regressions before they become incidents.',
   },
   {
     id: 6,
@@ -48,15 +48,15 @@ const features = [
   },
   {
     id: 7,
-    icon: FileBarChart,
-    title: 'Exportable Reports',
-    description: 'Generate detailed PDF and JSON reports for compliance reviews and stakeholder briefings.',
+    icon: FileCheck,
+    title: 'Compliance Reports',
+    description: 'Generate PDF and JSON reports with compliance mapping for SOC2, ISO27001, and NIS2 audits.',
   },
   {
     id: 8,
-    icon: Server,
-    title: 'Unified Asset View',
-    description: 'All discovered infrastructure — hosts, ports, services, certificates — in a single security model.',
+    icon: Radar,
+    title: 'Asset Discovery',
+    description: 'Every scan builds a live inventory of discovered hosts, services, certificates, and DNS records linked to your infrastructure.',
   },
 ];
 

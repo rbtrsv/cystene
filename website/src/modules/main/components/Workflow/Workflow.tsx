@@ -1,4 +1,4 @@
-import { Crosshair, SlidersHorizontal, Radar, ClipboardCheck } from 'lucide-react';
+import { Crosshair, SlidersHorizontal, Radar, ClipboardCheck, ArrowRight } from 'lucide-react';
 
 const steps = [
   {
@@ -27,7 +27,22 @@ const steps = [
   },
 ];
 
-export default function HowItWorks() {
+const scenarios = [
+  {
+    persona: 'Freelance Developer',
+    detail: 'Add your client\'s domain → run port scan + SSL check + web scan → get findings with severity ratings → share PDF report with the client.',
+  },
+  {
+    persona: 'DevOps Team',
+    detail: 'Add 10 production servers → configure weekly scheduled scans → upload SSH keys for host audits → track vulnerability trends across infrastructure over time.',
+  },
+  {
+    persona: 'Security & Compliance',
+    detail: 'Map entire infrastructure with business context → scan all targets with all 12 engines → generate SOC2 compliance reports → present executive summary to leadership.',
+  },
+];
+
+export default function Workflow() {
   return (
     <section id='workflow'>
       <div className='bg-white py-6 sm:py-14 dark:bg-black'>
@@ -104,6 +119,31 @@ export default function HowItWorks() {
                   );
                 })}
               </div>
+            </div>
+          </div>
+
+          {/* How it works in practice — per persona examples */}
+          <div className='mt-14 mb-8'>
+            <h3 className='text-center text-xl font-semibold text-black dark:text-white'>
+              How it works in practice
+            </h3>
+            <div className='mt-8 space-y-4'>
+              {scenarios.map((scenario) => (
+                <div
+                  key={scenario.persona}
+                  className='rounded-xl bg-zinc-100 p-6 dark:bg-zinc-900'
+                >
+                  <div className='flex items-center gap-2'>
+                    <ArrowRight className='h-4 w-4 shrink-0 text-green-400' />
+                    <span className='text-sm font-semibold text-black dark:text-white'>
+                      {scenario.persona}
+                    </span>
+                  </div>
+                  <p className='mt-1.5 pl-6 text-xs leading-relaxed text-black/60 dark:text-white/60'>
+                    {scenario.detail}
+                  </p>
+                </div>
+              ))}
             </div>
           </div>
 

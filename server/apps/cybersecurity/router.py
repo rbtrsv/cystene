@@ -10,7 +10,7 @@ No ungated routes needed (no OAuth callbacks, no webhook receivers, no public wi
 
 from fastapi import APIRouter, Depends
 
-from .utils.dependency_utils import require_active_subscription, enforce_rate_limit
+from .utils.dependency_utils import require_active_subscription
 
 # Infrastructure subrouters
 from .subrouters.infrastructure_subrouters.infrastructure_subrouter import router as infrastructure_router
@@ -31,8 +31,11 @@ from .subrouters.discovery_subrouters.dashboard_subrouter import router as dashb
 
 router = APIRouter(prefix="/cybersecurity")
 
-# All endpoints gated behind active subscription + rate limiting
-gated = APIRouter(dependencies=[Depends(require_active_subscription), Depends(enforce_rate_limit)])
+# All endpoints gated behind active subscription
+# Why no enforce_rate_limit here: Rate limiting is applied per-endpoint on write operations
+# (POST /start, POST /generate, etc.) not on all requests including GET.
+# Pattern: assetmanager rate_limiter.check() per-endpoint, not router-level.
+gated = APIRouter(dependencies=[Depends(require_active_subscription)])
 
 # Infrastructure domain
 gated.include_router(infrastructure_router, prefix="/infrastructure")

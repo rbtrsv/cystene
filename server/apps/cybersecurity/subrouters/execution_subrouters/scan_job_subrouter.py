@@ -626,11 +626,24 @@ async def start_scan(
 
     The scan runs in the background — poll GET /{job_id} for status updates.
     Status transitions: pending → running → completed (or failed/cancelled).
+
+    Rate limited per-endpoint — starting scans consumes CPU/network resources.
+    Pattern: assetmanager rate_limiter.check() per-endpoint, not router-level.
     """
     try:
         org_id = await get_user_organization_id(user.id, db)
         if not org_id:
             raise HTTPException(status_code=403, detail="Organization membership required")
+
+        # Rate limit check — starting scans is a resource-heavy operation
+        # Why here not router-level: GET requests (list, detail, dashboard) should not be rate limited.
+        # Only write operations that consume server resources need rate limiting.
+        from ...utils.dependency_utils import get_org_context
+        from ...utils.rate_limiting_utils import check_rate_limit
+        from ...utils.subscription_utils import get_org_tier, get_org_subscription
+        subscription = await get_org_subscription(org_id, db)
+        tier = get_org_tier(subscription)
+        await check_rate_limit(org_id, tier)
 
         # Verify target ownership
         target = await db.execute(

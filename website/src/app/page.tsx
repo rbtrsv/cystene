@@ -1,6 +1,7 @@
 import { Metadata, Viewport } from 'next';
 import Features from '@/modules/main/components/Features/Features';
-import HowItWorks from '@/modules/main/components/HowItWorks/HowItWorks';
+import Workflow from '@/modules/main/components/Workflow/Workflow';
+import Pricing from '@/modules/main/components/Pricing/Pricing';
 import ContactSection from '@/modules/main/components/ContactSection/ContactSection';
 import NavbarDownwards from '@/modules/main/components/NavbarDownwards/NavbarDownwards';
 import Footer from '@/modules/main/components/Footer/Footer';
@@ -114,7 +115,8 @@ export default function Home() {
         <NavbarDownwards />
         <HeroSectionAnimated />
         <Features />
-        <HowItWorks />
+        <Workflow />
+        <Pricing />
         <ContactSection />
         <Footer />
         {/* <div className="bg-violet-600 w-full h-[300px]"></div> */}
