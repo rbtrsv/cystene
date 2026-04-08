@@ -48,11 +48,11 @@ export function AssetManagerProviders({ children }: AssetManagerProvidersProps) 
       <EntityOrganizationMembersProvider initialFetch={false}>
         <EntityOrganizationInvitationsProvider initialFetch={false}>
           <StakeholderProvider initialFetch={false}>
-                  <FundingRoundProvider initialFetch={false}>
-                  <SecurityProvider initialFetch={false}>
-                    <SecurityTransactionProvider initialFetch={false}>
-                      <StakeholderPositionProvider>
-                      <CommitmentProvider initialFetch={false}>
+            <FundingRoundProvider initialFetch={false}>
+              <SecurityProvider initialFetch={false}>
+                <SecurityTransactionProvider initialFetch={false}>
+                  <StakeholderPositionProvider>
+                    <CommitmentProvider initialFetch={false}>
                       <FeeProvider initialFetch={false}>
                         <EntityDealProfileProvider initialFetch={false}>
                           <DealProvider initialFetch={false}>
@@ -86,11 +86,11 @@ export function AssetManagerProviders({ children }: AssetManagerProvidersProps) 
                           </DealProvider>
                         </EntityDealProfileProvider>
                       </FeeProvider>
-                      </CommitmentProvider>
-                      </StakeholderPositionProvider>
-                    </SecurityTransactionProvider>
-                  </SecurityProvider>
-                </FundingRoundProvider>
+                    </CommitmentProvider>
+                  </StakeholderPositionProvider>
+                </SecurityTransactionProvider>
+              </SecurityProvider>
+            </FundingRoundProvider>
           </StakeholderProvider>
         </EntityOrganizationInvitationsProvider>
       </EntityOrganizationMembersProvider>
