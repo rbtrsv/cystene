@@ -388,40 +388,52 @@ Also done: `client/src/app/(ecommerce)` renamed to `_ecommerce` (disabled in Nex
 
 **Goal:** Production features. Each item is independent and can be built in any order after Phase 3.
 
-### 4A. Scheduling
+### 4A. Scheduling ✅ COMPLETE
 
 | # | Step | File | Action | Test |
 |---|---|---|---|---|
-| 4A.1 | ❌ | `server/apps/cybersecurity/utils/scan_scheduler.py` | Background scheduler: periodically checks `scan_schedules` for due schedules (`next_run_at <= now AND is_active = TRUE`). Creates `ScanJob` and calls orchestrator. Uses `SKIP LOCKED` pattern from ecommerce sync scheduler. | Scheduled scans trigger automatically at configured intervals. |
-| 4A.2 | ❌ | `server/main.py` | Add scan scheduler to lifespan (startup/shutdown). | Scheduler starts with server, stops on shutdown. |
+| 4A.1 | ✅ | `server/apps/cybersecurity/utils/scan_scheduler.py` | Background scheduler: checks `scan_schedules` every 60s for due schedules (`next_run_at <= now AND is_active = TRUE`). Creates ScanJob + launches `run_scan_job()`. Uses `FOR UPDATE SKIP LOCKED` for multi-instance safety. Pattern from ecommerce `sync_scheduler.py`. | Scheduled scans trigger automatically. |
+| 4A.2 | ✅ | `server/main.py` | FastAPI lifespan context manager: `start_scan_scheduler()` on startup, `stop_scan_scheduler(task)` on shutdown. | Scheduler starts/stops with server. |
 
-### 4B. Reports
+### 4B. Reports ✅ COMPLETE (HTML/JSON, PDF later)
 
 | # | Step | File | Action | Test |
 |---|---|---|---|---|
-| 4B.1 | ❌ | Report generation engine | Implement report generation: aggregate findings/assets for a target or scan job → generate HTML content → store in `reports.content`. Templates for each `report_type` (full, executive_summary, compliance, delta). | "Generate Report" produces readable HTML report with severity breakdown. |
+| 4B.1 | ✅ | `server/apps/cybersecurity/services/report_generation_service.py` | Report generation service (in `services/` — touches multiple models). 4 report types: full (all findings + assets), executive_summary (top 10 + score), compliance (CWE/OWASP/MITRE grouping), delta (compare last 2 scans). HTML + JSON output. | POST /reports/generate creates report with real content. |
 | 4B.2 | ❌ | PDF export | Convert HTML report to PDF using `weasyprint` or `reportlab`. | Download PDF report. |
 
-### 4C. Dashboard
+### 4C. Dashboard ✅ COMPLETE
 
 | # | Step | File | Action | Test |
 |---|---|---|---|---|
-| 4C.1 | ❌ | `client/src/app/(cybersecurity)/dashboard/page.tsx` | Summary dashboard: total targets, total scans, finding severity breakdown (chart), recent scan jobs, top vulnerabilities. | Dashboard renders with aggregated data. |
-| 4C.2 | ❌ | Backend dashboard endpoint | `GET /cybersecurity/dashboard/summary` — aggregated stats across all user targets. | Returns correct counts and breakdowns. |
+| 4C.1 | ✅ | `client/src/app/(cybersecurity)/page.tsx` | Dashboard with: 6 stat cards (All/New/Critical/High/Open/Resolved), security score circle, severity breakdown bars, quick stat cards, recent scan jobs list. Data from stores. | Dashboard renders with real data from API. |
+| 4C.2 | ✅ | `server/apps/cybersecurity/subrouters/discovery_subrouters/dashboard_subrouter.py` | `GET /cybersecurity/dashboard/summary` — total targets, scans, findings, severity/status breakdown, new findings, latest security score, recent 10 jobs. Registered in router.py with `/dashboard` prefix. | Returns correct aggregated stats. |
 
-### 4D. Rust Performance Modules (PyO3)
+### 4D. Rust Performance Engine (PyO3) ✅ COMPLETE
 
-**Location:** `server/apps/cybersecurity/rust/`
-**Build tool:** maturin (compiles Rust → Python module via PyO3)
-**Pattern:** Python scanner imports Rust module if available, falls back to pure Python if not compiled.
-**Reference:** BHR Ch2-3 (rayon threadpool, tokio async), `support/cystene/readings/BHRCode/`
+**Location:** `server/apps/cybersecurity/engine/` (created by `maturin new --bindings pyo3`)
+**Build:** `maturin develop --release` (local) / `pip install ./apps/cybersecurity/engine` (production via `build.sh`)
+**Deployment:** `nixpacks.toml` includes `python313, rustc, cargo, gcc` in nixPkgs
+**Pattern:** Python scanners import `engine` module if available, fall back to pure Python if not compiled
 
-| # | Step | File | Action | Test |
-|---|---|---|---|---|
-| — | ❌ | `rust/port_scan_rs/` | Rust port scanner: tokio TcpStream + rayon for parallel connections. Compiled as Python module. Same return type as Python port_scan.run(). | Port scan 10-50x faster than pure Python asyncio. |
-| — | ❌ | `rust/password_rs/` | Rust password brute force: hash computation (bcrypt, SHA, NTLM) in Rust. Called from password_audit_scan.py. | Hash cracking 100x+ faster than pure Python hashlib. |
-| — | ❌ | `rust/banner_rs/` | Rust banner parsing: regex matching on large banner datasets. Called from vuln_scan.py for CVE version matching. | Banner parsing on 10k+ services in milliseconds. |
-| — | ❌ | Python fallback | Each scanner checks `try: import cystene_rust_port_scan` → uses Rust if available, pure Python if not. | All scanners work without Rust compiled. Rust is optional performance boost. |
+| # | Step | File | Status |
+|---|---|---|---|
+| — | `engine/src/scanners/external/port_scan.rs` | Tokio async TCP connect scan with bounded concurrency (BHR Ch3 pattern) | ✅ |
+| — | `engine/src/scanners/external/subdomain_enum.rs` | Rayon parallel DNS resolution (BHR Ch2 pattern) | ✅ |
+| — | `engine/src/scanners/external/http_probe.rs` | Tokio parallel HTTP path checks with reqwest (BHR Ch4 pattern) | ✅ |
+| — | `engine/src/scanners/crypto/hash_crack.rs` | Rayon parallel SHA-1/SHA-256/MD5 wordlist cracking (BHR Ch1 pattern) | ✅ |
+| — | `engine/src/scanners/utils/banner_match.rs` | Rayon parallel regex bulk matching on banners | ✅ |
+| — | `server/nixpacks.toml` + `server/build.sh` | Deployment config: nixPkgs includes Rust toolchain, build.sh runs `pip install ./apps/cybersecurity/engine` | ✅ |
+
+### 4D-fix. Rate Limiting Fix ✅ COMPLETE
+
+**Problem:** Rate limit (10 req/min FREE) was applied at router level on ALL requests including GET. Navigating dashboard consumed limit in 2-3 clicks.
+
+**Fix:** Removed `enforce_rate_limit` from gated router. Added `check_rate_limit()` inline only on resource-heavy POST endpoints:
+- `POST /scan-jobs/start` — launching scanners consumes CPU/network
+- `POST /reports/generate` — heavy DB aggregation queries
+
+GET requests (list, detail, dashboard) — **no rate limit**. Pattern: assetmanager `rate_limiter.check()` per-endpoint.
 
 ### 4E. External Tool Parsers
 

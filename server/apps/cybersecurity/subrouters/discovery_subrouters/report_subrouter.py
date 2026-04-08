@@ -80,11 +80,23 @@ async def generate_report(
     user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_session),
 ):
-    """Generate a new report for a target (optionally from a specific scan job)."""
+    """
+    Generate a new report for a target (optionally from a specific scan job).
+
+    Rate limited per-endpoint — report generation runs heavy DB aggregation queries.
+    Pattern: assetmanager rate_limiter.check() per-endpoint, not router-level.
+    """
     try:
         org_id = await get_user_organization_id(user.id, db)
         if not org_id:
             raise HTTPException(status_code=403, detail="Organization membership required")
+
+        # Rate limit check — report generation is a resource-heavy operation
+        from ...utils.rate_limiting_utils import check_rate_limit
+        from ...utils.subscription_utils import get_org_tier, get_org_subscription
+        subscription = await get_org_subscription(org_id, db)
+        tier = get_org_tier(subscription)
+        await check_rate_limit(org_id, tier)
 
         # Verify target ownership
         target = await db.execute(

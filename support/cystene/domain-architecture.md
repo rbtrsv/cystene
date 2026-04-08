@@ -1178,7 +1178,11 @@ router = APIRouter(prefix="/cybersecurity")
 # Reserved for future: webhook receivers, public report sharing, etc.
 
 # Gated — everything requires active subscription
-gated = APIRouter(dependencies=[Depends(require_active_subscription), Depends(enforce_rate_limit)])
+# Why no enforce_rate_limit here: Rate limiting is per-endpoint on write operations only.
+# GET requests (list, detail, dashboard) are NOT rate limited — users must navigate freely.
+# Rate limit applied inline on: POST /scan-jobs/start, POST /reports/generate.
+# Pattern: assetmanager rate_limiter.check() per-endpoint, not router-level.
+gated = APIRouter(dependencies=[Depends(require_active_subscription)])
 
 # Target management
 gated.include_router(scan_targets_router)
@@ -1673,14 +1677,18 @@ TIER_LIMITS = {
 - Sliding window: per-minute + per-hour
 - `check_rate_limit(org_id, tier)` → True or raises 429
 - DragonflyDB already deployed on Coolify
+- **NOT applied at router level** — only called inline on resource-heavy POST endpoints (start scan, generate report). Pattern: assetmanager per-endpoint rate_limiter.check().
 
 **`dependency_utils.py`** — Pattern: ecommerce + assetmanager combined
 ```python
 # Router-level dependencies:
 # require_active_subscription() — blocks ALL requests when inactive. 7-day grace period.
-# enforce_rate_limit() — per-org per-minute + per-hour
 # enforce_scan_credit_limit() — blocks POST /start if monthly credits exceeded
 # enforce_scan_type_access(scan_types) — blocks if scan_type not in tier's allowed list
+#
+# NOTE: enforce_rate_limit() exists but is NOT used at router level.
+# Rate limiting is per-endpoint on POST /scan-jobs/start and POST /reports/generate.
+# Why: GET requests (dashboard, list, detail) must not be rate limited — user navigates freely.
 # get_user_organization_id(user, db) → int
 # get_user_target(user, target_id, db) → ScanTarget (ownership + soft-delete check)
 ```
