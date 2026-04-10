@@ -157,7 +157,7 @@ export default function SubscriptionPage() {
       )}
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {plans.prices.map((plan: Price) => {
+        {[...plans.prices].sort((a, b) => a.amount - b.amount).map((plan: Price) => {
           // Only mark as current if subscription is active - allow re-subscribing if CANCELED
           // Case-insensitive: plan_name may be uppercase from Stripe metadata,
           // plan.name is the Stripe product name (capitalized)
