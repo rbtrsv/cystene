@@ -14,7 +14,6 @@ import {
   ShieldCheck,
   AlertTriangle,
   AlertOctagon,
-  Info,
   Target,
   Play,
   Globe,
