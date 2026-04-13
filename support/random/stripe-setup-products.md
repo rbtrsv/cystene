@@ -263,6 +263,7 @@ Each module (cybersecurity, ecommerce, nexotype, assetmanager) has its own `subs
 
 ## Notes
 
+- **⚠️ BIG NOTE — Local test subscription blocks live verification:** If you subscribe on local (test mode), the Subscription record is saved in the **same database** (Coolify PostgreSQL). When you then test on live (production), the org already has an active subscription from test mode, so the checkout flow won't behave as expected for a fresh user. To properly test live checkout after local testing: either use a different organization, or manually delete/reset the test Subscription record from the database.
 - **Currency:** Cystene uses USD. Stripe converts to EUR on payout automatically (~1-2% spread). No need for USD bank account at current volume.
 - **Stripe CLI login is per-account:** `stripe login` connects to ONE account. To work on another project, run `stripe login` again and select that account.
 - **FREE tier:** No Stripe product. Default when no Subscription record exists. Each module defines its own free tier limits.

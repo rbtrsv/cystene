@@ -23,6 +23,13 @@ Stripe Dashboard setup for Cystene (one-time config):
     2. Webhook: already configured in accounts
     3. Customer Portal: enable plan switching + proration + cancellation
 
+    Note: Local dev (test mode) and Coolify (live mode) share the same database.
+    If you subscribe on local, the Subscription record gets sandbox Stripe IDs.
+    Live checkout/portal will fail for that org because those IDs don't exist on
+    live Stripe. Fix: DELETE FROM subscriptions WHERE organization_id = <id>;
+    then re-subscribe through the live app. Or create a new organization
+    (no subscription record) and test live checkout on that one.
+
 FREE tier has no Stripe product — it's the default when no subscription exists.
 
 These are pure helpers — not FastAPI dependencies. The dependency that
