@@ -91,6 +91,7 @@ chardet==5.2.0
 charset-normalizer==3.4.3
     # via
     #   server (pyproject.toml)
+    #   reportlab
     #   requests
 click==8.2.1
     # via
@@ -324,7 +325,9 @@ peewee==3.18.2
 pexpect==4.9.0
     # via ipython
 pillow==12.2.0
-    # via matplotlib
+    # via
+    #   matplotlib
+    #   reportlab
 platformdirs==4.4.0
     # via
     #   server (pyproject.toml)
@@ -432,6 +435,8 @@ pyyaml==6.0.2
     #   androguard
     #   uvicorn
 redis==7.2.1
+    # via server (pyproject.toml)
+reportlab==4.4.10
     # via server (pyproject.toml)
 requests==2.32.5
     # via

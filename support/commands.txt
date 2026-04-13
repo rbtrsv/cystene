@@ -92,6 +92,7 @@ uv init --python 3.13
 uv add aiohttp
 uv add -r requirements.txt
 uv pip freeze > requirements.txt
+uv pip compile pyproject.toml -o requirements.txt
 uv sync --python 3.13  (syncs the virtual environment to match uv.lock/pyproject exactly)
 /Users/rbtrsv/Developer/main/nexotype/server/.venv/bin/python
 
