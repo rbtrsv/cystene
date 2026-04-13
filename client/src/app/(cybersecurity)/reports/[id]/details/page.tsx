@@ -24,6 +24,8 @@ import { Input } from '@/modules/shadcnui/components/ui/input';
 import { Alert, AlertDescription } from '@/modules/shadcnui/components/ui/alert';
 import { Loader2, ArrowLeft, FileText, Trash2 } from 'lucide-react';
 import Link from 'next/link';
+import { ExportButton } from '@/modules/cybersecurity/components/shared/export-button';
+import { REPORT_ENDPOINTS } from '@/modules/cybersecurity/utils/api.endpoints';
 
 export default function ReportDetailsPage() {
   const params = useParams();
@@ -95,14 +97,22 @@ export default function ReportDetailsPage() {
             Back to Reports
           </Button>
         </Link>
-        <div className="flex items-center gap-3">
-          <FileText className="h-8 w-8 text-muted-foreground" />
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight">{item.name}</h1>
-            <p className="text-muted-foreground">
-              {getReportTypeLabel(item.report_type)} &middot; {getReportFormatLabel(item.format)}
-            </p>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <FileText className="h-8 w-8 text-muted-foreground" />
+            <div>
+              <h1 className="text-3xl font-bold tracking-tight">{item.name}</h1>
+              <p className="text-muted-foreground">
+                {getReportTypeLabel(item.report_type)} &middot; {getReportFormatLabel(item.format)}
+              </p>
+            </div>
           </div>
+          {/* Export as branded PDF */}
+          <ExportButton
+            exportUrl={REPORT_ENDPOINTS.EXPORT(id)}
+            fileName={item.name}
+            pdfOnly
+          />
         </div>
       </div>
 

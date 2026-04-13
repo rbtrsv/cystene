@@ -653,6 +653,18 @@ async def start_scan(
         if not target:
             raise HTTPException(status_code=404, detail="Scan target not found")
 
+        # Why: Legal requirement — prevent scanning targets you don't own.
+        # No on/off toggle exists. Enforcement is always active, same as production.
+        # For local development: mark your own targets as verified directly in the database:
+        #   UPDATE scan_targets SET is_verified = true WHERE name = 'Your_Target_Name';
+        # Or use POST /scan-targets/{id}/verify with one of the 3 methods (dns_txt, file_upload, meta_tag).
+        # For IP targets (localhost, 192.168.x.x): POST /verify auto-verifies them (no DNS/HTTP check).
+        if not target.is_verified:
+            raise HTTPException(
+                status_code=403,
+                detail="Target must be verified before scanning. Use POST /scan-targets/{id}/verify to prove ownership."
+            )
+
         # Verify template belongs to target
         template = await db.execute(
             select(ScanTemplate).filter(ScanTemplate.id == template_id, ScanTemplate.target_id == target_id, ScanTemplate.deleted_at.is_(None))

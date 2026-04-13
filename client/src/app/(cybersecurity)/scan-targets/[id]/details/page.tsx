@@ -51,6 +51,8 @@ export default function ScanTargetDetailsPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isVerifying, setIsVerifying] = useState(false);
+  const [verificationMethod, setVerificationMethod] = useState('dns_txt');
+  const [verifyResult, setVerifyResult] = useState<{ instructions?: string; token?: string } | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState('');
 
   // Edit form state
@@ -115,12 +117,17 @@ export default function ScanTargetDetailsPage() {
   // Handle verify ownership
   const handleVerify = async () => {
     setIsVerifying(true);
-    const success = await verifyScanTarget(id);
+    setVerifyResult(null);
+    const result = await verifyScanTarget(id, verificationMethod);
     setIsVerifying(false);
-    if (success) {
+    if (result.success) {
       // Refresh item to get updated verification status
       const updated = await fetchScanTarget(id);
       if (updated) setItem(updated);
+      setVerifyResult(null);
+    } else {
+      // Show instructions on failure
+      setVerifyResult({ instructions: result.instructions, token: result.token });
     }
   };
 
@@ -215,16 +222,68 @@ export default function ScanTargetDetailsPage() {
             </CardContent>
           </Card>
 
-          {/* Verify Ownership button — only shown if target is not verified */}
+          {/* Verify Ownership — only shown if target is not verified */}
           {!item.is_verified && (
             <Card>
               <CardHeader>
                 <CardTitle>Ownership Verification</CardTitle>
                 <CardDescription>
                   Verify that you own this target before running scans against it.
+                  Choose a verification method and follow the instructions.
                 </CardDescription>
               </CardHeader>
-              <CardContent>
+              <CardContent className="space-y-4">
+                {/* Verification token — user needs this to set up proof */}
+                {item.verification_token && (
+                  <div>
+                    <p className="text-sm text-muted-foreground mb-1">Your Verification Token</p>
+                    <code className="block bg-muted p-3 rounded font-mono text-sm break-all">{item.verification_token}</code>
+                  </div>
+                )}
+
+                {/* Method selector */}
+                <div className="space-y-2">
+                  <Label>Verification Method</Label>
+                  <Select value={verificationMethod} onValueChange={setVerificationMethod}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="dns_txt">DNS TXT Record</SelectItem>
+                      <SelectItem value="file_upload">File Upload (.well-known)</SelectItem>
+                      <SelectItem value="meta_tag">HTML Meta Tag</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Instructions based on selected method */}
+                <div className="bg-muted p-3 rounded text-sm space-y-1">
+                  {verificationMethod === 'dns_txt' && (
+                    <>
+                      <p className="font-medium">DNS TXT Record</p>
+                      <p>Add a TXT record to your domain with this value:</p>
+                      <code className="block mt-1 bg-background p-2 rounded font-mono text-xs break-all">{item.verification_token}</code>
+                    </>
+                  )}
+                  {verificationMethod === 'file_upload' && (
+                    <>
+                      <p className="font-medium">File Upload</p>
+                      <p>Create a file at this URL containing your token:</p>
+                      <code className="block mt-1 bg-background p-2 rounded font-mono text-xs break-all">
+                        https://{item.target_value.replace(/^https?:\/\//, '').split('/')[0]}/.well-known/cystene-verify.txt
+                      </code>
+                    </>
+                  )}
+                  {verificationMethod === 'meta_tag' && (
+                    <>
+                      <p className="font-medium">HTML Meta Tag</p>
+                      <p>Add this tag to your homepage {'<head>'}:</p>
+                      <code className="block mt-1 bg-background p-2 rounded font-mono text-xs break-all">
+                        {'<meta name="cystene-verify" content="'}{item.verification_token}{'">'}
+                      </code>
+                    </>
+                  )}
+                </div>
+
+                {/* Verify button */}
                 <Button onClick={handleVerify} disabled={isVerifying}>
                   {isVerifying ? (
                     <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Verifying...</>
@@ -232,6 +291,16 @@ export default function ScanTargetDetailsPage() {
                     <><ShieldCheck className="mr-2 h-4 w-4" /> Verify Ownership</>
                   )}
                 </Button>
+
+                {/* Result message if verification failed */}
+                {verifyResult?.instructions && (
+                  <Alert>
+                    <AlertDescription>
+                      <p className="font-medium mb-1">Verification failed</p>
+                      <p className="text-sm">{verifyResult.instructions}</p>
+                    </AlertDescription>
+                  </Alert>
+                )}
               </CardContent>
             </Card>
           )}

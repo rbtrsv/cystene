@@ -18,6 +18,7 @@ from ...schemas.discovery_schemas.finding_schemas import (
     FindingDetail, FindingStatusUpdate, FindingResponse, FindingsResponse,
 )
 from ...utils.dependency_utils import get_user_organization_id
+from ...utils.export_utils import ExportColumn, SummaryCard, generate_csv, generate_pdf
 from apps.accounts.models import User
 from apps.accounts.utils.auth_utils import get_current_user
 from core.db import get_session
@@ -144,4 +145,118 @@ async def update_finding_status(
     except Exception as e:
         await db.rollback()
         logger.error(f"Error updating finding status {finding_id}: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+
+# ==========================================
+# EXPORT (PDF / CSV)
+# ==========================================
+
+@router.get("/export")
+async def export_findings(
+    format: str = Query("pdf", pattern="^(pdf|csv)$", description="Export format: pdf or csv"),
+    scan_job_id: int | None = None,
+    severity: str | None = None,
+    status: str | None = None,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_session),
+):
+    """
+    Export findings as PDF or CSV.
+
+    Same filters as list endpoint. PDF includes summary cards + data table.
+    CSV includes header row + data rows.
+    """
+    try:
+        org_id = await get_user_organization_id(user.id, db)
+        if not org_id:
+            raise HTTPException(status_code=403, detail="Organization membership required")
+
+        # Build query — same as list_findings but returns all matching rows
+        query = (
+            select(Finding)
+            .join(ScanJob, Finding.scan_job_id == ScanJob.id)
+            .join(ScanTarget, ScanJob.target_id == ScanTarget.id)
+            .filter(ScanTarget.organization_id == org_id)
+        )
+        if scan_job_id:
+            query = query.filter(Finding.scan_job_id == scan_job_id)
+        if severity:
+            query = query.filter(Finding.severity == severity)
+        if status:
+            query = query.filter(Finding.status == status)
+
+        query = query.order_by(Finding.discovered_at.desc())
+
+        result = await db.execute(query)
+        items = result.scalars().all()
+
+        # Define export columns
+        columns = [
+            ExportColumn(key="severity", label="Severity", formatter=lambda v: v.upper() if v else "—"),
+            ExportColumn(key="title", label="Title"),
+            ExportColumn(key="host_port", label="Host"),
+            ExportColumn(key="status", label="Status", formatter=lambda v: v.replace("_", " ").title() if v else "—"),
+            ExportColumn(key="category", label="Category", formatter=lambda v: v.replace("_", " ").title() if v else "—"),
+            ExportColumn(key="cve_id", label="CVE"),
+            ExportColumn(key="cwe_id", label="CWE"),
+            ExportColumn(key="mitre_technique", label="MITRE"),
+            ExportColumn(key="discovered_at", label="Discovered", formatter=lambda v: v[:10] if v else "—"),
+        ]
+
+        # Flatten Finding objects to dicts
+        rows = []
+        for item in items:
+            rows.append({
+                "severity": item.severity,
+                "title": item.title,
+                "host_port": f"{item.host or '—'}{f':{item.port}' if item.port else ''}",
+                "status": item.status,
+                "category": item.category,
+                "cve_id": item.cve_id,
+                "cwe_id": item.cwe_id,
+                "mitre_technique": item.mitre_technique,
+                "discovered_at": item.discovered_at.isoformat() if item.discovered_at else None,
+            })
+
+        # Count severities for summary cards
+        severity_counts = {"critical": 0, "high": 0, "medium": 0, "low": 0, "info": 0}
+        open_count = 0
+        for item in items:
+            if item.severity in severity_counts:
+                severity_counts[item.severity] += 1
+            if item.status == "open":
+                open_count += 1
+
+        title = "Findings"
+        subtitle_parts = []
+        if severity:
+            subtitle_parts.append(f"Severity: {severity.upper()}")
+        if status:
+            subtitle_parts.append(f"Status: {status.replace('_', ' ').title()}")
+        subtitle = " — ".join(subtitle_parts) if subtitle_parts else "All Findings"
+
+        if format == "csv":
+            return generate_csv(rows=rows, columns=columns, title=title)
+
+        # PDF — include summary cards
+        summary_cards = [
+            SummaryCard(label="Total Findings", value=str(len(items))),
+            SummaryCard(label="Critical", value=str(severity_counts["critical"])),
+            SummaryCard(label="High", value=str(severity_counts["high"])),
+            SummaryCard(label="Medium", value=str(severity_counts["medium"])),
+            SummaryCard(label="Open", value=str(open_count)),
+        ]
+
+        return generate_pdf(
+            rows=rows,
+            columns=columns,
+            title=title,
+            subtitle=subtitle,
+            summary_cards=summary_cards,
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error exporting findings: {e}")
         raise HTTPException(status_code=500, detail="Internal server error")

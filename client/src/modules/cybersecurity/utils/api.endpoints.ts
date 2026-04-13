@@ -111,6 +111,7 @@ export const FINDING_ENDPOINTS = {
   LIST: `${API_BASE_URL}/cybersecurity/findings/`,
   DETAIL: (id: number) => `${API_BASE_URL}/cybersecurity/findings/${id}`,
   UPDATE_STATUS: (id: number) => `${API_BASE_URL}/cybersecurity/findings/${id}/status`,
+  EXPORT: `${API_BASE_URL}/cybersecurity/findings/export`,
 };
 
 /**
@@ -121,6 +122,7 @@ export const FINDING_ENDPOINTS = {
 export const ASSET_ENDPOINTS = {
   LIST: `${API_BASE_URL}/cybersecurity/assets/`,
   DETAIL: (id: number) => `${API_BASE_URL}/cybersecurity/assets/${id}`,
+  EXPORT: `${API_BASE_URL}/cybersecurity/assets/export`,
 };
 
 /**
@@ -132,4 +134,5 @@ export const REPORT_ENDPOINTS = {
   DETAIL: (id: number) => `${API_BASE_URL}/cybersecurity/reports/${id}`,
   GENERATE: `${API_BASE_URL}/cybersecurity/reports/generate`,
   DELETE: (id: number) => `${API_BASE_URL}/cybersecurity/reports/${id}`,
+  EXPORT: (id: number) => `${API_BASE_URL}/cybersecurity/reports/${id}/export`,
 };

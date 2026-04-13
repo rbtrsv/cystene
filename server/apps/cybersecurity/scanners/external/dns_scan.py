@@ -20,6 +20,16 @@ import httpx
 
 logger = logging.getLogger(__name__)
 
+# Why try/except: Rust engine (PyO3/maturin) is an optional accelerator.
+# If compiled, resolve_subdomains runs 5-20x faster via Rayon parallel DNS resolution.
+# If not compiled, falls back to pure Python asyncio — identical results, just slower.
+try:
+    import engine
+    HAS_ENGINE = True
+    logger.info("Rust engine available — DNS scan will use engine.resolve_subdomains()")
+except ImportError:
+    HAS_ENGINE = False
+
 
 # ==========================================
 # COMMON SUBDOMAIN WORDLIST (brute-force)
@@ -235,9 +245,17 @@ async def brute_force_subdomains(domain: str, wordlist_size: str = "small") -> l
     wordlist = SUBDOMAIN_WORDLIST_SMALL  # Only small for now
 
     candidates = [f"{word}.{domain}" for word in wordlist]
-    found = []
 
-    # Validate in parallel with bounded concurrency
+    if HAS_ENGINE:
+        # Why asyncio.to_thread: engine.resolve_subdomains() is synchronous (blocks on Rayon).
+        # Why timeout 4: matches Python validate_subdomain() resolver.lifetime = 3.0 with margin.
+        try:
+            results = await asyncio.to_thread(engine.resolve_subdomains, candidates, 4)
+            return [sub for sub, resolves in results if resolves]
+        except Exception as e:
+            logger.warning(f"Rust engine failed in brute_force, falling back to Python: {e}")
+
+    # Python fallback — validate in parallel with bounded concurrency
     semaphore = asyncio.Semaphore(20)
 
     async def check(sub):
@@ -247,9 +265,7 @@ async def brute_force_subdomains(domain: str, wordlist_size: str = "small") -> l
             return None
 
     results = await asyncio.gather(*[check(sub) for sub in candidates])
-    found = [r for r in results if r is not None]
-
-    return found
+    return [r for r in results if r is not None]
 
 
 # ==========================================
@@ -302,10 +318,22 @@ async def run(target: str, params: dict) -> dict:
         logger.info(f"crt.sh found {len(crtsh_subdomains)} subdomains for {domain}")
 
         # Validate which subdomains actually resolve
+        # Why Rust here: crt.sh can return 100+ subdomains. Rayon resolves them in parallel
+        # across all CPU cores — much faster than Python's sequential validation.
         valid_subdomains = []
-        for sub in crtsh_subdomains:
-            if await validate_subdomain(sub):
-                valid_subdomains.append(sub)
+        if HAS_ENGINE and crtsh_subdomains:
+            try:
+                results = await asyncio.to_thread(engine.resolve_subdomains, crtsh_subdomains, 4)
+                valid_subdomains = [sub for sub, resolves in results if resolves]
+            except Exception as e:
+                logger.warning(f"Rust engine failed in subdomain validation, falling back to Python: {e}")
+                for sub in crtsh_subdomains:
+                    if await validate_subdomain(sub):
+                        valid_subdomains.append(sub)
+        else:
+            for sub in crtsh_subdomains:
+                if await validate_subdomain(sub):
+                    valid_subdomains.append(sub)
 
         for sub in valid_subdomains:
             # Finding: subdomain discovered

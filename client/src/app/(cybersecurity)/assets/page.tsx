@@ -6,6 +6,8 @@ import { Globe, Loader2, ChevronUp, ChevronDown, MoreHorizontal, Eye } from 'luc
 
 import { useAssets } from '@/modules/cybersecurity/hooks/discovery/use-assets';
 import { useOrganizations } from '@/modules/accounts/hooks/use-organizations';
+import { ExportButton } from '@/modules/cybersecurity/components/shared/export-button';
+import { ASSET_ENDPOINTS } from '@/modules/cybersecurity/utils/api.endpoints';
 import { getAssetTypeLabel, getAssetConfidenceLabel } from '@/modules/cybersecurity/schemas/discovery/assets.schemas';
 import { Card, CardContent } from '@/modules/shadcnui/components/ui/card';
 import { Button } from '@/modules/shadcnui/components/ui/button';
@@ -108,6 +110,12 @@ export default function AssetsPage() {
           <h1 className="text-3xl font-bold tracking-tight">Assets</h1>
           <p className="text-muted-foreground">Discovered infrastructure from scans</p>
         </div>
+        {/* Export button */}
+        <ExportButton
+          exportUrl={ASSET_ENDPOINTS.EXPORT}
+          fileName="assets"
+          disabled={isLoading || assets.length === 0}
+        />
       </div>
 
       {/* Search & Table */}

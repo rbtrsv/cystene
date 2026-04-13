@@ -24,6 +24,16 @@ from .service_signatures import get_probe_for_port, identify_service
 
 logger = logging.getLogger(__name__)
 
+# Why try/except: Rust engine (PyO3/maturin) is an optional accelerator.
+# If compiled (`maturin develop --release`), tcp_connect_scan runs 10-50x faster via Tokio.
+# If not compiled, falls back to pure Python asyncio — identical results, just slower.
+try:
+    import engine
+    HAS_ENGINE = True
+    logger.info("Rust engine available — port scan will use engine.tcp_connect_scan()")
+except ImportError:
+    HAS_ENGINE = False
+
 
 # ==========================================
 # SCAN SPEED → SETTINGS
@@ -185,6 +195,38 @@ def build_asset(host: str, port: int, service_info: dict) -> dict:
 
 
 # ==========================================
+# PYTHON PORT SCAN (fallback when Rust engine not available)
+# ==========================================
+
+async def _python_port_scan(host_ip: str, ports: list[int], timeout: float, max_concurrent: int, errors: list) -> list[int]:
+    """
+    Scan ports using pure Python asyncio with bounded concurrency.
+    Why extracted: Reused as fallback when Rust engine is unavailable or fails.
+    Returns list of open port numbers.
+    """
+    semaphore = asyncio.Semaphore(max_concurrent)
+    open_ports = []
+
+    async def scan_with_semaphore(port: int) -> tuple[int, bool]:
+        async with semaphore:
+            is_open = await scan_port(host_ip, port, timeout)
+            return (port, is_open)
+
+    tasks = [scan_with_semaphore(port) for port in ports]
+    results = await asyncio.gather(*tasks, return_exceptions=True)
+
+    for result in results:
+        if isinstance(result, Exception):
+            errors.append(str(result))
+            continue
+        port, is_open = result
+        if is_open:
+            open_ports.append(port)
+
+    return open_ports
+
+
+# ==========================================
 # MAIN SCANNER ENTRY POINT
 # ==========================================
 
@@ -245,25 +287,29 @@ async def run(target: str, params: dict) -> dict:
         "confidence": "confirmed",
     })
 
-    # Scan ports with bounded concurrency (asyncio.Semaphore — BHR pattern)
-    semaphore = asyncio.Semaphore(max_concurrent)
+    # Scan ports — Rust engine (Tokio) if available, Python asyncio fallback
     open_ports = []
 
-    async def scan_with_semaphore(port: int) -> tuple[int, bool]:
-        async with semaphore:
-            is_open = await scan_port(host_ip, port, timeout)
-            return (port, is_open)
-
-    tasks = [scan_with_semaphore(port) for port in ports]
-    results = await asyncio.gather(*tasks, return_exceptions=True)
-
-    for result in results:
-        if isinstance(result, Exception):
-            errors.append(str(result))
-            continue
-        port, is_open = result
-        if is_open:
-            open_ports.append(port)
+    if HAS_ENGINE:
+        # Why asyncio.to_thread: engine.tcp_connect_scan() is synchronous (blocks on Tokio runtime).
+        # to_thread runs it in a thread pool so it doesn't block the Python event loop.
+        # Why int(timeout * 1000): Rust expects milliseconds, Python uses seconds.
+        try:
+            results = await asyncio.to_thread(
+                engine.tcp_connect_scan, host_ip, ports, int(timeout * 1000), max_concurrent
+            )
+            for port_num, is_open in results:
+                if is_open:
+                    open_ports.append(port_num)
+            logger.info(f"Rust engine scan complete: {len(open_ports)} open ports found out of {len(ports)} scanned")
+        except Exception as e:
+            # Why fallback: If Rust engine fails (e.g. runtime error), fall back to Python
+            logger.warning(f"Rust engine failed, falling back to Python: {e}")
+            errors.append(f"Rust engine error (fell back to Python): {e}")
+            open_ports = await _python_port_scan(host_ip, ports, timeout, max_concurrent, errors)
+    else:
+        # Pure Python fallback — asyncio.Semaphore bounded concurrency (BHR pattern)
+        open_ports = await _python_port_scan(host_ip, ports, timeout, max_concurrent, errors)
 
     logger.info(f"Port scan phase complete: {len(open_ports)} open ports found out of {len(ports)} scanned")
 

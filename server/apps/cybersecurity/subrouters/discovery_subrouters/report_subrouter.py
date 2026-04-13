@@ -5,7 +5,7 @@ Generate, list, detail, and soft-delete reports.
 """
 
 import logging
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
@@ -16,6 +16,7 @@ from ...schemas.discovery_schemas.report_schemas import (
 )
 from ...utils.dependency_utils import get_user_organization_id
 from ...utils.audit_utils import log_audit, model_to_dict
+from ...utils.export_utils import ExportColumn, SummaryCard, ReportSection, generate_report_pdf
 from ...services.report_generation_service import generate_report_content
 from apps.accounts.models import User
 from apps.accounts.utils.auth_utils import get_current_user
@@ -180,4 +181,144 @@ async def delete_report(
     except Exception as e:
         await db.rollback()
         logger.error(f"Error deleting report {report_id}: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+
+# ==========================================
+# EXPORT (PDF)
+# ==========================================
+
+@router.get("/{report_id}/export")
+async def export_report(
+    report_id: int,
+    format: str = Query("pdf", pattern="^(pdf)$", description="Export format: pdf only"),
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_session),
+):
+    """
+    Export a report as branded PDF.
+
+    Why re-query from DB: Report.content is stored as HTML or JSON string.
+    ReportLab expects structured data (rows + columns), not HTML.
+    We read target_id and scan_job_id from the Report record, then re-query
+    findings and assets directly from DB to build ReportSection objects.
+    """
+    try:
+        org_id = await get_user_organization_id(user.id, db)
+        if not org_id:
+            raise HTTPException(status_code=403, detail="Organization membership required")
+
+        # Fetch report record
+        result = await db.execute(
+            select(Report)
+            .join(ScanTarget, Report.target_id == ScanTarget.id)
+            .filter(Report.id == report_id, ScanTarget.organization_id == org_id, Report.deleted_at.is_(None))
+        )
+        report = result.scalar_one_or_none()
+        if not report:
+            raise HTTPException(status_code=404, detail="Report not found")
+
+        # Fetch target name for title
+        target = await db.get(ScanTarget, report.target_id)
+        target_name = target.name if target else f"Target #{report.target_id}"
+
+        # Re-query findings from DB (same logic as report_generation_service.py)
+        from ...models.discovery_models import Finding, Asset
+        from ...models.execution_models import ScanJob
+
+        findings_query = select(Finding).join(ScanJob, Finding.scan_job_id == ScanJob.id)
+        if report.scan_job_id:
+            findings_query = findings_query.where(Finding.scan_job_id == report.scan_job_id)
+        else:
+            findings_query = findings_query.where(ScanJob.target_id == report.target_id)
+
+        result = await db.execute(findings_query)
+        findings = result.scalars().all()
+
+        # Re-query assets from DB
+        assets_query = select(Asset).join(ScanJob, Asset.scan_job_id == ScanJob.id)
+        if report.scan_job_id:
+            assets_query = assets_query.where(Asset.scan_job_id == report.scan_job_id)
+        else:
+            assets_query = assets_query.where(ScanJob.target_id == report.target_id)
+
+        result = await db.execute(assets_query)
+        assets = result.scalars().all()
+
+        # Build findings section
+        finding_columns = [
+            ExportColumn(key="severity", label="Severity", formatter=lambda v: v.upper() if v else "—"),
+            ExportColumn(key="title", label="Title"),
+            ExportColumn(key="host_port", label="Host"),
+            ExportColumn(key="status", label="Status", formatter=lambda v: v.replace("_", " ").title() if v else "—"),
+            ExportColumn(key="category", label="Category", formatter=lambda v: v.replace("_", " ").title() if v else "—"),
+        ]
+
+        finding_rows = []
+        severity_order = {"critical": 0, "high": 1, "medium": 2, "low": 3, "info": 4}
+        for f in sorted(findings, key=lambda x: severity_order.get(x.severity, 4)):
+            finding_rows.append({
+                "severity": f.severity,
+                "title": f.title,
+                "host_port": f"{f.host or '—'}{f':{f.port}' if f.port else ''}",
+                "status": f.status,
+                "category": f.category,
+            })
+
+        # Build assets section
+        asset_columns = [
+            ExportColumn(key="asset_type", label="Type", formatter=lambda v: v.replace("_", " ").title() if v else "—"),
+            ExportColumn(key="value", label="Value"),
+            ExportColumn(key="host", label="Host"),
+            ExportColumn(key="port", label="Port", align="RIGHT"),
+            ExportColumn(key="service_name", label="Service"),
+        ]
+
+        asset_rows = []
+        for a in assets:
+            asset_rows.append({
+                "asset_type": a.asset_type,
+                "value": a.value,
+                "host": a.host,
+                "port": a.port,
+                "service_name": a.service_name,
+            })
+
+        # Summary cards from report record (already computed at generation time)
+        summary_cards = [
+            SummaryCard(label="Total Findings", value=str(report.total_findings or 0)),
+            SummaryCard(label="Critical", value=str(report.critical_count or 0)),
+            SummaryCard(label="High", value=str(report.high_count or 0)),
+            SummaryCard(label="Medium", value=str(report.medium_count or 0)),
+        ]
+
+        # Build sections
+        sections = [
+            ReportSection(
+                title="Summary",
+                rows=[],
+                columns=[],
+                summary_cards=summary_cards,
+            ),
+            ReportSection(
+                title=f"Findings ({len(findings)})",
+                rows=finding_rows,
+                columns=finding_columns,
+            ),
+            ReportSection(
+                title=f"Discovered Assets ({len(assets)})",
+                rows=asset_rows,
+                columns=asset_columns,
+            ),
+        ]
+
+        return generate_report_pdf(
+            title=f"Security Report — {report.name}",
+            subtitle=f"Target: {target_name} — {report.report_type.replace('_', ' ').title()}",
+            sections=sections,
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error exporting report {report_id}: {e}")
         raise HTTPException(status_code=500, detail="Internal server error")

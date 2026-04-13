@@ -180,12 +180,18 @@ export const deleteScanTarget = async (id: number): Promise<{ success: boolean; 
 /**
  * Verify ownership of a scan target
  * @param id Scan target ID
- * @returns Promise with verification response
+ * @param verificationMethod Verification method: "dns_txt", "file_upload", or "meta_tag"
+ * @returns Promise with verification response (includes instructions if failed)
  */
-export const verifyScanTarget = async (id: number): Promise<{ success: boolean; message?: string; error?: string }> => {
+export const verifyScanTarget = async (
+  id: number,
+  verificationMethod: string = 'dns_txt'
+): Promise<{ success: boolean; message?: string; error?: string; instructions?: string; token?: string; is_verified?: boolean }> => {
   try {
-    const response = await fetchClient<{ success: boolean; message?: string; error?: string }>(
-      SCAN_TARGET_ENDPOINTS.VERIFY(id),
+    // Build query string with verification method
+    const url = `${SCAN_TARGET_ENDPOINTS.VERIFY(id)}?verification_method=${verificationMethod}`;
+    const response = await fetchClient<{ success: boolean; message?: string; instructions?: string; token?: string; is_verified?: boolean }>(
+      url,
       {
         method: 'POST'
       }

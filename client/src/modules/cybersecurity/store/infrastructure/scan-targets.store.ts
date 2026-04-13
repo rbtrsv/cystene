@@ -45,7 +45,7 @@ export interface ScanTargetState {
   createScanTarget: (data: CreateScanTarget) => Promise<boolean>;
   updateScanTarget: (id: number, data: UpdateScanTarget) => Promise<boolean>;
   deleteScanTarget: (id: number) => Promise<boolean>;
-  verifyScanTarget: (id: number) => Promise<boolean>;
+  verifyScanTarget: (id: number, verificationMethod?: string) => Promise<{ success: boolean; instructions?: string; token?: string }>;
   setActiveScanTarget: (id: number | null) => void;
   clearError: () => void;
   reset: () => void;
@@ -269,33 +269,34 @@ export const useScanTargetStore = create<ScanTargetState>()(
       /**
        * Verify ownership of a scan target
        * @param id Scan target ID
-       * @returns Success status
+       * @param verificationMethod Verification method: "dns_txt", "file_upload", or "meta_tag"
+       * @returns Object with success, instructions (if failed), and token
        */
-      verifyScanTarget: async (id) => {
+      verifyScanTarget: async (id, verificationMethod = 'dns_txt') => {
         set({ isLoading: true, error: null });
 
         try {
-          const response = await apiVerifyScanTarget(id);
+          const response = await apiVerifyScanTarget(id, verificationMethod);
 
           if (response.success) {
             // After verifying, refresh scan targets list
             await get().fetchScanTargets();
 
             set({ isLoading: false });
-            return true;
+            return { success: true };
           } else {
             set({
               isLoading: false,
-              error: response.error || `Failed to verify scan target with ID ${id}`
+              error: response.error || response.message || `Failed to verify scan target with ID ${id}`
             });
-            return false;
+            return { success: false, instructions: response.instructions, token: response.token };
           }
         } catch (error) {
           set({
             isLoading: false,
             error: error instanceof Error ? error.message : 'An unexpected error occurred'
           });
-          return false;
+          return { success: false };
         }
       },
 

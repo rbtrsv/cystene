@@ -6,6 +6,8 @@ import { AlertTriangle, Loader2, ChevronUp, ChevronDown, MoreHorizontal, Eye } f
 
 import { useFindings } from '@/modules/cybersecurity/hooks/discovery/use-findings';
 import { useOrganizations } from '@/modules/accounts/hooks/use-organizations';
+import { ExportButton } from '@/modules/cybersecurity/components/shared/export-button';
+import { FINDING_ENDPOINTS } from '@/modules/cybersecurity/utils/api.endpoints';
 import { getSeverityLabel, getFindingStatusLabel, SEVERITY_COLORS } from '@/modules/cybersecurity/schemas/discovery/findings.schemas';
 import type { Severity, FindingStatus } from '@/modules/cybersecurity/schemas/discovery/findings.schemas';
 import { Card, CardContent } from '@/modules/shadcnui/components/ui/card';
@@ -129,6 +131,12 @@ export default function FindingsPage() {
           <h1 className="text-3xl font-bold tracking-tight">Findings</h1>
           <p className="text-muted-foreground">Security vulnerabilities and misconfigurations</p>
         </div>
+        {/* Export button — appends current filters to export URL */}
+        <ExportButton
+          exportUrl={`${FINDING_ENDPOINTS.EXPORT}${severityFilter !== 'all' || statusFilter !== 'all' ? '?' : ''}${severityFilter !== 'all' ? `severity=${severityFilter}` : ''}${severityFilter !== 'all' && statusFilter !== 'all' ? '&' : ''}${statusFilter !== 'all' ? `status=${statusFilter}` : ''}`}
+          fileName="findings"
+          disabled={isLoading || findings.length === 0}
+        />
       </div>
 
       {/* Filters */}

@@ -101,10 +101,11 @@ Removed ecommerce from boot path (main.py, env.py, config.py). Kept `server/apps
 | 4C | Dashboard — backend summary endpoint + frontend stat cards/score/bars | ✅ COMPLETE |
 | 4D | Rust Engine — PyO3, 5 functions, nixpacks deployment config | ✅ COMPLETE |
 | 4H | Website — landing page, pricing, blog, legal, AI discoverability, deployed to Vercel | ✅ COMPLETE |
-| 4B.2 | PDF export — weasyprint or reportlab for report download | ❌ |
+| 4B.2 | PDF/CSV export — ReportLab branded PDF + CSV on findings, assets, reports. ExportButton component. Cystene green-600 branding. | ✅ COMPLETE |
+| 4D.2 | Python ↔ Rust engine integration — `try: import engine` fallback in port_scan.py + dns_scan.py. Tokio/Rayon when compiled, asyncio fallback. | ✅ COMPLETE |
+| 4G | Target verification — DNS TXT, file upload (.well-known), meta tag. Auto-verify for IP targets. Enforcement on POST /start. | ✅ COMPLETE |
 | 4E | External tool parsers — nmap XML, nuclei JSON → Finding/Asset dicts | ❌ |
 | 4F | Notifications — email on critical findings, webhook to user-configured URL | ❌ |
-| 4G | Target verification — DNS TXT, file upload (.well-known), meta tag | ❌ |
 
 ---
 
@@ -115,21 +116,21 @@ Removed ecommerce from boot path (main.py, env.py, config.py). Kept `server/apps
 - ✅ Rate limiting fix: removed from router level, applied inline on POST /start and POST /generate only
 - ✅ Subscription page sort by price ascending (matching nexotype pattern)
 - ✅ Stripe env vars fixed in Coolify (was pointing to Nudgio account)
+- ✅ Python ↔ Rust engine integration: port_scan.py + dns_scan.py use `engine.*` when compiled, asyncio fallback when not
+- ✅ PDF/CSV export: export_utils.py (ReportLab, green-600 branding), GET /export on findings + assets + reports, ExportButton component, export.utils.ts blob download
+- ✅ Target verification: verification_utils.py (DNS TXT, file upload, meta tag), real POST /verify endpoint, token auto-generated at create, POST /generate-token, enforcement on POST /start (403 if not verified), IP targets auto-verify
 
 ---
 
 ## Next Up
 
-- 🔴 **Python ↔ Rust engine integration** — Add `try: import engine` fallback pattern to Python scanners so they use Rust when compiled, pure Python otherwise
-- 🔴 **PDF export (4B.2)** — Convert HTML reports to PDF using reportlab (follow Finpy pattern in finpy project, NOT assetmanager — finpy is up to date, zero system deps)
-- 🔴 **Target verification (4G)** — DNS TXT, file upload, meta tag. Legal requirement before scanning external targets
+- 🔴 **External tool parsers (4E)** — Import nmap XML / nuclei JSON scan results
+- 🔴 **Notifications (4F)** — Email/Slack alerts on critical findings, webhook delivery
 
 ---
 
 ## Nice to Have
 
-- 🟡 **External tool parsers (4E)** — Import nmap XML / nuclei JSON scan results
-- 🟡 **Notifications (4F)** — Email/Slack alerts on critical findings, webhook delivery
 - 🟡 **MCP Server** — FastMCP wrapping Cystene API for LLM-driven scanning and triage
 - 🟡 **Audit Trail Page** — Frontend for cybersecurity_audit_logs with diff view (follow Finpy pattern)
 
@@ -137,7 +138,6 @@ Removed ecommerce from boot path (main.py, env.py, config.py). Kept `server/apps
 
 ## Backlog
 
-- 🔵 PDF/CSV export on findings, assets, scan jobs pages (follow Finpy ExportButton pattern)
 - 🔵 Multi-scanner comparison (delta report across N scans, not just last 2)
 - 🔵 RBAC per organization (admin/viewer/scanner roles)
 - 🔵 Bulk import targets (CSV upload)
