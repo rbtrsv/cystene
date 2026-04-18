@@ -166,8 +166,8 @@ async def google_auth(code: str, request=None, session: AsyncSession = None):
         }
         
     except Exception as e:
-        logger.error(f"Google auth error: {str(e)}")
-        raise HTTPException(status_code=400, detail=f"Google authentication failed: {str(e)}")
+        logger.exception(f"Google authentication failed: {e}")
+        raise HTTPException(status_code=400, detail="Authentication failed")
 
 # ==========================================
 # Token Management

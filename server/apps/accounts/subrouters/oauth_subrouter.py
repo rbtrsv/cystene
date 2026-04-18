@@ -5,6 +5,9 @@ from core.db import get_session
 from ..schemas.oauth_schemas import OAuthUrlResponse, OAuthCodeRequest, TokenResponse
 from ..utils.oauth_utils import get_google_auth_url, google_auth
 
+import logging
+logger = logging.getLogger(__name__)
+
 # ==========================================
 # OAuth Router
 # ==========================================
@@ -53,7 +56,8 @@ async def google_callback(
         response = await google_auth(payload.code, request, db)
         return TokenResponse(**response)
     except Exception as e:
+        logger.exception(f"Google authentication failed: {e}")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Google authentication failed: {str(e)}"
+            detail="Authentication failed"
         )

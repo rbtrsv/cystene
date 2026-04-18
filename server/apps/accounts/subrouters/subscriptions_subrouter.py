@@ -23,6 +23,9 @@ from ..utils.stripe_utils import (
 from core.db import get_session
 from ..models import User
 
+import logging
+logger = logging.getLogger(__name__)
+
 # ==========================================
 # Subscriptions Router
 # ==========================================
@@ -54,7 +57,8 @@ async def get_subscription_plans():
             }
         )
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.exception(f"Failed to get subscription plans: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.get("/organizations/{organization_id}", response_model=SubscriptionInfoResponse)
@@ -114,7 +118,8 @@ async def get_current_subscription(
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.exception(f"Failed to get current subscription: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.post("/checkout", response_model=UrlResponse)
@@ -183,7 +188,8 @@ async def checkout(
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.exception(f"Failed to create checkout session: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.post("/portal", response_model=UrlResponse)
@@ -242,7 +248,8 @@ async def customer_portal(
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.exception(f"Failed to create customer portal session: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.post("/create-customer", response_model=MessageResponse)
@@ -299,7 +306,8 @@ async def create_customer(
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.exception(f"Failed to create Stripe customer: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 # ==========================================
@@ -341,7 +349,8 @@ async def stripe_webhook(request: Request):
         raise
     except Exception as e:
         # 500 (not 400) so Stripe retries transient failures
+        logger.exception(f"Webhook processing error: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Webhook error: {str(e)}"
+            detail="Internal server error"
         )
