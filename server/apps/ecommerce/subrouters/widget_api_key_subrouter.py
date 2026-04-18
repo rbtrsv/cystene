@@ -35,6 +35,7 @@ from ..schemas.widget_api_key_schemas import (
 )
 from ..utils.dependency_utils import get_user_connection
 from ..utils.encryption_utils import encrypt_password
+import logging
 
 # ==========================================
 # Widget API Key Router
@@ -44,6 +45,7 @@ router = APIRouter(
     prefix="/connections/{connection_id}/api-keys",
     tags=["Widget API Keys"],
 )
+logger = logging.getLogger(__name__)
 
 
 # ==========================================
@@ -111,7 +113,8 @@ async def create_api_key(
         raise
     except Exception as e:
         await db.rollback()
-        raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")
+        logger.exception(f"Failed to create api key: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 # ==========================================
@@ -166,7 +169,8 @@ async def list_api_keys(
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")
+        logger.exception(f"Failed to list api keys: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 # ==========================================
@@ -226,4 +230,5 @@ async def delete_api_key(
         raise
     except Exception as e:
         await db.rollback()
-        raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")
+        logger.exception(f"Failed to delete api key: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")

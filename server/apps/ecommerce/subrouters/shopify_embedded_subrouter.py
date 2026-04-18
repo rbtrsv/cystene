@@ -476,7 +476,8 @@ async def get_settings(
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")
+        logger.exception(f"Failed to get settings: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 # ==========================================
@@ -593,7 +594,8 @@ async def update_settings(
         raise
     except Exception as e:
         await db.rollback()
-        raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")
+        logger.exception(f"Failed to update settings: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 # ==========================================
@@ -636,7 +638,8 @@ async def reset_settings(
         raise
     except Exception as e:
         await db.rollback()
-        raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")
+        logger.exception(f"Failed to reset settings: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 # ==========================================
@@ -698,7 +701,8 @@ async def get_bestsellers(
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error generating recommendations: {str(e)}")
+        logger.exception(f"Failed to get bestsellers: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 # ==========================================
@@ -761,7 +765,8 @@ async def get_cross_sell(
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error generating recommendations: {str(e)}")
+        logger.exception(f"Failed to get cross sell: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 # ==========================================
@@ -824,7 +829,8 @@ async def get_upsell(
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error generating recommendations: {str(e)}")
+        logger.exception(f"Failed to get upsell: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 # ==========================================
@@ -886,7 +892,8 @@ async def get_similar_products(
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error generating recommendations: {str(e)}")
+        logger.exception(f"Failed to get similar products: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 # ==========================================
@@ -1031,7 +1038,8 @@ async def get_bestsellers_component(
         return HTMLResponse(content=html)
 
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error generating component: {str(e)}")
+        logger.exception(f"Failed to get bestsellers component: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 # ==========================================
@@ -1168,7 +1176,8 @@ async def get_cross_sell_component(
         return HTMLResponse(content=html)
 
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error generating component: {str(e)}")
+        logger.exception(f"Failed to get cross sell component: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 # ==========================================
@@ -1305,7 +1314,8 @@ async def get_upsell_component(
         return HTMLResponse(content=html)
 
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error generating component: {str(e)}")
+        logger.exception(f"Failed to get upsell component: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 # ==========================================
@@ -1441,7 +1451,8 @@ async def get_similar_component(
         return HTMLResponse(content=html)
 
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error generating component: {str(e)}")
+        logger.exception(f"Failed to get similar component: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 # ==========================================
@@ -1561,7 +1572,8 @@ async def billing_subscribe(
         raise
     except Exception as e:
         await db.rollback()
-        raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")
+        logger.exception(f"Failed to billing subscribe: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 # ==========================================
@@ -1628,7 +1640,8 @@ async def billing_cancel(
         raise
     except Exception as e:
         await db.rollback()
-        raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")
+        logger.exception(f"Failed to billing cancel: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 # ==========================================
@@ -1685,7 +1698,8 @@ async def billing_status(
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")
+        logger.exception(f"Failed to billing status: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 # ==========================================
@@ -1816,7 +1830,8 @@ async def billing_verify_charge(
         raise
     except Exception as e:
         await db.rollback()
-        raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")
+        logger.exception(f"Failed to billing verify charge: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 # ==========================================

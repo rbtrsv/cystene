@@ -13,11 +13,13 @@ from ..adapters.factory import get_adapter
 from ..engine.engine import RecommendationEngine
 from ..utils.dependency_utils import get_active_connection, enforce_monthly_order_limit
 from ..utils.cache_utils import get_cached_recommendations, set_cached_recommendations
+import logging
 
 router = APIRouter(
     prefix="/components",
     tags=["Product Component Recommendations"],
-    dependencies=[Depends(enforce_monthly_order_limit)],
+    dependencies=[Depends(enforce_monthly_order_limit)
+logger = logging.getLogger(__name__)],
 )
 
 
@@ -370,7 +372,8 @@ async def get_bestsellers_component(
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error generating component: {str(e)}")
+        logger.exception(f"Failed to get bestsellers component: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.get("/cross-sell", response_class=HTMLResponse)
@@ -496,7 +499,8 @@ async def get_cross_sell_component(
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error generating component: {str(e)}")
+        logger.exception(f"Failed to get cross sell component: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.get("/upsell", response_class=HTMLResponse)
@@ -622,7 +626,8 @@ async def get_upsell_component(
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error generating component: {str(e)}")
+        logger.exception(f"Failed to get upsell component: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.get("/similar", response_class=HTMLResponse)
@@ -747,7 +752,8 @@ async def get_similar_component(
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error generating component: {str(e)}")
+        logger.exception(f"Failed to get similar component: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 def generate_recommendation_html(

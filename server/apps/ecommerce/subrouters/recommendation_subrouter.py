@@ -18,6 +18,7 @@ from ..adapters.factory import get_adapter
 from ..engine.engine import RecommendationEngine
 from ..utils.dependency_utils import get_active_connection, enforce_monthly_order_limit
 from ..utils.cache_utils import get_cached_recommendations, set_cached_recommendations
+import logging
 
 # ==========================================
 # Product Recommendations Router
@@ -26,7 +27,8 @@ from ..utils.cache_utils import get_cached_recommendations, set_cached_recommend
 router = APIRouter(
     prefix="/recommendations",
     tags=["Product Recommendations"],
-    dependencies=[Depends(enforce_monthly_order_limit)],
+    dependencies=[Depends(enforce_monthly_order_limit)
+logger = logging.getLogger(__name__)],
 )
 
 
@@ -86,7 +88,8 @@ async def get_bestsellers(
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error generating recommendations: {str(e)}")
+        logger.exception(f"Failed to get bestsellers: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.post("/cross-sell", response_model=RecommendationResponse)
@@ -146,7 +149,8 @@ async def get_cross_sell(
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error generating recommendations: {str(e)}")
+        logger.exception(f"Failed to get cross sell: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.post("/upsell", response_model=RecommendationResponse)
@@ -206,7 +210,8 @@ async def get_upsell(
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error generating recommendations: {str(e)}")
+        logger.exception(f"Failed to get upsell: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.post("/similar", response_model=RecommendationResponse)
@@ -265,4 +270,5 @@ async def get_similar_products(
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error generating recommendations: {str(e)}")
+        logger.exception(f"Failed to get similar products: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")

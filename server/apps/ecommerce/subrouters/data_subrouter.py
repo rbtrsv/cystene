@@ -103,7 +103,8 @@ async def import_products(
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error importing products: {str(e)}")
+        logger.exception(f"Failed to import products: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.post("/import/orders", response_model=DataImportResponse)
@@ -166,7 +167,8 @@ async def import_orders(
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error importing orders: {str(e)}")
+        logger.exception(f"Failed to import orders: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.post("/import/order-items", response_model=DataImportResponse)
@@ -232,7 +234,8 @@ async def import_order_items(
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error importing order items: {str(e)}")
+        logger.exception(f"Failed to import order items: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 # ==========================================
@@ -279,7 +282,8 @@ async def get_products(
         raise
     except Exception as e:
         logger.error("Products list error for connection_id=%s: %s", connection_id, str(e))
-        raise HTTPException(status_code=500, detail=f"Error fetching products: {str(e)}")
+        logger.exception(f"Failed to get products: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.get("/stats/{connection_id}", response_model=ConnectionStatsResponse)
@@ -320,7 +324,8 @@ async def get_connection_stats(
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error getting connection stats: {str(e)}")
+        logger.exception(f"Failed to get connection stats: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.post("/sync/{connection_id}", response_model=ConnectionStatsResponse)
@@ -360,4 +365,5 @@ async def sync_connection_data(
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error syncing connection data: {str(e)}")
+        logger.exception(f"Failed to sync connection data: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")

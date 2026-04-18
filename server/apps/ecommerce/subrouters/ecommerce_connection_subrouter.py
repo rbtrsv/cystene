@@ -25,12 +25,14 @@ from ..utils.dependency_utils import get_user_connection
 from ..utils.encryption_utils import encrypt_password
 from ..utils.subscription_utils import get_org_subscription, is_over_connection_limit
 from ..utils.sync_scheduler import compute_next_sync_at
+import logging
 
 # ==========================================
 # Ecommerce Connections Router
 # ==========================================
 
 router = APIRouter(prefix="/connections", tags=["Ecommerce Connections"])
+logger = logging.getLogger(__name__)
 
 
 @router.post("/", response_model=EcommerceConnectionResponse)
@@ -117,7 +119,8 @@ async def create_connection(
         raise
     except Exception as e:
         await db.rollback()
-        raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")
+        logger.exception(f"Failed to create connection: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.get("/", response_model=EcommerceConnectionListResponse)
@@ -150,7 +153,8 @@ async def list_connections(
             count=len(connections),
         )
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")
+        logger.exception(f"Failed to list connections: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.get("/{connection_id}", response_model=EcommerceConnectionResponse)
@@ -176,7 +180,8 @@ async def get_connection(
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")
+        logger.exception(f"Failed to get connection: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.post("/{connection_id}/test", response_model=EcommerceConnectionTestResponse)
@@ -369,7 +374,8 @@ async def update_connection(
         raise
     except Exception as e:
         await db.rollback()
-        raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")
+        logger.exception(f"Failed to update connection: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.delete("/{connection_id}", response_model=MessageResponse)
@@ -405,4 +411,5 @@ async def delete_connection(
         raise
     except Exception as e:
         await db.rollback()
-        raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")
+        logger.exception(f"Failed to delete connection: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")

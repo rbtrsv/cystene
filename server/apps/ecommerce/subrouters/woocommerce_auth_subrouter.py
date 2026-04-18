@@ -10,12 +10,14 @@ from apps.accounts.models import User, OrganizationMember
 from apps.accounts.utils.auth_utils import get_current_user
 
 from ..models import EcommerceConnection
+import logging
 
 # ==========================================
 # WooCommerce Auth Router
 # ==========================================
 
 router = APIRouter(prefix="/woocommerce", tags=["WooCommerce Auth"])
+logger = logging.getLogger(__name__)
 
 
 @router.get("/auth")
@@ -56,7 +58,8 @@ async def initiate_woocommerce_auth(
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")
+        logger.exception(f"Failed to initiate woocommerce auth: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.post("/callback")
@@ -156,4 +159,5 @@ async def woocommerce_auth_callback(
         raise
     except Exception as e:
         await db.rollback()
-        raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")
+        logger.exception(f"Failed to woocommerce auth callback: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")

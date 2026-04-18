@@ -163,7 +163,8 @@ async def subscribe(
         raise
     except Exception as e:
         await db.rollback()
-        raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")
+        logger.exception(f"Failed in subscribe: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 # ==========================================
@@ -382,7 +383,8 @@ async def cancel(
         raise
     except Exception as e:
         await db.rollback()
-        raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")
+        logger.exception(f"Failed in cancel: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 # ==========================================
@@ -441,4 +443,5 @@ async def billing_status(
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")
+        logger.exception(f"Failed to billing status: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")

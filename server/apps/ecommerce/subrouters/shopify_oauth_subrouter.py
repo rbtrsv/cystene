@@ -20,12 +20,14 @@ from ..schemas.ecommerce_connection_schemas import (
     EcommerceConnectionDetail,
     EcommerceConnectionResponse,
 )
+import logging
 
 # ==========================================
 # Shopify OAuth Router
 # ==========================================
 
 router = APIRouter(prefix="/shopify", tags=["Shopify OAuth"])
+logger = logging.getLogger(__name__)
 
 # In-memory nonce store (replace with Redis/DB in production)
 _oauth_nonces: dict[str, int] = {}
@@ -103,7 +105,8 @@ async def initiate_shopify_oauth(
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")
+        logger.exception(f"Failed to initiate shopify oauth: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.get("/callback")
@@ -249,4 +252,5 @@ async def shopify_oauth_callback(
         raise
     except Exception as e:
         await db.rollback()
-        raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")
+        logger.exception(f"Failed to shopify oauth callback: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")

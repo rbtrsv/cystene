@@ -17,12 +17,14 @@ from ..schemas.recommendation_settings_schemas import (
     MessageResponse,
 )
 from ..utils.dependency_utils import get_user_connection
+import logging
 
 # ==========================================
 # Recommendation Settings Router
 # ==========================================
 
 router = APIRouter(prefix="/settings", tags=["Recommendation Settings"])
+logger = logging.getLogger(__name__)
 
 
 @router.post("/{connection_id}", response_model=RecommendationSettingsResponse)
@@ -132,7 +134,8 @@ async def create_or_update_settings(
         raise
     except Exception as e:
         await db.rollback()
-        raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")
+        logger.exception(f"Failed to create or update settings: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.get("/{connection_id}", response_model=RecommendationSettingsResponse)
@@ -187,7 +190,8 @@ async def get_settings(
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")
+        logger.exception(f"Failed to get settings: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.get("/", response_model=RecommendationSettingsListResponse)
@@ -238,7 +242,8 @@ async def list_connection_settings(
             count=len(response),
         )
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")
+        logger.exception(f"Failed to list connection settings: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.delete("/{connection_id}", response_model=MessageResponse)
@@ -284,7 +289,8 @@ async def delete_settings(
         raise
     except Exception as e:
         await db.rollback()
-        raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")
+        logger.exception(f"Failed to delete settings: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.post("/{connection_id}/reset", response_model=MessageResponse)
@@ -325,4 +331,5 @@ async def reset_settings_to_default(
         raise
     except Exception as e:
         await db.rollback()
-        raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")
+        logger.exception(f"Failed to reset settings to default: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
