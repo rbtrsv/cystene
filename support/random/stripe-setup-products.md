@@ -177,11 +177,39 @@ Put this `whsec_` in `.env` as `STRIPE_WEBHOOK_SECRET`. Keep the terminal runnin
 
 ---
 
-## 6. Customer Portal (Manual — Stripe Dashboard)
+## 6. Customer Portal — via CLI (recommended) sau Dashboard manual
 
-This can't be done via CLI. Go to `dashboard.stripe.com`:
+### Optiunea A — CLI (recommended)
 
-**Settings → Billing → Customer portal:**
+Get default config ID:
+```bash
+STRIPE_API_KEY=sk_test_xxx stripe billing_portal configurations list --limit 1 | grep '"id"'
+# → bpc_xxx
+```
+
+Update default config (cancel + update + proration + eligible products):
+```bash
+curl -sS -X POST https://api.stripe.com/v1/billing_portal/configurations/bpc_xxx \
+  -u "sk_test_xxx:" \
+  -d "features[payment_method_update][enabled]=true" \
+  -d "features[subscription_cancel][enabled]=true" \
+  -d "features[subscription_cancel][mode]=at_period_end" \
+  -d "features[subscription_update][enabled]=true" \
+  -d "features[subscription_update][default_allowed_updates][]=price" \
+  -d "features[subscription_update][proration_behavior]=always_invoice" \
+  -d "features[subscription_update][products][0][product]=prod_PRO_ID" \
+  -d "features[subscription_update][products][0][prices][0]=price_PRO_ID" \
+  -d "features[subscription_update][products][1][product]=prod_ENTERPRISE_ID" \
+  -d "features[subscription_update][products][1][prices][0]=price_ENTERPRISE_ID"
+```
+
+Index `[0]` = primul afisat in portal, `[1]` = al doilea (ordinea pe pagina "Switch plans").
+
+**Run separately for live mode:** swap `sk_test_` → `sk_live_` + use prod IDs.
+
+### Optiunea B — Dashboard manual
+
+Go to `dashboard.stripe.com` → **Settings → Billing → Customer portal:**
 
 1. **Subscriptions** → "Allow customers to update subscriptions" → ON
    - Add Pro + Enterprise to eligible products
@@ -241,6 +269,36 @@ STRIPE_API_KEY=sk_live_YOUR_LIVE_KEY stripe products list -d "active=true"
 | Test | `we_1TJK7eCgafRZki0XLLGrZCSI` | `whsec_YOUR_TEST_WEBHOOK_SECRET` | server.cystene.com |
 | Live | `we_1TJK7pCgafRZki0XK0xB3tye` | `whsec_YOUR_LIVE_WEBHOOK_SECRET` | server.cystene.com |
 | Local | — | from `stripe listen` output | localhost:8003 |
+
+---
+
+### Nexotype
+
+Sandbox account: `acct_1ShB2tBm8LAXThst` (key prefix `51ShB2t`)
+Live account: `acct_1ShB2jAwlNUHRTXL` (key prefix `51ShB2j`)
+
+### Test mode (sandbox):
+| Product | Product ID | Price ID | Price | Status |
+|---|---|---|---|---|
+| Personal (legacy) | `prod_U4ppi6nge38JkR` | — | — | **archived** (was $20; renamed FREE in metadata) |
+| Pro | `prod_TeV6KczafhwGb5` | `price_1T6i73Bm8LAXThstY5eQlfkG` | $120/mo | active |
+| Enterprise | `prod_TuwlFKqJ93mkMt` | `price_1T6i6XBm8LAXThstnEq2g1lY` | $360/mo | active |
+
+(FREE tier has NO Stripe product — default when no Subscription record. Legacy
+PERSONAL subscribers grandfathered: backend maps plan_name="PERSONAL" → FREE tier limits.)
+
+### Live mode:
+| Product | Product ID | Price ID | Price | Status |
+|---|---|---|---|---|
+| Personal (legacy) | `prod_U4pvNr5u4IC29S` | — | — | **archived** (was $20; renamed FREE in metadata) |
+| Pro | `prod_U4dOsuLmNs8GxJ` | `price_1T6iOOAwlNUHRTXLvRRBBuYI` | $120/mo | active |
+| Enterprise | `prod_U4dUAWnVeKcXuA` | `price_1T6hzVAwlNUHRTXL8Sh5tdYW` | $360/mo | active |
+
+### Webhooks:
+| Mode | Secret (in env) | URL |
+|---|---|---|
+| Test | `whsec_b903b587da9896729c614cbc0929b5efec955ff3974be50c3dedaa783cfa1744` (server/.env) | localhost:8000 (via stripe listen) |
+| Live | `whsec_lwtENWg3G9Esytg8GiWOKDoGM3DiFCTf` (server/.env.production) | server.nexotype.com |
 
 ---
 
