@@ -63,6 +63,13 @@ maturin develop --release                       # build Rust engine locally (fro
 - **SurrealDB graph layer is documented but NOT implemented** — there is no `apps/cybersecurity/surrealdb/`. PostgreSQL is the only DB. Treat graph sections of `domain-architecture.md` as future design.
 - Rust lives in `engine/` (not `rust/`). Client modules are domain-grouped subfolders, not the flat layout the doc's §5.2 shows. The handover doc's "port needs update" notes are stale — ports are already 8003/3003 and ecommerce is already off the boot path.
 
+## Adjacent funnel: vibe-coded-app scanning
+A "scan-your-vibe-coded-app" market exists (vibeappscanner.com, Wiz research, SafeWeave, Aikido). It's a **funnel**, not the product — Cystene stays a general ESPM platform. The plan: add a few app-layer external checks (`baas_scan` for Supabase/Firebase RLS exposure, secret-grep in JS bundles/source maps, client-side-auth detection, public-app fingerprint) + a "Vibe-Coded App" `ScanTemplate` preset bundling them. Full analysis + the Wiz 4-misconfig blueprint + gap table: `support/cystene/market-vibe-scanners.md`. Roadmap items live in `support/to-do/0_order.md` (Nice To Have / Backlog). MCP/CLI packaging (pattern: `nexotype/mcp`) is Long Term — UI-first. `readings/` (Black Hat Python/Rust source) feeds future scanners.
+
+**Session governance:** `support/prompts/coding-prompt.md` governs the whole discussion (Propose→Approve→Implement→Review, no speculative changes, pattern parity, comments preserved, simple > complex).
+
+**Implementation approach (per feature):** think it through first → short implementation plan → Propose→Approve → implement **one feature at a time**. Per feature decide **Rust (`engine/`, PyO3) vs plain Python** (Python if simple; Rust only when CPU/IO-heavy justifies it) and **external package vs from-scratch** (prefer writing it ourselves; add a dependency only when genuinely justified). Full note in `support/to-do/0_order.md` (top of ROADMAP).
+
 ## Status (`support/to-do/0_order.md` is the live tracker)
 Phases 0–3 ✅ (cleanup, backend foundation = 41 endpoints, frontend = 49 module + 29 page files, 12 scanners + dispatcher). Phase 4 mostly ✅ (scheduling, reports HTML/JSON, dashboard, Rust engine + Python integration, PDF/CSV export, target verification, website). **Remaining:** 4E external tool parsers (nmap XML / nuclei JSON), 4F notifications (email/webhook on critical findings).
 
