@@ -88,6 +88,7 @@ export const FindingSchema = z.object({
   description: z.string(),
   remediation: z.string().nullable().optional(),
   remediation_script: z.string().nullable().optional(),
+  ai_fix_prompt: z.string().nullable().optional(), // Copy-paste prompt for an AI coding tool (detail only)
   evidence: z.string().nullable().optional(),
   host: z.string().nullable().optional(),
   port: z.number().nullable().optional(),

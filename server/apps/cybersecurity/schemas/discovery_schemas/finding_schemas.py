@@ -98,6 +98,9 @@ class FindingDetail(BaseModel):
     description: str = Field(description="Detailed explanation")
     remediation: str | None = Field(None, description="How to fix (explanation)")
     remediation_script: str | None = Field(None, description="Copiable fix command/snippet")
+    # Why populated in the detail endpoint (not computed_field): the prompt is only needed on
+    # the detail view, so we avoid building it for every row in list responses.
+    ai_fix_prompt: str | None = Field(None, description="Copy-paste prompt for an AI coding tool")
     evidence: str | None = Field(None, description="Raw evidence")
     host: str | None = None
     port: int | None = None

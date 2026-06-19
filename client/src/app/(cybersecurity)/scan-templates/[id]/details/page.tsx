@@ -241,7 +241,7 @@ export default function ScanTemplateDetailsPage() {
                 <Input value={editScanTypes} onChange={(e) => setEditScanTypes(e.target.value)} disabled={isSaving} />
                 <p className="text-xs text-muted-foreground">
                   Available types: port_scan, dns_enum, ssl_check, web_scan, vuln_scan, api_scan,
-                  active_web_scan, password_audit, host_audit, cloud_audit, ad_audit, mobile_scan
+                  active_web_scan, password_audit, baas_scan, secret_scan, host_audit, cloud_audit, ad_audit, mobile_scan
                 </p>
               </div>
               <div className="grid grid-cols-2 gap-4">

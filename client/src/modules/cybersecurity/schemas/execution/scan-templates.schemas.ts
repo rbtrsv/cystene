@@ -21,9 +21,9 @@ import { z } from 'zod';
  * Backend: class ScanType(str, Enum)
  */
 export const ScanTypeEnum = z.enum([
-  // Production scanners (12)
+  // Production scanners (14)
   'port_scan', 'dns_enum', 'ssl_check', 'web_scan', 'vuln_scan', 'api_scan',
-  'active_web_scan', 'password_audit', 'host_audit', 'cloud_audit', 'ad_audit', 'mobile_scan',
+  'active_web_scan', 'password_audit', 'baas_scan', 'secret_scan', 'host_audit', 'cloud_audit', 'ad_audit', 'mobile_scan',
   // Future expansion
   'tech_detect', 'waf_detect', 'whois', 'cloud_scan', 'smb_scan', 'ad_scan',
 ]);
@@ -149,6 +149,8 @@ export const SCAN_TYPE_LABELS: Record<string, string> = {
   api_scan: 'API Scan',
   active_web_scan: 'Active Web Scan',
   password_audit: 'Password Audit',
+  baas_scan: 'BaaS Data Exposure',
+  secret_scan: 'Exposed Secrets',
   host_audit: 'Host Audit',
   cloud_audit: 'Cloud Audit',
   ad_audit: 'AD Audit',

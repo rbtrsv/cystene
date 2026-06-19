@@ -47,9 +47,6 @@
 
 Strategic priority = ship the sellable **vibe-coded-app slice** (acquisition wedge) + complete **continuous-protection** monetization. Cystene stays a general ESPM platform — these are checks + a preset, not a separate product. Listed by priority; build one at a time.
 
-- 🔴 **A2 — `baas_scan` scanner (Backend-as-a-Service data exposure)** — *highest value*: single most-cited vibe-coded vuln (leaks PII directly), and a self-contained external scanner with no deps. Supabase (anon key in JS → OpenAPI `/rest/v1/` table enum → per-table probe → flag sensitive fields) + Firebase (Firestore/RTDB rules), general/extensible. See `market-vibe-scanners.md` §4.3 + §5.
-- 🔴 **A1 — Secret-grep in JS bundles + source maps** — second most-cited (exposed API keys → real $ damage). Extend `web_scan`: grep bundles + `.map` for 150+ secret patterns (OpenAI/Anthropic/Stripe/AWS/GCP/Supabase anon). New `Finding.category = "exposed_secret"`. See `market-vibe-scanners.md` §4.2.
-- 🔴 **B2 — AI-fix-prompt format on `Finding.remediation_script`** — cheap, high-leverage; the signature VAS UX ("a fix list, formatted for your AI tool — that's the whole product"). Field already exists; standardize content as a copy-paste prompt block. **Set this convention early** so all 12 existing scanners + every new one emit it. See `market-vibe-scanners.md` §3.3.
 - 🔴 **Notifications (4F)** — email/Slack on critical findings + webhook to user URL. Completes scheduling (4A, already shipped) → unlocks "continuous protection" monetization; scheduled scans are worthless without alerts. Low effort, cross-cutting.
 
 ## Nice To Have
@@ -130,6 +127,26 @@ Removed ecommerce from boot path (main.py, env.py, config.py). Kept `server/apps
 - ✅ Rate limiting fix: removed from router level, applied inline on POST /start and POST /generate only
 - ✅ Subscription page sort by price ascending (matching nexotype pattern)
 - ✅ Stripe env vars fixed in Coolify (was pointing to Nudgio account)
+
+## A2 — `baas_scan` scanner (Backend-as-a-Service data exposure) ✅ COMPLETE (verified locally; awaiting deploy/commit)
+
+First vibe-coded-app check. NEW external scanner `scanners/external/baas_scan.py` (plain async, no Rust, no new deps) — detects public anon BaaS key in client JS + missing RLS. **Supabase:** detect URL + anon key (JWT role-confirmed) → OpenAPI enumeration (bonus) + wordlist probe of common tables (robust to Supabase's 2026-03-11 schema-enum block) → flag sensitive fields → critical/high Finding + RLS-deny-by-default `remediation_script`. **Firebase:** RTDB `.json?shallow=true` open check. **Data minimization:** evidence = table + field names + row count only, never values.
+- Wiring (full-stack, start to end): `SCANNERS["baas_scan"]`, `ScanType.BAAS_SCAN`, `subscription_utils` all 4 tiers (external → incl FREE), client `ScanTypeEnum` + label "BaaS Data Exposure", **+ "Available types" help-text in BOTH template forms (create `new/page.tsx` + edit `[id]/details/page.tsx`)** — the only places a user discovers a scanner.
+- Verified: `compileall` ✅; smoke tests (detect/role-decode/sensitive-fields/finding+asset shapes) ✅; `tsc --noEmit` ✅; live run on nexotype.com/finpy.tech (clean, no false positives) ✅; local Supabase-mock integration test (positive path: critical findings, row_count, data-minimization, no value leak) ✅.
+- Per-feature research: `support/cystene/market-vibe-scanners.md` §4.3 + §5; methodology web-verified (Supabase March-2026 change).
+
+## A1 — `secret_scan` scanner (exposed secrets in JS bundles + source maps) ✅ COMPLETE (verified locally; awaiting deploy/commit)
+
+Second vibe-coded check. NEW external scanner `scanners/external/secret_scan.py` (**separate scanner, not web_scan** — clean responsibility). Fetches served bundles + follows source maps (`.map` `sourcesContent`), greps ~30 curated high-signal secret patterns (OpenAI/Anthropic/AWS/Google/GitHub/Slack/Stripe/Twilio/SendGrid/private-key/Supabase-service-role + entropy-gated generic) → `Finding.category="exposed_secret"` (CWE-798 / CWE-540 for maps, OWASP A02). **Rust engine `bulk_banner_match` (rayon) when compiled + pure-`re` fallback** (port_scan/dns_scan pattern). **Data minimization:** evidence = redacted secret (first4…last4), never the full value. No live verification (v1).
+- Wiring (full-stack): `SCANNERS["secret_scan"]`, `ScanType.SECRET_SCAN`, `subscription_utils` all 4 tiers (external → incl FREE), client `ScanTypeEnum` + label "Exposed Secrets" + "Available types" help-text in BOTH template forms.
+- Verified: `compileall` ✅; smoke (pattern match, redaction, placeholder/entropy skip, sourcemap follow, fallback w/o engine) ✅; `tsc --noEmit` ✅; local mock E2E (bundle + sourcemap secrets caught, placeholder skipped, no value leaked) ✅; **live caught a real false-positive (CSS `sk-inset-…` matched as OpenAI) → tightened regex (48-char/anchored) + entropy gate → re-verified 0 FP on client.nexotype.com** ✅.
+- Per-feature research: `market-vibe-scanners.md` §4.2; web-verified (gitleaks/trufflehog — quality-over-quantity, no live verification).
+
+## B2 — AI-fix-prompt format on findings ✅ COMPLETE (verified locally; awaiting deploy/commit)
+
+The signature VAS UX ("a fix list, formatted for your AI tool"). NEW util `utils/remediation_utils.py:build_ai_fix_prompt(finding)` — composes a copy-paste prompt from a finding's existing fields (title/severity/location/description/remediation/remediation_script/evidence), so it works for **every scanner automatically** (no per-scanner change). Single source of truth used by both the finding-detail endpoint and JSON reports. **Not `@computed_field`** (no precedent + would compute for every list row) — populated explicitly in `get_finding` detail endpoint (`utils/small-composable` "orchestration explicit in routes").
+- Wiring (full-stack): `FindingDetail.ai_fix_prompt` field + populated on detail; `report_generation_service._finding_to_dict` includes it (JSON); client Zod `ai_fix_prompt` + **"Copy AI Fix" button** on finding detail page (inline `navigator.clipboard.writeText`, assetmanager pattern).
+- Verified: `compileall` ✅; unit test util (full + sparse — empty lines omitted) ✅; schema field + report import ✅; app boots ✅; `tsc --noEmit` ✅.
 
 ---
 

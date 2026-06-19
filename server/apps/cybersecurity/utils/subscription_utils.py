@@ -74,7 +74,7 @@ TIER_LIMITS = {
         "requests_per_hour": 200,
         "allowed_scan_types": [
             "port_scan", "dns_enum", "ssl_check", "web_scan",
-            "vuln_scan", "api_scan", "active_web_scan", "password_audit",
+            "vuln_scan", "api_scan", "active_web_scan", "password_audit", "baas_scan", "secret_scan",
         ],
         "allowed_report_types": ["full"],
         "allowed_schedule_frequencies": [],
@@ -89,7 +89,7 @@ TIER_LIMITS = {
         "requests_per_hour": 2000,
         "allowed_scan_types": [
             "port_scan", "dns_enum", "ssl_check", "web_scan",
-            "vuln_scan", "api_scan", "active_web_scan", "password_audit",
+            "vuln_scan", "api_scan", "active_web_scan", "password_audit", "baas_scan", "secret_scan",
             "host_audit", "cloud_audit", "mobile_scan",
         ],
         "allowed_report_types": ["full", "compliance"],
@@ -105,7 +105,7 @@ TIER_LIMITS = {
         "requests_per_hour": 10000,
         "allowed_scan_types": [
             "port_scan", "dns_enum", "ssl_check", "web_scan",
-            "vuln_scan", "api_scan", "active_web_scan", "password_audit",
+            "vuln_scan", "api_scan", "active_web_scan", "password_audit", "baas_scan", "secret_scan",
             "host_audit", "cloud_audit", "ad_audit", "mobile_scan",
         ],
         "allowed_report_types": ["full", "compliance", "executive_summary", "delta"],
@@ -121,7 +121,7 @@ TIER_LIMITS = {
         "requests_per_hour": 10000,
         "allowed_scan_types": [
             "port_scan", "dns_enum", "ssl_check", "web_scan",
-            "vuln_scan", "api_scan", "active_web_scan", "password_audit",
+            "vuln_scan", "api_scan", "active_web_scan", "password_audit", "baas_scan", "secret_scan",
             "host_audit", "cloud_audit", "ad_audit", "mobile_scan",
         ],
         "allowed_report_types": ["full", "compliance", "executive_summary", "delta"],

@@ -188,6 +188,18 @@ export default function FindingDetailsPage() {
               <pre className="bg-muted p-4 rounded overflow-x-auto mt-1"><code>{item.remediation_script}</code></pre>
             </div>
           )}
+          {item.ai_fix_prompt && (
+            <div>
+              <div className="flex items-center justify-between">
+                <p className="text-sm text-muted-foreground">AI Fix Prompt</p>
+                {/* Copy the prompt straight into Cursor / Claude Code (assetmanager clipboard pattern) */}
+                <Button variant="outline" size="sm" onClick={() => navigator.clipboard.writeText(item.ai_fix_prompt!)}>
+                  Copy AI Fix
+                </Button>
+              </div>
+              <pre className="bg-muted p-4 rounded overflow-x-auto mt-1 whitespace-pre-wrap text-xs"><code>{item.ai_fix_prompt}</code></pre>
+            </div>
+          )}
         </CardContent>
       </Card>
 

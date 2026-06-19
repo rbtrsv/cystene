@@ -32,6 +32,7 @@ from sqlalchemy import select, and_, func, desc
 from ..models.discovery_models import Finding, Asset
 from ..models.execution_models import ScanJob
 from ..models.infrastructure_models import ScanTarget
+from ..utils.remediation_utils import build_ai_fix_prompt
 
 logger = logging.getLogger(__name__)
 
@@ -449,6 +450,7 @@ def _finding_to_dict(f) -> dict:
         "description": f.description,
         "remediation": f.remediation,
         "remediation_script": f.remediation_script,
+        "ai_fix_prompt": build_ai_fix_prompt(f),
         "host": f.host,
         "port": f.port,
         "protocol": f.protocol,

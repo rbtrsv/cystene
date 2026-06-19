@@ -7,7 +7,7 @@ with the signature: async def run(target: str, params: dict) -> dict
 Scanner dispatcher in scan_job_subrouter uses this dict to call scanners.
 """
 
-from .external import port_scan, dns_scan, ssl_scan, web_scan, vuln_scan, api_scan, active_web_scan, password_audit_scan
+from .external import port_scan, dns_scan, ssl_scan, web_scan, vuln_scan, api_scan, active_web_scan, password_audit_scan, baas_scan, secret_scan
 from .internal import host_audit_scan, cloud_audit_scan, ad_audit_scan
 from .upload import mobile_scan
 
@@ -22,6 +22,8 @@ SCANNERS = {
     "api_scan": api_scan.run,
     "active_web_scan": active_web_scan.run,
     "password_audit": password_audit_scan.run,
+    "baas_scan": baas_scan.run,
+    "secret_scan": secret_scan.run,
     # Internal scanners (require SSH/API/domain credentials)
     "host_audit": host_audit_scan.run,
     "cloud_audit": cloud_audit_scan.run,

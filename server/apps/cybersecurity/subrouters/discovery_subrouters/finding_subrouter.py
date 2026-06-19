@@ -19,6 +19,7 @@ from ...schemas.discovery_schemas.finding_schemas import (
 )
 from ...utils.dependency_utils import get_user_organization_id
 from ...utils.export_utils import ExportColumn, SummaryCard, generate_csv, generate_pdf
+from ...utils.remediation_utils import build_ai_fix_prompt
 from apps.accounts.models import User
 from apps.accounts.utils.auth_utils import get_current_user
 from core.db import get_session
@@ -97,7 +98,10 @@ async def get_finding(
         item = result.scalar_one_or_none()
         if not item:
             raise HTTPException(status_code=404, detail="Finding not found")
-        return FindingResponse(success=True, data=FindingDetail.model_validate(item))
+        # Build the AI-ready fix prompt on detail only (not in list responses).
+        detail = FindingDetail.model_validate(item)
+        detail.ai_fix_prompt = build_ai_fix_prompt(item)
+        return FindingResponse(success=True, data=detail)
     except HTTPException:
         raise
     except Exception as e:

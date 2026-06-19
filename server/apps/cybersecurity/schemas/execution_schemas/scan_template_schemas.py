@@ -15,7 +15,7 @@ from enum import Enum
 
 class ScanType(str, Enum):
     """Scan type options — each maps to a scanner module"""
-    # Production scanners (12)
+    # Production scanners (14)
     PORT_SCAN = "port_scan"
     DNS_ENUM = "dns_enum"
     SSL_CHECK = "ssl_check"
@@ -24,6 +24,8 @@ class ScanType(str, Enum):
     API_SCAN = "api_scan"
     ACTIVE_WEB_SCAN = "active_web_scan"
     PASSWORD_AUDIT = "password_audit"
+    BAAS_SCAN = "baas_scan"
+    SECRET_SCAN = "secret_scan"
     HOST_AUDIT = "host_audit"
     CLOUD_AUDIT = "cloud_audit"
     AD_AUDIT = "ad_audit"
