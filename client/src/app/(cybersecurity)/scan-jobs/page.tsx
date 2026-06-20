@@ -107,9 +107,16 @@ export default function ScanJobsPage() {
           <h1 className="text-3xl font-bold tracking-tight">Scan Jobs</h1>
           <p className="text-muted-foreground">Monitor scan executions and results</p>
         </div>
-        <Button onClick={() => fetchScanJobs()} variant="outline">
-          <RotateCcw className="mr-2 h-4 w-4" /> Refresh
-        </Button>
+        <div className="flex gap-2">
+          <Button onClick={() => fetchScanJobs()} variant="outline">
+            <RotateCcw className="mr-2 h-4 w-4" /> Refresh
+          </Button>
+          <Link href="/scan-jobs/new">
+            <Button>
+              <Play className="mr-2 h-4 w-4" /> Start Scan
+            </Button>
+          </Link>
+        </div>
       </div>
 
       {/* Search & Table */}

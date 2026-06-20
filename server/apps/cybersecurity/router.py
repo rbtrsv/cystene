@@ -21,6 +21,7 @@ from .subrouters.infrastructure_subrouters.scan_target_subrouter import router a
 from .subrouters.execution_subrouters.scan_template_subrouter import router as scan_template_router
 from .subrouters.execution_subrouters.scan_schedule_subrouter import router as scan_schedule_router
 from .subrouters.execution_subrouters.scan_job_subrouter import router as scan_job_router
+from .subrouters.execution_subrouters.mobile_scan_subrouter import router as mobile_scan_router
 
 # Discovery subrouters
 from .subrouters.discovery_subrouters.finding_subrouter import router as finding_router
@@ -46,6 +47,7 @@ gated.include_router(scan_target_router, prefix="/scan-targets")
 gated.include_router(scan_template_router, prefix="/scan-templates")
 gated.include_router(scan_schedule_router, prefix="/scan-schedules")
 gated.include_router(scan_job_router, prefix="/scan-jobs")
+gated.include_router(mobile_scan_router, prefix="/mobile-scan")
 
 # Discovery domain
 gated.include_router(finding_router, prefix="/findings")

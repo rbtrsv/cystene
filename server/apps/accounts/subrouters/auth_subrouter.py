@@ -58,6 +58,19 @@ async def register(
     db.add(user)
     await db.flush()
 
+    # Auto-create a personal workspace so the user can scan immediately (FREE funnel) —
+    # no manual "create organization" step. Diverges from finpy (which waits until checkout)
+    # because cystene's FREE tier lets users scan their first target before paying.
+    base_name = user.name or (user.email.split("@")[0] if user.email else "Personal")
+    organization = Organization(name=f"{base_name}'s Workspace")
+    db.add(organization)
+    await db.flush()  # get organization.id without committing
+    db.add(OrganizationMember(
+        user_id=user.id,
+        organization_id=organization.id,
+        role=OrganizationMemberRole.OWNER.value,
+    ))
+
     # Create tokens
     access_token = generate_access_token(user.id)
     refresh_token = generate_refresh_token()
@@ -77,11 +90,20 @@ async def register(
     
     await db.commit()
     await db.refresh(user)
+    await db.refresh(organization)
 
-    # Create session data (no organizations yet - user creates org later)
+    # Session includes the auto-created personal workspace
     session = SessionSchema(
         user=UserResponse.model_validate(user),
-        organizations=[]
+        organizations=[
+            OrganizationResponse(
+                id=organization.id,
+                name=organization.name,
+                created_at=organization.created_at,
+                updated_at=organization.updated_at,
+                user_role=OrganizationMemberRole.OWNER.value,
+            )
+        ]
     )
     
     return AuthResponse(

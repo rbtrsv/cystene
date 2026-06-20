@@ -33,6 +33,36 @@ logger = logging.getLogger(__name__)
 router = APIRouter(tags=["Subscriptions"])
 
 
+async def _ensure_personal_organization(user: User, session: AsyncSession) -> Organization:
+    """
+    Return the user's first org; auto-create a personal workspace if they have none.
+
+    Safety net for the direct subscription flow: new users get a workspace at registration,
+    but a pre-existing zero-org user must still be able to subscribe without manually
+    creating an organization. Mirrors finpy's subscriptions_subrouter._ensure_personal_organization.
+    """
+    membership = await session.scalar(
+        select(OrganizationMember).filter(OrganizationMember.user_id == user.id).limit(1)
+    )
+    if membership:
+        return await session.get(Organization, membership.organization_id)
+
+    # No org yet — auto-create a personal workspace (same shape as auth register).
+    base_name = user.name or (user.email.split("@")[0] if user.email else "Personal")
+    organization = Organization(name=f"{base_name}'s Workspace")
+    session.add(organization)
+    await session.flush()  # get organization.id without committing
+    session.add(OrganizationMember(
+        user_id=user.id,
+        organization_id=organization.id,
+        role="OWNER",
+    ))
+    await session.commit()
+    await session.refresh(organization)
+    logger.info(f"Auto-created personal org {organization.id} for user {user.id} at checkout")
+    return organization
+
+
 @router.get("/plans", response_model=SubscriptionPlansResponse)
 async def get_subscription_plans():
     """
@@ -158,21 +188,9 @@ async def checkout(
             if not organization:
                 raise HTTPException(status_code=404, detail="Organization not found")
         else:
-            # Backward-compatible fallback to first membership.
-            result = await session.execute(
-                select(OrganizationMember)
-                .filter(OrganizationMember.user_id == user.id)
-                .limit(1)
-            )
-            membership = result.scalar_one_or_none()
-
-            if not membership:
-                raise HTTPException(status_code=403, detail="You are not a member of any organization")
-
-            result = await session.execute(
-                select(Organization).filter(Organization.id == membership.organization_id)
-            )
-            organization = result.scalar_one()
+            # No explicit org — resolve (or auto-create) the user's personal workspace, so a
+            # zero-org user can subscribe directly without a manual "create organization" step.
+            organization = await _ensure_personal_organization(user, session)
 
         # Create checkout session
         result = await create_checkout_session(

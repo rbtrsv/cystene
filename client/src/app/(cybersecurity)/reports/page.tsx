@@ -106,6 +106,11 @@ export default function ReportsPage() {
           <h1 className="text-3xl font-bold tracking-tight">Reports</h1>
           <p className="text-muted-foreground">Generated security assessment reports</p>
         </div>
+        <Link href="/reports/new">
+          <Button>
+            <FileBarChart className="mr-2 h-4 w-4" /> Generate Report
+          </Button>
+        </Link>
       </div>
 
       {/* Search & Table */}

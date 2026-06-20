@@ -98,6 +98,14 @@ export const SCAN_JOB_ENDPOINTS = {
   CANCEL: (id: number) => `${API_BASE_URL}/cybersecurity/scan-jobs/${id}/cancel`,
 };
 
+/**
+ * API endpoints for mobile (APK) scanning — ephemeral upload-and-analyze.
+ * Backend: server/apps/cybersecurity/subrouters/execution_subrouters/mobile_scan_subrouter.py
+ */
+export const MOBILE_SCAN_ENDPOINTS = {
+  SCAN: `${API_BASE_URL}/cybersecurity/mobile-scan/scan`,
+};
+
 // ==========================================
 // DISCOVERY DOMAIN
 // ==========================================

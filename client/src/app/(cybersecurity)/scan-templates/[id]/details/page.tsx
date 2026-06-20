@@ -12,9 +12,15 @@
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useScanTemplates } from '@/modules/cybersecurity/hooks/execution/use-scan-templates';
+import { useCredentials } from '@/modules/cybersecurity/hooks/infrastructure/use-credentials';
 import { useOrganizations } from '@/modules/accounts/hooks/use-organizations';
 import {
   getScanSpeedLabel,
+  SCAN_TYPE_GROUPS,
+  SCAN_TYPE_LABELS,
+  SCAN_TYPE_DESCRIPTIONS,
+  SCAN_TYPE_NEEDS_CREDENTIAL,
+  SCAN_TYPE_NEEDS_CONSENT,
   type ScanTemplate,
 } from '@/modules/cybersecurity/schemas/execution/scan-templates.schemas';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/modules/shadcnui/components/ui/card';
@@ -25,8 +31,11 @@ import { Textarea } from '@/modules/shadcnui/components/ui/textarea';
 import { Alert, AlertDescription } from '@/modules/shadcnui/components/ui/alert';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/modules/shadcnui/components/ui/select';
 import { Checkbox } from '@/modules/shadcnui/components/ui/checkbox';
+import { Badge } from '@/modules/shadcnui/components/ui/badge';
+import { Popover, PopoverContent, PopoverTrigger } from '@/modules/shadcnui/components/ui/popover';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/modules/shadcnui/components/ui/command';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/modules/shadcnui/components/ui/tabs';
-import { Loader2, ArrowLeft, FileText, Trash2 } from 'lucide-react';
+import { Loader2, ArrowLeft, FileText, Trash2, ChevronsUpDown, Check, X } from 'lucide-react';
 import Link from 'next/link';
 
 export default function ScanTemplateDetailsPage() {
@@ -41,6 +50,11 @@ export default function ScanTemplateDetailsPage() {
     isLoading,
     error: storeError,
   } = useScanTemplates();
+  const { credentials, fetchCredentials } = useCredentials();
+  const [credOpen, setCredOpen] = useState(false);
+  useEffect(() => {
+    if (activeOrganization) fetchCredentials();
+  }, [activeOrganization]);
 
   // Local state for the fetched item
   const [item, setItem] = useState<ScanTemplate | null>(null);
@@ -238,11 +252,53 @@ export default function ScanTemplateDetailsPage() {
               </div>
               <div className="space-y-2">
                 <Label>Scan Types</Label>
-                <Input value={editScanTypes} onChange={(e) => setEditScanTypes(e.target.value)} disabled={isSaving} />
-                <p className="text-xs text-muted-foreground">
-                  Available types: port_scan, dns_enum, ssl_check, web_scan, vuln_scan, api_scan,
-                  active_web_scan, password_audit, baas_scan, secret_scan, host_audit, cloud_audit, ad_audit, mobile_scan
-                </p>
+                {(() => {
+                  // Grouped checkboxes over the comma-separated editScanTypes string (same as the create form).
+                  const selected = new Set(editScanTypes.split(',').map((s) => s.trim()).filter(Boolean));
+                  const emit = (next: Set<string>) => setEditScanTypes(Array.from(next).join(','));
+                  const toggle = (type: string) => {
+                    const next = new Set(selected);
+                    if (next.has(type)) next.delete(type); else next.add(type);
+                    emit(next);
+                  };
+                  const toggleGroup = (types: string[], all: boolean) => {
+                    const next = new Set(selected);
+                    types.forEach((t) => (all ? next.delete(t) : next.add(t)));
+                    emit(next);
+                  };
+                  return (
+                    <div className="space-y-4">
+                      {SCAN_TYPE_GROUPS.map((group) => {
+                        const all = group.types.every((t) => selected.has(t));
+                        return (
+                          <div key={group.label} className="space-y-2">
+                            <div className="flex items-center justify-between">
+                              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{group.label}</p>
+                              <Button type="button" variant="ghost" size="sm" className="h-auto py-1 text-xs" disabled={isSaving} onClick={() => toggleGroup(group.types, all)}>
+                                {all ? 'Clear all' : 'Select all'}
+                              </Button>
+                            </div>
+                            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                              {group.types.map((type) => (
+                                <label key={type} className="flex cursor-pointer items-start gap-2 rounded border p-2 hover:bg-muted/50">
+                                  <Checkbox checked={selected.has(type)} onCheckedChange={() => toggle(type)} disabled={isSaving} className="mt-0.5" />
+                                  <div className="flex-1 space-y-0.5">
+                                    <div className="flex items-center gap-2">
+                                      <span className="text-sm">{SCAN_TYPE_LABELS[type] ?? type}</span>
+                                      {SCAN_TYPE_NEEDS_CREDENTIAL.has(type) && <Badge variant="outline" className="text-xs font-normal">needs credential</Badge>}
+                                      {SCAN_TYPE_NEEDS_CONSENT.has(type) && <Badge variant="outline" className="text-xs font-normal">needs consent</Badge>}
+                                    </div>
+                                    {SCAN_TYPE_DESCRIPTIONS[type] && <p className="text-xs text-muted-foreground">{SCAN_TYPE_DESCRIPTIONS[type]}</p>}
+                                  </div>
+                                </label>
+                              ))}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  );
+                })()}
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
@@ -326,14 +382,43 @@ export default function ScanTemplateDetailsPage() {
               {/* Credential */}
               <div className="space-y-4 pt-4 border-t">
                 <div className="space-y-2">
-                  <Label>Credential ID</Label>
-                  <Input
-                    type="number"
-                    value={editCredentialId ?? ''}
-                    onChange={(e) => setEditCredentialId(e.target.value ? Number(e.target.value) : null)}
-                    disabled={isSaving}
-                    placeholder="Leave empty if no credential needed"
-                  />
+                  <Label>Credential</Label>
+                  {(() => {
+                    const selectedName = editCredentialId
+                      ? (credentials.find((c) => c.id === editCredentialId)?.name || `Credential #${editCredentialId}`)
+                      : null;
+                    return (
+                      <Popover open={credOpen} onOpenChange={setCredOpen}>
+                        <PopoverTrigger asChild>
+                          <Button type="button" variant="outline" role="combobox" aria-expanded={credOpen}
+                            className="w-full justify-between font-normal" disabled={isSaving}>
+                            <span className={selectedName ? '' : 'text-muted-foreground'}>{selectedName || 'Leave empty if no credential needed'}</span>
+                            <div className="flex items-center gap-1">
+                              {editCredentialId && <X className="h-4 w-4 opacity-50 hover:opacity-100" onClick={(e) => { e.stopPropagation(); setEditCredentialId(null); }} />}
+                              <ChevronsUpDown className="h-4 w-4 shrink-0 opacity-50" />
+                            </div>
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+                          <Command>
+                            <CommandInput placeholder="Search credentials..." />
+                            <CommandList>
+                              <CommandEmpty>No credentials yet.</CommandEmpty>
+                              <CommandGroup>
+                                {credentials.map((c) => (
+                                  <CommandItem key={c.id} value={c.name}
+                                    onSelect={() => { setEditCredentialId(c.id); setCredOpen(false); }}>
+                                    <span className="truncate">{c.name}</span>
+                                    {editCredentialId === c.id && <Check className="ml-auto h-4 w-4" />}
+                                  </CommandItem>
+                                ))}
+                              </CommandGroup>
+                            </CommandList>
+                          </Command>
+                        </PopoverContent>
+                      </Popover>
+                    );
+                  })()}
                 </div>
                 <div className="space-y-2">
                   <Label>Engine Parameters</Label>

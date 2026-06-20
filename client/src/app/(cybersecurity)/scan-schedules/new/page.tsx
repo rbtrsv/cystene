@@ -9,9 +9,12 @@
  * Backend: POST /cybersecurity/scan-schedules/
  */
 
+import { useEffect, useState } from 'react';
 import { useForm } from '@tanstack/react-form';
 import { useRouter } from 'next/navigation';
 import { useScanSchedules } from '@/modules/cybersecurity/hooks/execution/use-scan-schedules';
+import { useScanTargets } from '@/modules/cybersecurity/hooks/infrastructure/use-scan-targets';
+import { useScanTemplates } from '@/modules/cybersecurity/hooks/execution/use-scan-templates';
 import { useOrganizations } from '@/modules/accounts/hooks/use-organizations';
 import { CreateScanScheduleSchema } from '@/modules/cybersecurity/schemas/execution/scan-schedules.schemas';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/modules/shadcnui/components/ui/card';
@@ -20,13 +23,29 @@ import { Input } from '@/modules/shadcnui/components/ui/input';
 import { Label } from '@/modules/shadcnui/components/ui/label';
 import { Alert, AlertDescription } from '@/modules/shadcnui/components/ui/alert';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/modules/shadcnui/components/ui/select';
-import { Loader2, ArrowLeft } from 'lucide-react';
+import { Popover, PopoverContent, PopoverTrigger } from '@/modules/shadcnui/components/ui/popover';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/modules/shadcnui/components/ui/command';
+import { Loader2, ArrowLeft, ChevronsUpDown, Check } from 'lucide-react';
 import Link from 'next/link';
 
 export default function CreateScanSchedulePage() {
   const router = useRouter();
   const { activeOrganization } = useOrganizations();
   const { createScanSchedule, error: storeError } = useScanSchedules();
+  const { scanTargets, fetchScanTargets } = useScanTargets();
+  const { scanTemplates, fetchScanTemplates } = useScanTemplates();
+
+  // Open state for the inline FK pickers (Popover + Command pattern — finpy convention).
+  const [targetOpen, setTargetOpen] = useState(false);
+  const [templateOpen, setTemplateOpen] = useState(false);
+
+  // Load the entities the FK pickers select from (providers don't auto-fetch).
+  useEffect(() => {
+    if (activeOrganization) {
+      fetchScanTargets();
+      fetchScanTemplates();
+    }
+  }, [activeOrganization]);
 
   const form = useForm({
     defaultValues: {
@@ -131,42 +150,90 @@ export default function CreateScanSchedulePage() {
                 )}
               </form.Field>
 
-              {/* Target ID */}
+              {/* Target — pick by name (inline Popover + Command, finpy pattern) */}
               <form.Field name="target_id">
-                {(field) => (
-                  <div className="space-y-2">
-                    <Label htmlFor={field.name}>Target ID *</Label>
-                    <Input
-                      id={field.name}
-                      name={field.name}
-                      type="number"
-                      value={field.state.value || ''}
-                      onBlur={field.handleBlur}
-                      onChange={(e) => field.handleChange(parseInt(e.target.value) || 0)}
-                      placeholder="1"
-                      disabled={form.state.isSubmitting}
-                    />
-                  </div>
-                )}
+                {(field) => {
+                  const selectedName = field.state.value
+                    ? (scanTargets.find((t) => t.id === field.state.value)?.name || `Target #${field.state.value}`)
+                    : null;
+                  return (
+                    <div className="space-y-2">
+                      <Label htmlFor={field.name}>Target *</Label>
+                      <Popover open={targetOpen} onOpenChange={setTargetOpen}>
+                        <PopoverTrigger asChild>
+                          <Button type="button" variant="outline" role="combobox" aria-expanded={targetOpen}
+                            className="w-full justify-between font-normal" disabled={form.state.isSubmitting}>
+                            {selectedName || 'Select a scan target'}
+                            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+                          <Command>
+                            <CommandInput placeholder="Search targets..." />
+                            <CommandList>
+                              <CommandEmpty className="py-3 px-2 text-sm">
+                                No scan targets yet.{' '}
+                                <Link href="/scan-targets/new" className="underline">Create one</Link>
+                              </CommandEmpty>
+                              <CommandGroup>
+                                {scanTargets.map((t) => (
+                                  <CommandItem key={t.id} value={t.name}
+                                    onSelect={() => { field.handleChange(t.id); setTargetOpen(false); }}>
+                                    <span className="truncate">{t.name}</span>
+                                    {field.state.value === t.id && <Check className="ml-auto h-4 w-4" />}
+                                  </CommandItem>
+                                ))}
+                              </CommandGroup>
+                            </CommandList>
+                          </Command>
+                        </PopoverContent>
+                      </Popover>
+                    </div>
+                  );
+                }}
               </form.Field>
 
-              {/* Template ID */}
+              {/* Template — pick by name (inline Popover + Command, finpy pattern) */}
               <form.Field name="template_id">
-                {(field) => (
-                  <div className="space-y-2">
-                    <Label htmlFor={field.name}>Template ID *</Label>
-                    <Input
-                      id={field.name}
-                      name={field.name}
-                      type="number"
-                      value={field.state.value || ''}
-                      onBlur={field.handleBlur}
-                      onChange={(e) => field.handleChange(parseInt(e.target.value) || 0)}
-                      placeholder="1"
-                      disabled={form.state.isSubmitting}
-                    />
-                  </div>
-                )}
+                {(field) => {
+                  const selectedName = field.state.value
+                    ? (scanTemplates.find((t) => t.id === field.state.value)?.name || `Template #${field.state.value}`)
+                    : null;
+                  return (
+                    <div className="space-y-2">
+                      <Label htmlFor={field.name}>Template *</Label>
+                      <Popover open={templateOpen} onOpenChange={setTemplateOpen}>
+                        <PopoverTrigger asChild>
+                          <Button type="button" variant="outline" role="combobox" aria-expanded={templateOpen}
+                            className="w-full justify-between font-normal" disabled={form.state.isSubmitting}>
+                            {selectedName || 'Select a scan template'}
+                            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+                          <Command>
+                            <CommandInput placeholder="Search templates..." />
+                            <CommandList>
+                              <CommandEmpty className="py-3 px-2 text-sm">
+                                No scan templates yet.{' '}
+                                <Link href="/scan-templates/new" className="underline">Create one</Link>
+                              </CommandEmpty>
+                              <CommandGroup>
+                                {scanTemplates.map((t) => (
+                                  <CommandItem key={t.id} value={t.name}
+                                    onSelect={() => { field.handleChange(t.id); setTemplateOpen(false); }}>
+                                    <span className="truncate">{t.name}</span>
+                                    {field.state.value === t.id && <Check className="ml-auto h-4 w-4" />}
+                                  </CommandItem>
+                                ))}
+                              </CommandGroup>
+                            </CommandList>
+                          </Command>
+                        </PopoverContent>
+                      </Popover>
+                    </div>
+                  );
+                }}
               </form.Field>
             </div>
           </CardContent>

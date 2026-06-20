@@ -11,9 +11,11 @@
  * Backend: POST /cybersecurity/credentials/
  */
 
+import { useEffect, useState } from 'react';
 import { useForm } from '@tanstack/react-form';
 import { useRouter } from 'next/navigation';
 import { useCredentials } from '@/modules/cybersecurity/hooks/infrastructure/use-credentials';
+import { useInfrastructures } from '@/modules/cybersecurity/hooks/infrastructure/use-infrastructure';
 import { useOrganizations } from '@/modules/accounts/hooks/use-organizations';
 import { CreateCredentialSchema } from '@/modules/cybersecurity/schemas/infrastructure/credentials.schemas';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/modules/shadcnui/components/ui/card';
@@ -23,13 +25,22 @@ import { Label } from '@/modules/shadcnui/components/ui/label';
 import { Textarea } from '@/modules/shadcnui/components/ui/textarea';
 import { Alert, AlertDescription } from '@/modules/shadcnui/components/ui/alert';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/modules/shadcnui/components/ui/select';
-import { Loader2, ArrowLeft } from 'lucide-react';
+import { Popover, PopoverContent, PopoverTrigger } from '@/modules/shadcnui/components/ui/popover';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/modules/shadcnui/components/ui/command';
+import { Loader2, ArrowLeft, ChevronsUpDown, Check, X } from 'lucide-react';
 import Link from 'next/link';
 
 export default function CreateCredentialPage() {
   const router = useRouter();
   const { activeOrganization } = useOrganizations();
   const { createCredential, error: storeError } = useCredentials();
+  const { infrastructures, fetchInfrastructures } = useInfrastructures();
+
+  // Inline FK picker open state + load the list (optional infrastructure link).
+  const [infraOpen, setInfraOpen] = useState(false);
+  useEffect(() => {
+    if (activeOrganization) fetchInfrastructures();
+  }, [activeOrganization]);
 
   const form = useForm({
     defaultValues: {
@@ -240,24 +251,52 @@ export default function CreateCredentialPage() {
                 )}
               </form.Field>
 
-              {/* Infrastructure ID */}
+              {/* Infrastructure — optional link, pick by name (inline Popover + Command) */}
               <form.Field name="infrastructure_id">
-                {(field) => (
-                  <div className="space-y-2">
-                    <Label htmlFor={field.name}>Infrastructure ID</Label>
-                    <Input
-                      id={field.name}
-                      name={field.name}
-                      type="number"
-                      value={field.state.value ?? ''}
-                      onBlur={field.handleBlur}
-                      onChange={(e) => field.handleChange(e.target.value ? parseInt(e.target.value) : null)}
-                      placeholder="Optional — link to an infrastructure item"
-                      disabled={form.state.isSubmitting}
-                    />
-                    <p className="text-xs text-muted-foreground">Associate this credential with a specific infrastructure item</p>
-                  </div>
-                )}
+                {(field) => {
+                  const selectedName = field.state.value
+                    ? (infrastructures.find((i) => i.id === field.state.value)?.name || `Infrastructure #${field.state.value}`)
+                    : null;
+                  return (
+                    <div className="space-y-2">
+                      <Label htmlFor={field.name}>Infrastructure</Label>
+                      <Popover open={infraOpen} onOpenChange={setInfraOpen}>
+                        <PopoverTrigger asChild>
+                          <Button type="button" variant="outline" role="combobox" aria-expanded={infraOpen}
+                            className="w-full justify-between font-normal" disabled={form.state.isSubmitting}>
+                            <span className={selectedName ? '' : 'text-muted-foreground'}>
+                              {selectedName || 'Optional — link to an infrastructure item'}
+                            </span>
+                            <div className="flex items-center gap-1">
+                              {field.state.value && (
+                                <X className="h-4 w-4 opacity-50 hover:opacity-100"
+                                  onClick={(e) => { e.stopPropagation(); field.handleChange(null); }} />
+                              )}
+                              <ChevronsUpDown className="h-4 w-4 shrink-0 opacity-50" />
+                            </div>
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+                          <Command>
+                            <CommandInput placeholder="Search infrastructure..." />
+                            <CommandList>
+                              <CommandEmpty>No infrastructure items yet.</CommandEmpty>
+                              <CommandGroup>
+                                {infrastructures.map((i) => (
+                                  <CommandItem key={i.id} value={i.name}
+                                    onSelect={() => { field.handleChange(i.id); setInfraOpen(false); }}>
+                                    <span className="truncate">{i.name}</span>
+                                    {field.state.value === i.id && <Check className="ml-auto h-4 w-4" />}
+                                  </CommandItem>
+                                ))}
+                              </CommandGroup>
+                            </CommandList>
+                          </Command>
+                        </PopoverContent>
+                      </Popover>
+                    </div>
+                  );
+                }}
               </form.Field>
             </div>
           </CardContent>

@@ -7,7 +7,6 @@ import {
   Moon,
   Sun,
   User2,
-  Building2,
   Server,
   KeyRound,
   Target,
@@ -18,13 +17,12 @@ import {
   Globe,
   FileBarChart,
   LayoutDashboard,
-  ChevronsUpDown,
-  Check,
+  CreditCard,
+  Smartphone,
 } from "lucide-react"
 import { usePathname, useRouter } from "next/navigation"
 import Link from "next/link"
 import { useAuthStore } from "@/modules/accounts/store/auth.server.store"
-import { useOrganizations } from "@/modules/accounts/hooks/use-organizations"
 
 import { Avatar, AvatarFallback } from "@/modules/shadcnui/components/ui/avatar"
 import {
@@ -35,19 +33,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/modules/shadcnui/components/ui/dropdown-menu"
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/modules/shadcnui/components/ui/popover"
-import {
-  Command,
-  CommandInput,
-  CommandList,
-  CommandEmpty,
-  CommandGroup,
-  CommandItem,
-} from "@/modules/shadcnui/components/ui/command"
 import {
   Sidebar,
   SidebarContent,
@@ -79,11 +64,6 @@ export function CybersecuritySidebar({ ...props }: React.ComponentProps<typeof S
   const router = useRouter()
   const { user } = useAuthStore()
 
-  // Organization data for switcher
-  const { organizations, activeOrganization, setActiveOrganization } = useOrganizations()
-
-  // Popover open/close state for organization switcher
-  const [orgPopoverOpen, setOrgPopoverOpen] = useState(false)
 
   // Hydration state - prevents radix-ui ID mismatch between server/client
   const [hasMounted, setHasMounted] = useState(false)
@@ -164,92 +144,6 @@ export function CybersecuritySidebar({ ...props }: React.ComponentProps<typeof S
       </SidebarHeader>
 
       <SidebarContent>
-        {/* Organization Switcher - hidden when sidebar is collapsed to icon mode */}
-        <SidebarGroup className="group-data-[collapsible=icon]:hidden">
-          <SidebarGroupLabel>Workspace</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {/* Organization Switcher */}
-              <SidebarMenuItem>
-                <Popover open={orgPopoverOpen} onOpenChange={setOrgPopoverOpen}>
-                  <PopoverTrigger asChild>
-                    <SidebarMenuButton
-                      size="lg"
-                      tooltip={activeOrganization?.name || "Select Organization"}
-                      className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
-                    >
-                      <Building2 className="h-4 w-4" />
-                      <div className="grid flex-1 text-left text-sm leading-tight">
-                        <span className="truncate font-semibold">
-                          {activeOrganization?.name || "Select Organization"}
-                        </span>
-                        <span className="truncate text-xs text-muted-foreground">
-                          {activeOrganization?.role
-                            ? activeOrganization.role.charAt(0) + activeOrganization.role.slice(1).toLowerCase()
-                            : "Organization"}
-                        </span>
-                      </div>
-                      <ChevronsUpDown className="ml-auto h-4 w-4" />
-                    </SidebarMenuButton>
-                  </PopoverTrigger>
-                  <PopoverContent
-                    className="w-[--radix-popover-trigger-width] min-w-56 p-0"
-                    side={isMobile ? "bottom" : "right"}
-                    align="start"
-                    sideOffset={4}
-                  >
-                    <Command>
-                      <CommandInput placeholder="Search organization..." />
-                      <CommandList>
-                        <CommandEmpty>No organizations found.</CommandEmpty>
-                        <CommandGroup>
-                          {organizations.map((org) => (
-                            <CommandItem
-                              key={org.id}
-                              value={org.name}
-                              onSelect={() => {
-                                setActiveOrganization(org.id)
-                                setOrgPopoverOpen(false)
-                              }}
-                            >
-                              <Building2 className="h-4 w-4" />
-                              <span>{org.name}</span>
-                              {activeOrganization?.id === org.id && (
-                                <Check className="ml-auto h-4 w-4" />
-                              )}
-                            </CommandItem>
-                          ))}
-                        </CommandGroup>
-                      </CommandList>
-                    </Command>
-                  </PopoverContent>
-                </Popover>
-              </SidebarMenuItem>
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-
-        <SidebarSeparator />
-
-        {/* Organizations */}
-        <SidebarGroup>
-          <SidebarGroupLabel>Organizations</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              <SidebarMenuItem>
-                <SidebarMenuButton asChild isActive={isActive("/organizations")} tooltip="Organizations">
-                  <Link href="/organizations">
-                    <Building2 className="h-4 w-4" />
-                    <span>Organizations</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-
-        <SidebarSeparator />
-
         {/* Dashboard */}
         <SidebarGroup>
           <SidebarGroupLabel>Dashboard</SidebarGroupLabel>
@@ -333,6 +227,14 @@ export function CybersecuritySidebar({ ...props }: React.ComponentProps<typeof S
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild isActive={isActive("/mobile-scan")} tooltip="Mobile Scan">
+                  <Link href="/mobile-scan">
+                    <Smartphone className="h-4 w-4" />
+                    <span>Mobile Scan</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
@@ -365,6 +267,25 @@ export function CybersecuritySidebar({ ...props }: React.ComponentProps<typeof S
                   <Link href="/reports">
                     <FileBarChart className="h-4 w-4" />
                     <span>Reports</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        <SidebarSeparator />
+
+        {/* Account — subscription/billing (org is auto + hidden, so no org admin here) */}
+        <SidebarGroup>
+          <SidebarGroupLabel>Account</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild isActive={isActive("/subscription")} tooltip="Subscription">
+                  <Link href="/subscription">
+                    <CreditCard className="h-4 w-4" />
+                    <span>Subscription</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>

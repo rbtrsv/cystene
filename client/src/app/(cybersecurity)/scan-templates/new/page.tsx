@@ -9,11 +9,20 @@
  * Backend: POST /cybersecurity/scan-templates/
  */
 
+import { useEffect, useState } from 'react';
 import { useForm } from '@tanstack/react-form';
 import { useRouter } from 'next/navigation';
 import { useScanTemplates } from '@/modules/cybersecurity/hooks/execution/use-scan-templates';
+import { useScanTargets } from '@/modules/cybersecurity/hooks/infrastructure/use-scan-targets';
 import { useOrganizations } from '@/modules/accounts/hooks/use-organizations';
-import { CreateScanTemplateSchema } from '@/modules/cybersecurity/schemas/execution/scan-templates.schemas';
+import {
+  CreateScanTemplateSchema,
+  SCAN_TYPE_GROUPS,
+  SCAN_TYPE_LABELS,
+  SCAN_TYPE_DESCRIPTIONS,
+  SCAN_TYPE_NEEDS_CREDENTIAL,
+  SCAN_TYPE_NEEDS_CONSENT,
+} from '@/modules/cybersecurity/schemas/execution/scan-templates.schemas';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/modules/shadcnui/components/ui/card';
 import { Button } from '@/modules/shadcnui/components/ui/button';
 import { Input } from '@/modules/shadcnui/components/ui/input';
@@ -22,13 +31,25 @@ import { Textarea } from '@/modules/shadcnui/components/ui/textarea';
 import { Alert, AlertDescription } from '@/modules/shadcnui/components/ui/alert';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/modules/shadcnui/components/ui/select';
 import { Checkbox } from '@/modules/shadcnui/components/ui/checkbox';
-import { Loader2, ArrowLeft } from 'lucide-react';
+import { Badge } from '@/modules/shadcnui/components/ui/badge';
+import { Popover, PopoverContent, PopoverTrigger } from '@/modules/shadcnui/components/ui/popover';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/modules/shadcnui/components/ui/command';
+import { Loader2, ArrowLeft, ChevronsUpDown, Check } from 'lucide-react';
 import Link from 'next/link';
 
 export default function CreateScanTemplatePage() {
   const router = useRouter();
   const { activeOrganization } = useOrganizations();
   const { createScanTemplate, error: storeError } = useScanTemplates();
+  const { scanTargets, fetchScanTargets } = useScanTargets();
+
+  // Inline FK picker open state (Popover + Command, finpy convention).
+  const [targetOpen, setTargetOpen] = useState(false);
+
+  // Load targets for the FK picker (providers don't auto-fetch).
+  useEffect(() => {
+    if (activeOrganization) fetchScanTargets();
+  }, [activeOrganization]);
 
   const form = useForm({
     defaultValues: {
@@ -117,23 +138,47 @@ export default function CreateScanTemplatePage() {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {/* Target ID */}
+              {/* Target — pick by name (inline Popover + Command, finpy pattern) */}
               <form.Field name="target_id">
-                {(field) => (
-                  <div className="space-y-2">
-                    <Label htmlFor={field.name}>Target ID *</Label>
-                    <Input
-                      id={field.name}
-                      name={field.name}
-                      type="number"
-                      value={field.state.value}
-                      onBlur={field.handleBlur}
-                      onChange={(e) => field.handleChange(Number(e.target.value))}
-                      placeholder="1"
-                      disabled={form.state.isSubmitting}
-                    />
-                  </div>
-                )}
+                {(field) => {
+                  const selectedName = field.state.value
+                    ? (scanTargets.find((t) => t.id === field.state.value)?.name || `Target #${field.state.value}`)
+                    : null;
+                  return (
+                    <div className="space-y-2">
+                      <Label htmlFor={field.name}>Target *</Label>
+                      <Popover open={targetOpen} onOpenChange={setTargetOpen}>
+                        <PopoverTrigger asChild>
+                          <Button type="button" variant="outline" role="combobox" aria-expanded={targetOpen}
+                            className="w-full justify-between font-normal" disabled={form.state.isSubmitting}>
+                            {selectedName || 'Select a scan target'}
+                            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+                          <Command>
+                            <CommandInput placeholder="Search targets..." />
+                            <CommandList>
+                              <CommandEmpty className="py-3 px-2 text-sm">
+                                No scan targets yet.{' '}
+                                <Link href="/scan-targets/new" className="underline">Create one</Link>
+                              </CommandEmpty>
+                              <CommandGroup>
+                                {scanTargets.map((t) => (
+                                  <CommandItem key={t.id} value={t.name}
+                                    onSelect={() => { field.handleChange(t.id); setTargetOpen(false); }}>
+                                    <span className="truncate">{t.name}</span>
+                                    {field.state.value === t.id && <Check className="ml-auto h-4 w-4" />}
+                                  </CommandItem>
+                                ))}
+                              </CommandGroup>
+                            </CommandList>
+                          </Command>
+                        </PopoverContent>
+                      </Popover>
+                    </div>
+                  );
+                }}
               </form.Field>
 
               {/* Name */}
@@ -180,33 +225,62 @@ export default function CreateScanTemplatePage() {
           <CardHeader>
             <CardTitle>Scan Types</CardTitle>
             <CardDescription>
-              Which scanners to run (comma-separated)
+              Pick which scanners to run
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              {/* Scan Types */}
-              <form.Field name="scan_types">
-                {(field) => (
-                  <div className="space-y-2">
-                    <Label htmlFor={field.name}>Scan Types *</Label>
-                    <Input
-                      id={field.name}
-                      name={field.name}
-                      value={field.state.value}
-                      onBlur={field.handleBlur}
-                      onChange={(e) => field.handleChange(e.target.value)}
-                      placeholder="port_scan,dns_enum,ssl_check"
-                      disabled={form.state.isSubmitting}
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      Available types: port_scan, dns_enum, ssl_check, web_scan, vuln_scan, api_scan,
-                      active_web_scan, password_audit, baas_scan, secret_scan, host_audit, cloud_audit, ad_audit, mobile_scan
-                    </p>
+            {/* Scan types — grouped checkboxes (value is the comma-separated string) */}
+            <form.Field name="scan_types">
+              {(field) => {
+                const selected = new Set(field.state.value.split(',').map((s) => s.trim()).filter(Boolean));
+                const emit = (next: Set<string>) => field.handleChange(Array.from(next).join(','));
+                const toggle = (type: string) => {
+                  const next = new Set(selected);
+                  if (next.has(type)) next.delete(type); else next.add(type);
+                  emit(next);
+                };
+                const toggleGroup = (types: string[], allSelected: boolean) => {
+                  const next = new Set(selected);
+                  types.forEach((t) => (allSelected ? next.delete(t) : next.add(t)));
+                  emit(next);
+                };
+                return (
+                  <div className="space-y-4">
+                    {SCAN_TYPE_GROUPS.map((group) => {
+                      const allSelected = group.types.every((t) => selected.has(t));
+                      return (
+                        <div key={group.label} className="space-y-2">
+                          <div className="flex items-center justify-between">
+                            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{group.label}</p>
+                            <Button type="button" variant="ghost" size="sm" className="h-auto py-1 text-xs"
+                              disabled={form.state.isSubmitting} onClick={() => toggleGroup(group.types, allSelected)}>
+                              {allSelected ? 'Clear all' : 'Select all'}
+                            </Button>
+                          </div>
+                          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                            {group.types.map((type) => (
+                              <label key={type} className="flex cursor-pointer items-start gap-2 rounded border p-2 hover:bg-muted/50">
+                                <Checkbox checked={selected.has(type)} onCheckedChange={() => toggle(type)} disabled={form.state.isSubmitting} className="mt-0.5" />
+                                <div className="flex-1 space-y-0.5">
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-sm">{SCAN_TYPE_LABELS[type] ?? type}</span>
+                                    {SCAN_TYPE_NEEDS_CREDENTIAL.has(type) && <Badge variant="outline" className="text-xs font-normal">needs credential</Badge>}
+                                    {SCAN_TYPE_NEEDS_CONSENT.has(type) && <Badge variant="outline" className="text-xs font-normal">needs consent</Badge>}
+                                  </div>
+                                  {SCAN_TYPE_DESCRIPTIONS[type] && (
+                                    <p className="text-xs text-muted-foreground">{SCAN_TYPE_DESCRIPTIONS[type]}</p>
+                                  )}
+                                </div>
+                              </label>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
-                )}
-              </form.Field>
-            </div>
+                );
+              }}
+            </form.Field>
           </CardContent>
         </Card>
 

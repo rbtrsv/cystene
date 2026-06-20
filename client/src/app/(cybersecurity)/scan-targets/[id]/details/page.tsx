@@ -14,6 +14,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useScanTargets } from '@/modules/cybersecurity/hooks/infrastructure/use-scan-targets';
+import { useInfrastructures } from '@/modules/cybersecurity/hooks/infrastructure/use-infrastructure';
 import { useOrganizations } from '@/modules/accounts/hooks/use-organizations';
 import {
   getTargetTypeLabel,
@@ -28,8 +29,10 @@ import { Textarea } from '@/modules/shadcnui/components/ui/textarea';
 import { Alert, AlertDescription } from '@/modules/shadcnui/components/ui/alert';
 import { Badge } from '@/modules/shadcnui/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/modules/shadcnui/components/ui/select';
+import { Popover, PopoverContent, PopoverTrigger } from '@/modules/shadcnui/components/ui/popover';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/modules/shadcnui/components/ui/command';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/modules/shadcnui/components/ui/tabs';
-import { Loader2, ArrowLeft, Crosshair, Trash2, ShieldCheck } from 'lucide-react';
+import { Loader2, ArrowLeft, Crosshair, Trash2, ShieldCheck, ChevronsUpDown, Check, X } from 'lucide-react';
 import Link from 'next/link';
 
 export default function ScanTargetDetailsPage() {
@@ -45,6 +48,11 @@ export default function ScanTargetDetailsPage() {
     isLoading,
     error: storeError,
   } = useScanTargets();
+  const { infrastructures, fetchInfrastructures } = useInfrastructures();
+  const [infraOpen, setInfraOpen] = useState(false);
+  useEffect(() => {
+    if (activeOrganization) fetchInfrastructures();
+  }, [activeOrganization]);
 
   // Local state for the fetched item
   const [item, setItem] = useState<ScanTarget | null>(null);
@@ -335,14 +343,44 @@ export default function ScanTargetDetailsPage() {
                 <Input value={editTargetValue} onChange={(e) => setEditTargetValue(e.target.value)} disabled={isSaving} />
               </div>
               <div className="space-y-2">
-                <Label>Infrastructure ID</Label>
-                <Input
-                  type="number"
-                  value={editInfrastructureId}
-                  onChange={(e) => setEditInfrastructureId(e.target.value)}
-                  placeholder="Link to an infrastructure item (optional)"
-                  disabled={isSaving}
-                />
+                <Label>Infrastructure</Label>
+                {(() => {
+                  const current = editInfrastructureId ? Number(editInfrastructureId) : null;
+                  const selectedName = current
+                    ? (infrastructures.find((i) => i.id === current)?.name || `Infrastructure #${current}`)
+                    : null;
+                  return (
+                    <Popover open={infraOpen} onOpenChange={setInfraOpen}>
+                      <PopoverTrigger asChild>
+                        <Button type="button" variant="outline" role="combobox" aria-expanded={infraOpen}
+                          className="w-full justify-between font-normal" disabled={isSaving}>
+                          <span className={selectedName ? '' : 'text-muted-foreground'}>{selectedName || 'Link to an infrastructure item (optional)'}</span>
+                          <div className="flex items-center gap-1">
+                            {current && <X className="h-4 w-4 opacity-50 hover:opacity-100" onClick={(e) => { e.stopPropagation(); setEditInfrastructureId(''); }} />}
+                            <ChevronsUpDown className="h-4 w-4 shrink-0 opacity-50" />
+                          </div>
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+                        <Command>
+                          <CommandInput placeholder="Search infrastructure..." />
+                          <CommandList>
+                            <CommandEmpty>No infrastructure items yet.</CommandEmpty>
+                            <CommandGroup>
+                              {infrastructures.map((i) => (
+                                <CommandItem key={i.id} value={i.name}
+                                  onSelect={() => { setEditInfrastructureId(String(i.id)); setInfraOpen(false); }}>
+                                  <span className="truncate">{i.name}</span>
+                                  {current === i.id && <Check className="ml-auto h-4 w-4" />}
+                                </CommandItem>
+                              ))}
+                            </CommandGroup>
+                          </CommandList>
+                        </Command>
+                      </PopoverContent>
+                    </Popover>
+                  );
+                })()}
               </div>
               <div className="space-y-2">
                 <Label>Tags</Label>

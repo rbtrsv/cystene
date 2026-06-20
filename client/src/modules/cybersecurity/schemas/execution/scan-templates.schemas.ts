@@ -161,6 +161,48 @@ export const getScanTypeLabel = (type: string): string => {
   return SCAN_TYPE_LABELS[type] || type;
 };
 
+/**
+ * Scanner grouping + prerequisites — domain data for the scan-type pickers.
+ * Mirrors the backend `scanners/{external,internal,upload}/` folders. Lives here
+ * (next to SCAN_TYPE_LABELS) so the template forms render their checkboxes inline
+ * without a shared component, while the grouping data stays single-sourced.
+ */
+export const SCAN_TYPE_GROUPS: { label: string; types: string[] }[] = [
+  {
+    label: 'External — no credentials',
+    types: ['port_scan', 'dns_enum', 'ssl_check', 'web_scan', 'vuln_scan', 'api_scan', 'active_web_scan', 'password_audit', 'baas_scan', 'secret_scan'],
+  },
+  { label: 'Internal — needs a credential', types: ['host_audit', 'cloud_audit', 'ad_audit'] },
+  // mobile_scan is intentionally NOT here — it needs an APK file, not a network target,
+  // so it lives in its own dedicated upload flow, not the target-based template checkboxes.
+];
+
+/** Scanners that need a Credential / explicit consent — surfaced inline in the picker. */
+export const SCAN_TYPE_NEEDS_CREDENTIAL = new Set(['host_audit', 'cloud_audit', 'ad_audit']);
+export const SCAN_TYPE_NEEDS_CONSENT = new Set(['active_web_scan']);
+
+/**
+ * One-line description of what each scanner does — shown under its checkbox so the user
+ * knows what they're selecting. Sourced from the scanner definitions
+ * (support/cystene/domain-architecture.md §4.2), not invented.
+ */
+export const SCAN_TYPE_DESCRIPTIONS: Record<string, string> = {
+  port_scan: 'TCP connect scan + banner grabbing — finds open ports and identifies services.',
+  dns_enum: 'DNS records (A/MX/NS/TXT), subdomain discovery via crt.sh, SPF/DKIM/DMARC checks.',
+  ssl_check: 'Certificate validity/expiry, cipher suites, TLS versions, and chain completeness.',
+  web_scan: 'Security headers (CSP/HSTS), server disclosure, HTTPS redirect, exposed files (.git/.env).',
+  vuln_scan: 'Matches detected service versions against known CVEs.',
+  api_scan: 'JWT weaknesses, GraphQL introspection, CORS misconfig, rate-limiting, exposed OpenAPI/Swagger.',
+  active_web_scan: 'Detection-only probes for SQLi, XSS, command injection, LFI, open redirect (safe payloads).',
+  password_audit: 'Brute-force + default/weak credentials on detected services (SSH, FTP, HTTP login).',
+  baas_scan: 'Supabase/Firebase: detects the public anon key + tables readable without RLS (data exposure).',
+  secret_scan: 'Greps JS bundles + source maps for hardcoded API keys and secrets.',
+  host_audit: 'Via SSH: SUID binaries, weak permissions, cron, sudo config, exposed credentials.',
+  cloud_audit: 'Via cloud API keys: S3 exposure, IAM, security groups, metadata service, unencrypted storage.',
+  ad_audit: 'Via domain credentials: Kerberoasting, AS-REP roasting, delegation, stale/privileged accounts.',
+  mobile_scan: 'APK analysis: hardcoded credentials, insecure storage, missing SSL pinning, exported components.',
+};
+
 /** Human-readable labels for scan speeds */
 export const SCAN_SPEED_LABELS: Record<ScanSpeed, string> = {
   slow: 'Slow (Stealth)',

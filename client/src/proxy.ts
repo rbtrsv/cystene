@@ -5,9 +5,9 @@ import { NextRequest, NextResponse } from 'next/server';
  * Must match the names from token.client.utils.ts
  */
 const COOKIE_NAMES = {
-  ACCESS_TOKEN: 'nudgio_access_token',
-  REFRESH_TOKEN: 'nudgio_refresh_token',
-  TOKEN_EXPIRY: 'nudgio_token_expiry',
+  ACCESS_TOKEN: 'cystene_access_token',
+  REFRESH_TOKEN: 'cystene_refresh_token',
+  TOKEN_EXPIRY: 'cystene_token_expiry',
 };
 
 /**
