@@ -144,3 +144,15 @@ export const REPORT_ENDPOINTS = {
   DELETE: (id: number) => `${API_BASE_URL}/cybersecurity/reports/${id}`,
   EXPORT: (id: number) => `${API_BASE_URL}/cybersecurity/reports/${id}/export`,
 };
+
+/**
+ * API endpoints for feedback (cross-cutting: in-app bug/feature reports)
+ * Backend: server/apps/cybersecurity/subrouters/feedback_subrouter.py
+ */
+export const FEEDBACK_ENDPOINTS = {
+  LIST: `${API_BASE_URL}/cybersecurity/feedback/`,
+  DETAIL: (id: number) => `${API_BASE_URL}/cybersecurity/feedback/${id}`,
+  CREATE: `${API_BASE_URL}/cybersecurity/feedback/`,
+  UPDATE: (id: number) => `${API_BASE_URL}/cybersecurity/feedback/${id}`,
+  DELETE: (id: number) => `${API_BASE_URL}/cybersecurity/feedback/${id}`,
+};

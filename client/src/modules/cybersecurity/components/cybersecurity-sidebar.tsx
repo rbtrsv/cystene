@@ -19,6 +19,7 @@ import {
   LayoutDashboard,
   CreditCard,
   Smartphone,
+  MessageSquare,
 } from "lucide-react"
 import { usePathname, useRouter } from "next/navigation"
 import Link from "next/link"
@@ -290,6 +291,14 @@ export function CybersecuritySidebar({ ...props }: React.ComponentProps<typeof S
                   <Link href="/subscription">
                     <CreditCard className="h-4 w-4" />
                     <span>Subscription</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild isActive={isActive("/feedback")} tooltip="Feedback">
+                  <Link href="/feedback">
+                    <MessageSquare className="h-4 w-4" />
+                    <span>Feedback</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>

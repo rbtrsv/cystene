@@ -32,7 +32,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Popover, PopoverContent, PopoverTrigger } from '@/modules/shadcnui/components/ui/popover';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/modules/shadcnui/components/ui/command';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/modules/shadcnui/components/ui/tabs';
-import { Loader2, ArrowLeft, Crosshair, Trash2, ShieldCheck, ChevronsUpDown, Check, X } from 'lucide-react';
+import { Loader2, ArrowLeft, Crosshair, Trash2, ShieldCheck, ChevronsUpDown, Check, X, FileBarChart } from 'lucide-react';
 import Link from 'next/link';
 
 export default function ScanTargetDetailsPage() {
@@ -171,14 +171,23 @@ export default function ScanTargetDetailsPage() {
             Back to Scan Targets
           </Button>
         </Link>
-        <div className="flex items-center gap-3">
-          <Crosshair className="h-8 w-8 text-muted-foreground" />
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight">{item.name}</h1>
-            <p className="text-muted-foreground">
-              {getTargetTypeLabel(item.target_type)} &middot; {item.target_value}
-            </p>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Crosshair className="h-8 w-8 text-muted-foreground" />
+            <div>
+              <h1 className="text-3xl font-bold tracking-tight">{item.name}</h1>
+              <p className="text-muted-foreground">
+                {getTargetTypeLabel(item.target_type)} &middot; {item.target_value}
+              </p>
+            </div>
           </div>
+          {/* Target-level entry-point to the in-UI security reports. */}
+          <Link href="/reports">
+            <Button variant="outline">
+              <FileBarChart className="mr-2 h-4 w-4" />
+              View Reports
+            </Button>
+          </Link>
         </div>
       </div>
 

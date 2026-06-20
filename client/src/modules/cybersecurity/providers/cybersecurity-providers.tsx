@@ -10,6 +10,7 @@ import { ScanJobProvider } from './execution/scan-job-provider';
 import { FindingProvider } from './discovery/finding-provider';
 import { AssetProvider } from './discovery/asset-provider';
 import { ReportProvider } from './discovery/report-provider';
+import { FeedbackProvider } from './feedback-provider';
 
 /**
  * CybersecurityProviders props
@@ -38,7 +39,9 @@ export function CybersecurityProviders({ children }: CybersecurityProvidersProps
                 <FindingProvider initialFetch={false}>
                   <AssetProvider initialFetch={false}>
                     <ReportProvider initialFetch={false}>
-                      {children}
+                      <FeedbackProvider initialFetch={false}>
+                        {children}
+                      </FeedbackProvider>
                     </ReportProvider>
                   </AssetProvider>
                 </FindingProvider>

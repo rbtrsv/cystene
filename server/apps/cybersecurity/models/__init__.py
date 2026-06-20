@@ -32,12 +32,18 @@ from .discovery_models import (
     Report,
 )
 
+# Feedback (cross-cutting: in-app bug/feature reports, not a security entity)
+from .feedback_models import CybersecurityFeedback
+
 __all__ = [
     # Mixins
     "BaseMixin",
 
     # Audit
     "CybersecurityAuditLog",
+
+    # Feedback
+    "CybersecurityFeedback",
 
     # Infrastructure domain
     "Infrastructure",

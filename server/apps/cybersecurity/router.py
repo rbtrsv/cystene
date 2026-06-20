@@ -29,6 +29,9 @@ from .subrouters.discovery_subrouters.asset_subrouter import router as asset_rou
 from .subrouters.discovery_subrouters.report_subrouter import router as report_router
 from .subrouters.discovery_subrouters.dashboard_subrouter import router as dashboard_router
 
+# Cross-cutting subrouters (not a domain)
+from .subrouters.shared.feedback_subrouter import router as feedback_router
+
 
 router = APIRouter(prefix="/cybersecurity")
 
@@ -54,5 +57,8 @@ gated.include_router(finding_router, prefix="/findings")
 gated.include_router(asset_router, prefix="/assets")
 gated.include_router(report_router, prefix="/reports")
 gated.include_router(dashboard_router, prefix="/dashboard")
+
+# Cross-cutting — feedback (any active-subscription user, incl. FREE; access is owner/admin)
+gated.include_router(feedback_router, prefix="/feedback")
 
 router.include_router(gated)

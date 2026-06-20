@@ -117,7 +117,50 @@ def require_organization_role(roles: Union[str, List[str]]):
             )
             
         return membership.organization
-    
+
+    return dependency
+
+
+def require_user_role(roles: Union[str, List[str]]):
+    """
+    FastAPI dependency factory to check the user's PLATFORM-level role.
+
+    Distinct from `require_organization_role` (which checks the per-org membership role
+    OWNER/ADMIN/EDITOR/VIEWER on OrganizationMember.role): this checks the platform-wide
+    role on `User.role` (ADMIN/MEMBER per the UserRole enum in auth_schemas.py) — used for
+    cross-org admin actions like feedback triage.
+
+    Args:
+        roles: Role or list of roles allowed (e.g. "ADMIN" or ["ADMIN", "OWNER"])
+
+    Returns:
+        FastAPI dependency function returning the authenticated User
+
+    Usage:
+        @router.put('/feedback/{feedback_id}')
+        async def update_feedback(
+            feedback_id: int,
+            user: User = Depends(require_user_role('ADMIN')),
+        ):
+    """
+    if isinstance(roles, str):
+        roles = [roles]
+    # Normalize once at factory time. Why case-insensitive: User.role is a free-form
+    # String(50) (no PG enum), and legacy rows exist with mixed casing (e.g. 'user'
+    # lowercase on system accounts vs the 'MEMBER' uppercase default).
+    allowed_roles = {r.upper() for r in roles}
+
+    async def dependency(
+        user: User = Depends(get_current_user),
+    ) -> User:
+        if (user.role or "").upper() not in allowed_roles:
+            role_list = ", ".join(sorted(allowed_roles))
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"You need one of these platform roles: {role_list}"
+            )
+        return user
+
     return dependency
 
 

@@ -13,16 +13,23 @@
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useReports } from '@/modules/cybersecurity/hooks/discovery/use-reports';
+import { useFindings } from '@/modules/cybersecurity/hooks/discovery/use-findings';
 import {
   getReportTypeLabel,
   getReportFormatLabel,
   type Report,
 } from '@/modules/cybersecurity/schemas/discovery/reports.schemas';
+import {
+  SEVERITY_COLORS,
+  getSeverityLabel,
+  SeverityEnum,
+} from '@/modules/cybersecurity/schemas/discovery/findings.schemas';
+import { buildAiFixExport } from '@/modules/cybersecurity/utils/report-ai-export.utils';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/modules/shadcnui/components/ui/card';
 import { Button } from '@/modules/shadcnui/components/ui/button';
 import { Input } from '@/modules/shadcnui/components/ui/input';
 import { Alert, AlertDescription } from '@/modules/shadcnui/components/ui/alert';
-import { Loader2, ArrowLeft, FileText, Trash2 } from 'lucide-react';
+import { Loader2, ArrowLeft, FileText, Trash2, Sparkles, Check, ExternalLink } from 'lucide-react';
 import Link from 'next/link';
 import { ExportButton } from '@/modules/cybersecurity/components/shared/export-button';
 import { REPORT_ENDPOINTS } from '@/modules/cybersecurity/utils/api.endpoints';
@@ -37,11 +44,16 @@ export default function ReportDetailsPage() {
     isLoading,
     error: storeError,
   } = useReports();
+  // Findings rendered in-UI come from the report's scan job (append-only, so this IS the snapshot).
+  const { findings, fetchFindings } = useFindings();
 
   // Local state for the fetched item
   const [item, setItem] = useState<Report | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState('');
+  // Transient "copied" feedback for the per-finding "Copy AI Fix" and the report-wide "Export for AI".
+  const [aiExported, setAiExported] = useState(false);
+  const [copiedScriptId, setCopiedScriptId] = useState<number | null>(null);
 
   // Fetch item on mount
   useEffect(() => {
@@ -54,6 +66,39 @@ export default function ReportDetailsPage() {
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
+
+  // Once the report is loaded, pull its scan job's findings for the in-UI breakdown.
+  // Why guard on scan_job_id: the findings endpoint filters by scan_job_id; a target-level
+  // report (no scan_job_id) can't be filtered, so we skip the list and show a note instead.
+  useEffect(() => {
+    if (item?.scan_job_id) {
+      fetchFindings({ scan_job_id: item.scan_job_id });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [item?.scan_job_id]);
+
+  // Copy a single finding's scanner remediation script to the clipboard (assetmanager pattern).
+  const handleCopyScript = (findingId: number, script: string) => {
+    navigator.clipboard.writeText(script);
+    setCopiedScriptId(findingId);
+    setTimeout(() => setCopiedScriptId(null), 2000);
+  };
+
+  // Build one combined AI-fix markdown for ALL findings, copy it + offer a .md download.
+  const handleAiExport = () => {
+    if (!item) return;
+    const markdown = buildAiFixExport(item.name, findings);
+    navigator.clipboard.writeText(markdown);
+    const blob = new Blob([markdown], { type: 'text/markdown' });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = `${item.name}-ai-fixes.md`;
+    anchor.click();
+    URL.revokeObjectURL(url);
+    setAiExported(true);
+    setTimeout(() => setAiExported(false), 2000);
+  };
 
   // Handle delete
   const handleDelete = async () => {
@@ -107,12 +152,24 @@ export default function ReportDetailsPage() {
               </p>
             </div>
           </div>
-          {/* Export as branded PDF */}
-          <ExportButton
-            exportUrl={REPORT_ENDPOINTS.EXPORT(id)}
-            fileName={item.name}
-            pdfOnly
-          />
+          <div className="flex items-center gap-2">
+            {/* Export every finding as one AI-fix prompt (copy + .md download) */}
+            {item.scan_job_id && findings.length > 0 && (
+              <Button variant="outline" onClick={handleAiExport}>
+                {aiExported ? (
+                  <><Check className="mr-2 h-4 w-4" /> Copied</>
+                ) : (
+                  <><Sparkles className="mr-2 h-4 w-4" /> Export for AI</>
+                )}
+              </Button>
+            )}
+            {/* Export as branded PDF */}
+            <ExportButton
+              exportUrl={REPORT_ENDPOINTS.EXPORT(id)}
+              fileName={item.name}
+              pdfOnly
+            />
+          </div>
         </div>
       </div>
 
@@ -153,39 +210,109 @@ export default function ReportDetailsPage() {
         </Card>
       )}
 
-      {/* Card 3: Statistics */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Statistics</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <div>
-            <p className="text-sm text-muted-foreground mb-1">Total Findings</p>
-            <p className="font-medium">{item.total_findings}</p>
+      {/* Severity summary tiles — counts come from the report record (reliable, snapshot). */}
+      <div className="grid grid-cols-3 gap-3 sm:grid-cols-6">
+        <div className="rounded-lg border p-4">
+          <p className="text-xs text-muted-foreground">Total</p>
+          <p className="text-2xl font-bold">{item.total_findings}</p>
+        </div>
+        {([
+          ['Critical', item.critical_count, 'text-red-600'],
+          ['High', item.high_count, 'text-orange-500'],
+          ['Medium', item.medium_count, 'text-yellow-500'],
+          ['Low', item.low_count, 'text-blue-400'],
+          ['Info', item.info_count, 'text-gray-400'],
+        ] as const).map(([label, count, color]) => (
+          <div key={label} className="rounded-lg border p-4">
+            <p className="text-xs text-muted-foreground">{label}</p>
+            <p className={`text-2xl font-bold ${color}`}>{count}</p>
           </div>
-          <div>
-            <p className="text-sm text-muted-foreground mb-2">Severity Breakdown</p>
-            <div className="flex flex-wrap gap-2">
-              <span className="inline-block px-2 py-0.5 rounded text-xs font-medium bg-red-600 text-white">Critical: {item.critical_count}</span>
-              <span className="inline-block px-2 py-0.5 rounded text-xs font-medium bg-orange-500 text-white">High: {item.high_count}</span>
-              <span className="inline-block px-2 py-0.5 rounded text-xs font-medium bg-yellow-500 text-black">Medium: {item.medium_count}</span>
-              <span className="inline-block px-2 py-0.5 rounded text-xs font-medium bg-blue-400 text-white">Low: {item.low_count}</span>
-              <span className="inline-block px-2 py-0.5 rounded text-xs font-medium bg-gray-400 text-white">Info: {item.info_count}</span>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+        ))}
+      </div>
 
-      {/* Card 4: Content (only if content present) */}
-      {item.content && (
+      {/* Findings breakdown — grouped by severity (the in-UI report body). */}
+      {!item.scan_job_id ? (
+        // Target-level report: the findings endpoint can only filter by scan_job_id, so there is
+        // no single scan to render. Counts above still apply; per-scan reports show the breakdown.
+        <Alert>
+          <AlertDescription>
+            This report aggregates multiple scans. Open a per-scan report to see the finding breakdown here.
+          </AlertDescription>
+        </Alert>
+      ) : findings.length === 0 ? (
         <Card>
-          <CardHeader>
-            <CardTitle>Content</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <pre className="bg-muted p-4 rounded overflow-x-auto max-h-96"><code>{item.content}</code></pre>
+          <CardContent className="py-8 text-center text-muted-foreground">
+            No findings recorded for this scan.
           </CardContent>
         </Card>
+      ) : (
+        <div className="space-y-6">
+          {/* Iterate severities in canonical order (critical → info); skip empty groups. */}
+          {SeverityEnum.options.map((sev) => {
+            const group = findings.filter((f) => f.severity === sev);
+            if (group.length === 0) return null;
+            return (
+              <div key={sev} className="space-y-3">
+                <h2 className="text-lg font-semibold">
+                  {getSeverityLabel(sev)} ({group.length})
+                </h2>
+                {group.map((f) => (
+                  <Card key={f.id}>
+                    <CardHeader>
+                      <CardTitle className="flex items-start justify-between gap-2 text-base">
+                        <span>{f.title}</span>
+                        <span className={`shrink-0 inline-block rounded px-2 py-0.5 text-xs font-medium ${SEVERITY_COLORS[f.severity]}`}>
+                          {getSeverityLabel(f.severity)}
+                        </span>
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-3 text-sm">
+                      <p>{f.description}</p>
+
+                      {f.evidence && (
+                        <div>
+                          <p className="mb-1 text-xs text-muted-foreground">Evidence</p>
+                          <pre className="overflow-x-auto whitespace-pre-wrap rounded bg-muted p-3 text-xs"><code>{f.evidence}</code></pre>
+                        </div>
+                      )}
+
+                      {f.remediation && (
+                        <div>
+                          <p className="mb-1 text-xs text-muted-foreground">Remediation</p>
+                          <p>{f.remediation}</p>
+                        </div>
+                      )}
+
+                      {f.remediation_script && (
+                        <div>
+                          <p className="mb-1 text-xs text-muted-foreground">Fix command</p>
+                          <pre className="overflow-x-auto rounded bg-muted p-3 text-xs"><code>{f.remediation_script}</code></pre>
+                        </div>
+                      )}
+
+                      <div className="flex items-center gap-2 pt-1">
+                        {f.ai_fix_prompt && (
+                          <Button variant="outline" size="sm" onClick={() => handleCopyScript(f.id, f.ai_fix_prompt!)}>
+                            {copiedScriptId === f.id ? (
+                              <><Check className="mr-2 h-3.5 w-3.5" /> Copied</>
+                            ) : (
+                              <><Sparkles className="mr-2 h-3.5 w-3.5" /> Copy AI Fix</>
+                            )}
+                          </Button>
+                        )}
+                        <Link href={`/findings/${f.id}`}>
+                          <Button variant="ghost" size="sm">
+                            <ExternalLink className="mr-2 h-3.5 w-3.5" /> Details
+                          </Button>
+                        </Link>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            );
+          })}
+        </div>
       )}
 
       {/* Delete section */}
