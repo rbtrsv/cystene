@@ -1,5 +1,15 @@
 'use client';
 
+/**
+ * Organizations list — SECONDARY / ADVANCED (not the primary funnel).
+ *
+ * The product runs on an auto-created, hidden personal workspace (one org per user,
+ * created at registration) + a direct `/subscription` page, so a solo user never has
+ * to touch the org concept. These org-management pages are kept and surfaced under the
+ * "Account" group in the sidebar (not the main nav) for a future multi-org / team
+ * evolution of the product.
+ */
+
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { useOrganizations } from '@/modules/accounts/hooks/use-organizations';
@@ -228,8 +238,13 @@ export default function OrganizationsPage() {
                       className="w-full"
                       onClick={(e) => {
                         e.stopPropagation();
+                        // Single canonical billing page (Account → Subscription). We set the
+                        // active org first so the (future multi-org) billing page bills the
+                        // right org. The legacy per-org /organizations/[id]/subscription page
+                        // is kept latent but intentionally no longer linked, to avoid two
+                        // confusingly-different subscription UIs.
                         setActiveOrganization(org.id);
-                        router.push(`/organizations/${org.id}/subscription`);
+                        router.push('/subscription');
                       }}
                     >
                       Manage Subscription

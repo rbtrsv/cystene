@@ -21,10 +21,14 @@ find /data/coolify -name "docker-compose.yml" 2>/dev/null
 
 # Stripe
 stripe login
-stripe listen --forward-to localhost:8000/api/accounts/subscriptions/webhook
-stripe listen --forward-to localhost:8000/accounts/subscriptions/webhook
+# Server runs on :8003, webhook path is /accounts/subscriptions/webhook (NOT 8000, NOT /api/).
+stripe listen --forward-to localhost:8003/accounts/subscriptions/webhook
+# You juggle finpy/nexotype/cystene (different Stripe accounts). To force the Cystene
+# account per-command (no stripe login switching), pass the cystene STRIPE_SECRET_KEY:
+#   stripe listen --api-key <cystene sk_test_...> --forward-to localhost:8003/accounts/subscriptions/webhook
+# Then put the printed `whsec_...` into server/.env STRIPE_WEBHOOK_SECRET and restart the server.
+# Re-sync an EXISTING subscription into the DB (no new checkout): stripe events resend <event_id>
 stripe trigger customer.subscription.updated
-Your webhook signing secret is whsec_cb9d5ac886314d2bee6ebe4422830d3c9ac6fd0352ef389496d02dd5f2d26b5f
 
 # Stripe — Cystene (acct_1TFIscCgafRZki0X, port 8003)
 # Must use --api-key to target Cystene sandbox specifically.

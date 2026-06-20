@@ -276,7 +276,11 @@ export function CybersecuritySidebar({ ...props }: React.ComponentProps<typeof S
 
         <SidebarSeparator />
 
-        {/* Account — subscription/billing (org is auto + hidden, so no org admin here) */}
+        {/* Account — direct billing only.
+            Subscription is the single, canonical billing page. The organization concept
+            is intentionally NOT in the nav: solo users run on an auto-created hidden
+            personal workspace. The /organizations/* pages are kept as latent files
+            (reachable by URL) for a future multi-org / team evolution, but off the funnel. */}
         <SidebarGroup>
           <SidebarGroupLabel>Account</SidebarGroupLabel>
           <SidebarGroupContent>

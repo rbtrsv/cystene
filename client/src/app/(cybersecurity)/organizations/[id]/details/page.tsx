@@ -1,5 +1,13 @@
 'use client';
 
+/**
+ * Organization detail (members, invitations, settings) — SECONDARY / ADVANCED.
+ *
+ * Not on the primary funnel — solo users run on an auto-created hidden personal
+ * workspace. Surfaced under the "Account" group in the sidebar; kept for a future
+ * multi-org / team evolution of the product.
+ */
+
 import { useParams, useSearchParams, useRouter } from 'next/navigation';
 import { useOrganizations } from '@/modules/accounts/hooks/use-organizations';
 import { useOrganizationMembers } from '@/modules/accounts/hooks/use-organization-members';

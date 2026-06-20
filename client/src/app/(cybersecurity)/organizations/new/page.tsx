@@ -1,5 +1,13 @@
 'use client';
 
+/**
+ * Create Organization — SECONDARY / ADVANCED (not the primary funnel).
+ *
+ * Every user already gets an auto-created personal workspace at registration, so this
+ * manual create flow is only for the future multi-org / team scenario. Surfaced under
+ * the "Account" group in the sidebar, kept (not deleted) for that evolution.
+ */
+
 import { useForm } from '@tanstack/react-form';
 import { useRouter } from 'next/navigation';
 

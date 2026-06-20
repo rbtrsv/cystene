@@ -1,5 +1,14 @@
 'use client';
 
+/**
+ * Per-organization subscription — LEGACY / SUPERSEDED.
+ *
+ * The primary billing UI is now the direct `/subscription` page (Stripe-driven, no org
+ * concept for solo users). This per-org page is kept (not deleted) for the future
+ * multi-org / team scenario where billing is scoped to a specific organization.
+ * Reachable from the Organizations area under the "Account" group.
+ */
+
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import { useSubscriptions } from '@/modules/accounts/hooks/use-subscriptions';

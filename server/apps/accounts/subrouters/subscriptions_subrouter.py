@@ -132,9 +132,18 @@ async def get_current_subscription(
         if not subscription:
             return SubscriptionInfoResponse(success=True, data=None)
         
-        # Format subscription data using exact database field names
+        # Format subscription data using exact database field names.
+        # Why stripe_product_id: the frontend matches it against each plan card's
+        # product_id to mark the active plan as "Current" (and its Zod schema requires
+        # the field present) — omitting it broke the parse, so the UI fell back to Free.
+        # Why every stripe_* field: the frontend Zod SubscriptionSchema requires all of
+        # them present (nullable but not missing). Omitting any made the parse fail, so
+        # currentSubscription stayed null and the UI fell back to Free even when active.
         subscription_data = {
             "id": str(subscription.id),
+            "stripe_customer_id": subscription.stripe_customer_id,
+            "stripe_subscription_id": subscription.stripe_subscription_id,
+            "stripe_product_id": subscription.stripe_product_id,
             "plan_name": subscription.plan_name,
             "subscription_status": subscription.subscription_status,
             "start_date": subscription.start_date.isoformat() if subscription.start_date else None,

@@ -403,7 +403,7 @@ export default function ScanTemplateDetailsPage() {
                           <Command>
                             <CommandInput placeholder="Search credentials..." />
                             <CommandList>
-                              <CommandEmpty>No credentials yet.</CommandEmpty>
+                              <CommandEmpty className="py-3 px-2 text-sm">No credentials yet. <Link href="/credentials/new" className="underline">Create one</Link></CommandEmpty>
                               <CommandGroup>
                                 {credentials.map((c) => (
                                   <CommandItem key={c.id} value={c.name}

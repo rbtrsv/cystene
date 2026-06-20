@@ -273,7 +273,16 @@ async def create_customer_portal_session(user_id: int, organization: Organizatio
         if not subscription.stripe_customer_id:
             return {"error": "No Stripe customer found for this organization"}
 
-        # Create portal session (manage subscription, billing, invoices)
+        # ⚠️ SETUP REMINDER (one-time, per Stripe account, in BOTH test + live mode):
+        # The Billing Portal must be configured to allow plan switching, or this portal
+        # only shows "Cancel" — the Upgrade/Downgrade buttons on /subscription would dead-end.
+        # Required portal config: features.subscription_update.enabled = true +
+        # default_allowed_updates=['price'] + the switchable products (Pro + Enterprise).
+        # Configure it from the terminal (curl, not the Dashboard UI) — see section 6
+        # "Customer Portal" of: support/random/stripe-setup-products.md
+        # Why not in code: it's account-level config, not request-time state.
+
+        # Create portal session (manage subscription, billing, invoices, switch plan)
         portal_session = stripe.billing_portal.Session.create(
             customer=subscription.stripe_customer_id,
             return_url=f"{FRONTEND_URL}/",  # Redirect after exiting portal

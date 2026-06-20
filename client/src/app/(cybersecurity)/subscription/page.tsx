@@ -24,6 +24,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/mod
 import { Button } from '@/modules/shadcnui/components/ui/button';
 import { Badge } from '@/modules/shadcnui/components/ui/badge';
 import { Alert, AlertDescription } from '@/modules/shadcnui/components/ui/alert';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/modules/shadcnui/components/ui/select';
 import { Loader2, Check, CreditCard, AlertTriangle } from 'lucide-react';
 
 // Currency symbols for the prices Stripe returns (extend as new currencies are added).
@@ -49,7 +50,7 @@ export default function SubscriptionPage() {
     createCustomerPortalSession,
     isSubscriptionActive,
   } = useSubscriptions();
-  const { activeOrganizationId } = useOrganizations();
+  const { organizations, activeOrganizationId, setActiveOrganization } = useOrganizations();
 
   // Tracks which action is in flight: a price.id (subscribing) or 'manage' (portal).
   const [processing, setProcessing] = useState<string | null>(null);
@@ -67,6 +68,9 @@ export default function SubscriptionPage() {
 
   const hasActiveSub = isSubscriptionActive();
   const activeProductId = currentSubscription?.stripe_product_id ?? null;
+  // tier_order of the plan the user is currently on — used to label other plans as
+  // Upgrade vs Downgrade when they already have an active subscription.
+  const currentTierOrder = paidPrices.find((p) => p.product_id === activeProductId)?.tier_order ?? 0;
 
   // Send the user to Stripe Checkout for the chosen plan. orgId is optional — the backend
   // auto-resolves (or auto-creates) the personal workspace, so a solo user never sees it.
@@ -127,7 +131,7 @@ export default function SubscriptionPage() {
 
       <div className="grid gap-4 md:grid-cols-3">
         {/* FREE — no Stripe product (so no feature list to read); just the default-plan marker */}
-        <Card className={!hasActiveSub ? 'border-primary' : ''}>
+        <Card className={`flex flex-col ${!hasActiveSub ? 'border-primary' : ''}`}>
           <CardHeader>
             <CardTitle className="flex items-center justify-between">
               <span>Free</span>
@@ -148,7 +152,7 @@ export default function SubscriptionPage() {
           const isCurrent = hasActiveSub && activeProductId === price.product_id;
           const features = price.features ?? [];
           return (
-            <Card key={price.id} className={isCurrent ? 'border-primary' : ''}>
+            <Card key={price.id} className={`flex flex-col ${isCurrent ? 'border-primary' : ''}`}>
               <CardHeader>
                 <CardTitle className="flex items-center justify-between">
                   <span>{tierLabel(price.tier)}</span>
@@ -158,9 +162,9 @@ export default function SubscriptionPage() {
                   {currencySymbol(price.currency)}{price.amount.toFixed(2)}/month
                 </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-6">
+              <CardContent className="flex flex-1 flex-col space-y-6">
                 {features.length > 0 && (
-                  <ul className="space-y-2">
+                  <ul className="flex-1 space-y-2">
                     {features.map((feature, idx) => (
                       <li key={idx} className="flex items-start">
                         <Check className="h-4 w-4 text-green-500 mr-2 mt-0.5 shrink-0" />
@@ -171,6 +175,7 @@ export default function SubscriptionPage() {
                 )}
 
                 {isCurrent ? (
+                  // The plan the user is on — manage it (cancel / payment method / invoices) in the portal.
                   <Button onClick={handleManage} disabled={!!processing} variant="outline" className="w-full">
                     {processing === 'manage' ? (
                       <>
@@ -184,7 +189,25 @@ export default function SubscriptionPage() {
                       </>
                     )}
                   </Button>
+                ) : hasActiveSub ? (
+                  // Already subscribed to a different tier. Stripe Checkout refuses a second
+                  // subscription ("Active subscription already exists"), so plan changes must go
+                  // through the Billing Portal, which handles the upgrade/downgrade + proration.
+                  <Button onClick={handleManage} disabled={!!processing} variant="outline" className="w-full">
+                    {processing === 'manage' ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Opening Stripe Portal...
+                      </>
+                    ) : (
+                      <>
+                        <CreditCard className="mr-2 h-4 w-4" />
+                        {(price.tier_order ?? 0) > currentTierOrder ? 'Upgrade' : 'Downgrade'}
+                      </>
+                    )}
+                  </Button>
                 ) : (
+                  // No active subscription — start one via Stripe Checkout.
                   <Button onClick={() => handleSubscribe(price)} disabled={!!processing} className="w-full" size="lg">
                     {processing === price.id ? (
                       <>
@@ -201,6 +224,30 @@ export default function SubscriptionPage() {
           );
         })}
       </div>
+
+      {/* Multi-org escape hatch — only shown when the user belongs to 2+ orgs (finpy pattern).
+          Solo users never see the "organization" concept; multi-org users pick the billing org,
+          which re-fetches that org's current subscription. */}
+      {organizations.length >= 2 && (
+        <div className="flex items-center gap-3 text-sm text-muted-foreground border-t pt-4">
+          <span className="shrink-0">Billing organization:</span>
+          <Select
+            value={activeOrganizationId ? String(activeOrganizationId) : ''}
+            onValueChange={(value) => setActiveOrganization(Number(value))}
+          >
+            <SelectTrigger className="w-auto min-w-[200px] max-w-full">
+              <SelectValue placeholder="Change organization" />
+            </SelectTrigger>
+            <SelectContent>
+              {organizations.map((org) => (
+                <SelectItem key={org.id} value={String(org.id)}>
+                  {org.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      )}
 
       <p className="text-xs text-muted-foreground text-center">
         Cancel anytime via the Stripe portal. Payment, invoices, and plan changes are handled by Stripe.

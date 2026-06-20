@@ -207,6 +207,15 @@ Index `[0]` = primul afisat in portal, `[1]` = al doilea (ordinea pe pagina "Swi
 
 **Run separately for live mode:** swap `sk_test_` → `sk_live_` + use prod IDs.
 
+> ✅ **cystene status — already applied** to test (`bpc_1TkQ5SCgafRZki0X6QNSDuRa`) + live
+> (`bpc_1TJKIICgafRZki0XUIVa5CKo`): `subscription_update` enabled, Pro+Enterprise switchable,
+> `proration_behavior=always_invoice` (charge the upgrade difference now, then normal monthly —
+> avoids the confusing bundled next invoice). Re-run the curl above after adding/renaming plans.
+>
+> ⚠️ The current Stripe API version does NOT echo `subscription_update[products]` back in the
+> response — a display quirk, not a failure. Confirmed applied by passing a fake product id
+> (Stripe rejects it with "No such product"), proving the allowlist is parsed + stored.
+
 ### Optiunea B — Dashboard manual
 
 Go to `dashboard.stripe.com` → **Settings → Billing → Customer portal:**

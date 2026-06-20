@@ -94,15 +94,12 @@ export default function CybersecurityPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header with context */}
+      {/* Header — no organization name: the workspace is auto-created and hidden for solo
+          users (see the auto-workspace flow), so surfacing the org name here would just
+          expose a concept the product intentionally hides. */}
       <div className="space-y-1">
         <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
-        <div className="flex items-center gap-4 text-sm text-muted-foreground">
-          <div className="flex items-center gap-2">
-            <Building className="h-4 w-4" />
-            <span>{activeOrganization.name}</span>
-          </div>
-        </div>
+        <p className="text-sm text-muted-foreground">Your security posture at a glance</p>
       </div>
 
       {isLoading ? (

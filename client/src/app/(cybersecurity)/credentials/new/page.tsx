@@ -280,7 +280,7 @@ export default function CreateCredentialPage() {
                           <Command>
                             <CommandInput placeholder="Search infrastructure..." />
                             <CommandList>
-                              <CommandEmpty>No infrastructure items yet.</CommandEmpty>
+                              <CommandEmpty className="py-3 px-2 text-sm">No infrastructure items yet. <Link href="/infrastructure/new" className="underline">Create one</Link></CommandEmpty>
                               <CommandGroup>
                                 {infrastructures.map((i) => (
                                   <CommandItem key={i.id} value={i.name}
