@@ -31,6 +31,7 @@ from .subrouters.discovery_subrouters.dashboard_subrouter import router as dashb
 
 # Cross-cutting subrouters (not a domain)
 from .subrouters.shared.feedback_subrouter import router as feedback_router
+from .subrouters.shared.audit_subrouter import router as audit_trail_router
 
 
 router = APIRouter(prefix="/cybersecurity")
@@ -60,5 +61,7 @@ gated.include_router(dashboard_router, prefix="/dashboard")
 
 # Cross-cutting — feedback (any active-subscription user, incl. FREE; access is owner/admin)
 gated.include_router(feedback_router, prefix="/feedback")
+# Cross-cutting — audit trail (read-only; org-scoped, user sees their own org's activity)
+gated.include_router(audit_trail_router, prefix="/audit-trail")
 
 router.include_router(gated)

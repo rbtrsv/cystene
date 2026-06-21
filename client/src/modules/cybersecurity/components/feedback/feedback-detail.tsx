@@ -3,23 +3,28 @@
 /**
  * Feedback Detail Dialog
  *
- * Read-only view of a feedback item for the submitter; for a platform admin it adds
- * editable status + admin_notes (triage). Delete is shown to an admin (any) or the
- * owner while the item is still "open" (the backend enforces the same rule).
+ * The submitter (or an admin) can edit the feedback CONTENT (category/title/description).
+ * A platform admin additionally gets TRIAGE fields (status + admin_notes). Save runs the
+ * content update first (PUT /{id}) then, for admins, the triage update (PUT /{id}/admin).
+ * Delete is shown to an admin (any) or the owner while the item is still "open" (the
+ * backend enforces the same rules).
  */
 
 import { useEffect, useState } from 'react';
-import { useFeedback } from '../../hooks/use-feedback';
+import { useFeedback } from '../../hooks/shared/use-feedback';
 import {
+  FeedbackCategorySchema,
   FeedbackStatusSchema,
+  FEEDBACK_CATEGORY_LABELS,
   FEEDBACK_STATUS_LABELS,
-  getFeedbackCategoryLabel,
   getFeedbackStatusLabel,
   type Feedback,
+  type FeedbackCategory,
   type FeedbackStatus,
-} from '../../schemas/feedback.schemas';
+} from '../../schemas/shared/feedback.schemas';
 import { Button } from '@/modules/shadcnui/components/ui/button';
 import { Badge } from '@/modules/shadcnui/components/ui/badge';
+import { Input } from '@/modules/shadcnui/components/ui/input';
 import { Label } from '@/modules/shadcnui/components/ui/label';
 import { Textarea } from '@/modules/shadcnui/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/modules/shadcnui/components/ui/select';
@@ -39,28 +44,59 @@ export function FeedbackDetail({
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
-  const { updateFeedback, deleteFeedback } = useFeedback();
+  const { updateFeedback, adminUpdateFeedback, deleteFeedback } = useFeedback();
 
+  // Content (owner/admin editable)
+  const [category, setCategory] = useState<FeedbackCategory>('bug');
+  const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
+  // Triage (admin only)
   const [status, setStatus] = useState<FeedbackStatus>('open');
   const [adminNotes, setAdminNotes] = useState('');
+
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  // Seed the admin fields from the selected feedback whenever the dialog opens.
+  // Seed every field from the selected feedback whenever the dialog opens.
   useEffect(() => {
     if (feedback) {
+      setCategory(feedback.category);
+      setTitle(feedback.title);
+      setDescription(feedback.description);
       setStatus(feedback.status);
       setAdminNotes(feedback.admin_notes ?? '');
+      setError(null);
     }
   }, [feedback]);
 
   if (!feedback) return null;
 
   const handleSave = async () => {
+    setError(null);
+    if (title.trim().length < 3) {
+      setError('Title must be at least 3 characters.');
+      return;
+    }
+    if (description.trim().length < 10) {
+      setError('Description must be at least 10 characters.');
+      return;
+    }
     setSaving(true);
-    const ok = await updateFeedback(feedback.id, { status, admin_notes: adminNotes || null });
+    // Content first (submitter or admin)...
+    const contentOk = await updateFeedback(feedback.id, {
+      category,
+      title: title.trim(),
+      description: description.trim(),
+    });
+    // ...then triage (admin only).
+    let triageOk = true;
+    if (contentOk && isAdmin) {
+      triageOk = await adminUpdateFeedback(feedback.id, { status, admin_notes: adminNotes || null });
+    }
     setSaving(false);
-    if (ok) onOpenChange(false);
+    if (contentOk && triageOk) onOpenChange(false);
+    else setError('Failed to save feedback. Please try again.');
   };
 
   const handleDelete = async () => {
@@ -78,31 +114,41 @@ export function FeedbackDetail({
       <DialogContent className="max-w-lg">
         <DialogHeader>
           <DialogTitle className="flex items-center justify-between gap-2 pr-6">
-            <span>{feedback.title}</span>
+            <span className="truncate">{feedback.title}</span>
             <Badge variant="outline" className="shrink-0">{getFeedbackStatusLabel(feedback.status)}</Badge>
           </DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4 text-sm">
           <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-            <Badge variant="secondary">{getFeedbackCategoryLabel(feedback.category)}</Badge>
             <span>{new Date(feedback.created_at).toLocaleString()}</span>
             {isAdmin && feedback.user_email && <span>· {feedback.user_name || feedback.user_email}</span>}
+            {feedback.page_url && <span className="font-mono">· {feedback.page_url}</span>}
           </div>
 
-          <div>
-            <Label className="text-xs text-muted-foreground">Description</Label>
-            <p className="mt-1 whitespace-pre-wrap">{feedback.description}</p>
+          {/* Content — editable by the submitter or an admin */}
+          <div className="space-y-2">
+            <Label>Category</Label>
+            <Select value={category} onValueChange={(v) => setCategory(v as FeedbackCategory)} disabled={saving}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {FeedbackCategorySchema.options.map((c) => (
+                  <SelectItem key={c} value={c}>{FEEDBACK_CATEGORY_LABELS[c]}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label>Title</Label>
+            <Input value={title} onChange={(e) => setTitle(e.target.value)} maxLength={200} disabled={saving} />
+          </div>
+          <div className="space-y-2">
+            <Label>Description</Label>
+            <Textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={5} disabled={saving} />
           </div>
 
-          {feedback.page_url && (
-            <div>
-              <Label className="text-xs text-muted-foreground">Page</Label>
-              <p className="mt-1 font-mono text-xs">{feedback.page_url}</p>
-            </div>
-          )}
-
-          {isAdmin ? (
+          {/* Triage — admin only */}
+          {isAdmin && (
             <>
               <div className="space-y-2">
                 <Label>Status</Label>
@@ -118,17 +164,12 @@ export function FeedbackDetail({
               <div className="space-y-2">
                 <Label>Admin notes</Label>
                 <Textarea value={adminNotes} onChange={(e) => setAdminNotes(e.target.value)}
-                  placeholder="Internal triage notes (not shown to the submitter as editable)" rows={3} disabled={saving} />
+                  placeholder="Internal triage notes" rows={3} disabled={saving} />
               </div>
             </>
-          ) : (
-            feedback.admin_notes && (
-              <div>
-                <Label className="text-xs text-muted-foreground">Response</Label>
-                <p className="mt-1 whitespace-pre-wrap">{feedback.admin_notes}</p>
-              </div>
-            )
           )}
+
+          {error && <p className="text-sm text-destructive">{error}</p>}
         </div>
 
         <DialogFooter className="gap-2 sm:justify-between">
@@ -138,11 +179,9 @@ export function FeedbackDetail({
               Delete
             </Button>
           ) : <span />}
-          {isAdmin && (
-            <Button onClick={handleSave} disabled={saving || deleting}>
-              {saving ? (<><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Saving...</>) : 'Save'}
-            </Button>
-          )}
+          <Button onClick={handleSave} disabled={saving || deleting}>
+            {saving ? (<><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Saving...</>) : 'Save'}
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

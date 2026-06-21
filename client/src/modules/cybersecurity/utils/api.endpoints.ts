@@ -147,12 +147,24 @@ export const REPORT_ENDPOINTS = {
 
 /**
  * API endpoints for feedback (cross-cutting: in-app bug/feature reports)
- * Backend: server/apps/cybersecurity/subrouters/feedback_subrouter.py
+ * Backend: server/apps/cybersecurity/subrouters/shared/feedback_subrouter.py
  */
 export const FEEDBACK_ENDPOINTS = {
   LIST: `${API_BASE_URL}/cybersecurity/feedback/`,
   DETAIL: (id: number) => `${API_BASE_URL}/cybersecurity/feedback/${id}`,
   CREATE: `${API_BASE_URL}/cybersecurity/feedback/`,
+  // PUT /{id} — owner/admin edits content (category/title/description)
   UPDATE: (id: number) => `${API_BASE_URL}/cybersecurity/feedback/${id}`,
+  // PUT /{id}/admin — admin-only triage (status/admin_notes)
+  ADMIN_UPDATE: (id: number) => `${API_BASE_URL}/cybersecurity/feedback/${id}/admin`,
   DELETE: (id: number) => `${API_BASE_URL}/cybersecurity/feedback/${id}`,
+};
+
+/**
+ * API endpoints for the audit trail (cross-cutting: read-only activity log)
+ * Backend: server/apps/cybersecurity/subrouters/shared/audit_subrouter.py
+ */
+export const AUDIT_TRAIL_ENDPOINTS = {
+  LIST: `${API_BASE_URL}/cybersecurity/audit-trail/`,
+  EXPORT: `${API_BASE_URL}/cybersecurity/audit-trail/export`,
 };

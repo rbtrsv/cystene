@@ -14,13 +14,15 @@ import {
   FeedbacksResponse,
   FeedbackMessageResponse,
   CreateFeedback,
+  UpdateFeedbackContent,
   UpdateFeedback,
   CreateFeedbackSchema,
+  UpdateFeedbackContentSchema,
   UpdateFeedbackSchema,
   FeedbackStatus,
-} from '../schemas/feedback.schemas';
-import { FEEDBACK_ENDPOINTS } from '../utils/api.endpoints';
-import { fetchClient } from '../../accounts/utils/fetch.client';
+} from '../../schemas/shared/feedback.schemas';
+import { FEEDBACK_ENDPOINTS } from '../../utils/api.endpoints';
+import { fetchClient } from '../../../accounts/utils/fetch.client';
 
 // Type for errors thrown by fetchClient
 interface FetchError extends Error {
@@ -54,7 +56,7 @@ export const getFeedbackList = async (params?: ListFeedbackParams): Promise<Feed
     return response;
   } catch (error) {
     if ((error as FetchError)?.status === 401) {
-      const { clearAuthCookies } = await import('../../accounts/utils/token.client.utils');
+      const { clearAuthCookies } = await import('../../../accounts/utils/token.client.utils');
       clearAuthCookies();
     }
 
@@ -80,7 +82,7 @@ export const getFeedback = async (id: number): Promise<FeedbackResponse> => {
     return response;
   } catch (error) {
     if ((error as FetchError)?.status === 401) {
-      const { clearAuthCookies } = await import('../../accounts/utils/token.client.utils');
+      const { clearAuthCookies } = await import('../../../accounts/utils/token.client.utils');
       clearAuthCookies();
     }
 
@@ -116,14 +118,14 @@ export const createFeedback = async (data: CreateFeedback): Promise<FeedbackResp
 };
 
 /**
- * Admin triage update — status + admin_notes only (admin enforced server-side)
+ * Edit feedback CONTENT (category/title/description) — submitter or admin (enforced server-side)
  * @param id Feedback ID
- * @param data Update payload
+ * @param data Content update payload
  * @returns Promise with feedback response
  */
-export const updateFeedback = async (id: number, data: UpdateFeedback): Promise<FeedbackResponse> => {
+export const updateFeedback = async (id: number, data: UpdateFeedbackContent): Promise<FeedbackResponse> => {
   try {
-    UpdateFeedbackSchema.parse(data);
+    UpdateFeedbackContentSchema.parse(data);
 
     const response = await fetchClient<FeedbackResponse>(FEEDBACK_ENDPOINTS.UPDATE(id), {
       method: 'PUT',
@@ -135,6 +137,30 @@ export const updateFeedback = async (id: number, data: UpdateFeedback): Promise<
     return {
       success: false,
       error: error instanceof Error ? error.message : `Failed to update feedback ${id}`,
+    };
+  }
+};
+
+/**
+ * Admin triage update — status + admin_notes only (admin enforced server-side via /admin route)
+ * @param id Feedback ID
+ * @param data Triage update payload
+ * @returns Promise with feedback response
+ */
+export const adminUpdateFeedback = async (id: number, data: UpdateFeedback): Promise<FeedbackResponse> => {
+  try {
+    UpdateFeedbackSchema.parse(data);
+
+    const response = await fetchClient<FeedbackResponse>(FEEDBACK_ENDPOINTS.ADMIN_UPDATE(id), {
+      method: 'PUT',
+      body: data as unknown as Record<string, unknown>,
+    });
+
+    return response;
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : `Failed to triage feedback ${id}`,
     };
   }
 };

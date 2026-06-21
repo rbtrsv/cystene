@@ -41,6 +41,13 @@ class FeedbackCreate(BaseModel):
     page_url: str | None = Field(default=None, description="Page the feedback was submitted from")
 
 
+class FeedbackContentUpdate(BaseModel):
+    """Schema for the submitter (or admin) editing the feedback content (not triage)."""
+    category: FeedbackCategory | None = None
+    title: str | None = Field(default=None, min_length=3, max_length=200)
+    description: str | None = Field(default=None, min_length=10)
+
+
 class FeedbackUpdate(BaseModel):
     """Schema for admin triage — status + internal notes only."""
     status: FeedbackStatus | None = None

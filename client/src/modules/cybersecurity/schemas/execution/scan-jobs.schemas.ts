@@ -39,6 +39,10 @@ export const ScanJobSchema = z.object({
   target_id: z.number(),
   template_id: z.number(),
   schedule_id: z.number().nullable().optional(),
+  // Resolved names (enriched by the detail endpoint; absent in list responses)
+  target_name: z.string().nullable().optional(),
+  template_name: z.string().nullable().optional(),
+  schedule_name: z.string().nullable().optional(),
   status: JobStatusEnum,
   started_at: z.string().nullable().optional(), // ISO datetime
   completed_at: z.string().nullable().optional(), // ISO datetime

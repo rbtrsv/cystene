@@ -57,11 +57,11 @@ Next in line after the Next Up slice. Cystene stays a general ESPM platform.
 - 🟡 **B1 — "Vibe-Coded App" `ScanTemplate` preset (seed)** — the one-click "scan my vibe-coded app" funnel entry. Bundles A1/A2 (+ A3 when ready) + headers/ssl. Ship once A1/A2 land. See `market-vibe-scanners.md` §5.
 - 🟡 **OWASP-Top-10-for-Vibe mapping** — tag vibe findings via existing `Finding.owasp_category` (A01 broken access, A02 secrets, A03 injection, A05 misconfig, A07 auth). Zero schema change — reports speak the vibe-coder's language. See `market-vibe-scanners.md` §6.
 - 🟡 **B3 — Verifiable trust badge** — embeddable badge after a clean scan (zero critical/high). Ties to `security_score` + existing target verification. Marketing funnel. See `market-vibe-scanners.md` §3.4.
-- 🟡 **Audit Trail Page** — Frontend for cybersecurity_audit_logs with diff view (follow Finpy pattern). Enterprise/compliance, not funnel.
 
 ## Backlog
 
 - 🔵 **External tool parsers (4E)** — import nmap XML / nuclei JSON → Finding/Asset dicts. *Demoted from Next Up: power-user/aggregation integration — Cystene's target users (vibe-coders, SMBs) don't run nmap/nuclei. Promote if we pivot toward an enterprise "single pane of glass."*
+- 🔵 **Security Strengths in reports** — vibeappscanner-style "what passed" section (HTTPS ✓, No SQLi ✓, RLS configured ✓). The one element of the reference report UI not built. Needs scanners to emit passed-checks (not just findings) — a 12-scanner change, not just UI. Report UI already matches the reference otherwise.
 - 🔵 Multi-scanner comparison (delta report across N scans, not just last 2)
 - 🔵 RBAC per organization (admin/viewer/scanner roles)
 - 🔵 Bulk import targets (CSV upload)
@@ -147,6 +147,18 @@ Second vibe-coded check. NEW external scanner `scanners/external/secret_scan.py`
 The signature VAS UX ("a fix list, formatted for your AI tool"). NEW util `utils/remediation_utils.py:build_ai_fix_prompt(finding)` — composes a copy-paste prompt from a finding's existing fields (title/severity/location/description/remediation/remediation_script/evidence), so it works for **every scanner automatically** (no per-scanner change). Single source of truth used by both the finding-detail endpoint and JSON reports. **Not `@computed_field`** (no precedent + would compute for every list row) — populated explicitly in `get_finding` detail endpoint (`utils/small-composable` "orchestration explicit in routes").
 - Wiring (full-stack): `FindingDetail.ai_fix_prompt` field + populated on detail; `report_generation_service._finding_to_dict` includes it (JSON); client Zod `ai_fix_prompt` + **"Copy AI Fix" button** on finding detail page (inline `navigator.clipboard.writeText`, assetmanager pattern).
 - Verified: `compileall` ✅; unit test util (full + sparse — empty lines omitted) ✅; schema field + report import ✅; app boots ✅; `tsc --noEmit` ✅.
+
+## Feedback module — in-app bug reports / feature requests / questions ✅ COMPLETE (awaiting deploy/commit)
+
+Cross-cutting module: `CybersecurityFeedback` model (`models/feedback_models.py`, BaseMixin, table `cybersecurity_feedback`) + full pipeline in `shared/` (backend schemas/subrouter; frontend schemas/service/store/provider/hook/page/2 dialogs). 6 endpoints: list (member sees own / admin sees all, enriched user_email+name), get (owner-or-admin), create, **`PUT /{id}` owner/admin content-edit + `PUT /{id}/admin` admin triage** (status/admin_notes), soft-delete (admin any / owner while `open`). CRUD via the new `crud_utils` helpers. NEW platform-role gate `accounts/utils/dependency_utils.py:require_user_role(["ADMIN"])` (case-insensitive). NEW `utils/crud_utils.py` (`create_with_audit`/`update_with_audit`/`soft_delete_with_audit` — cystene previously had none; feedback uses them, rest still inline `log_audit`). Sidebar: Account → Feedback. Migration applied (human). Verified live (create + owner-edit + audit write).
+
+## Audit Trail — read layer + UI ✅ COMPLETE (awaiting deploy/commit) — promoted from Nice To Have
+
+Read side over the existing `cybersecurity_audit_logs` (write side already in 8 subrouters via `log_audit`). NEW `subrouters/shared/audit_subrouter.py` (org-scoped list — table/action/date/user filters + JOIN user_email + CSV export) + `schemas/shared/audit_schemas.py`. Frontend `service/shared/audit-trail.service.ts` + `app/(cybersecurity)/audit-trail/page.tsx` (filters, expandable old→new diff, `TABLE_NAME_LABELS` for the 7 audited tables, CSV export, pagination). Sidebar: Account → Audit Trail. Mirrors the nexotype audit-trail, adapted to cystene. Verified live (shows real feedback INSERT/UPDATE rows).
+
+## FK names in detail responses + UI label polish ✅ COMPLETE (awaiting deploy/commit)
+
+Killed raw "Target ID: 1" across 7 detail pages. NEW small composable helper `crud_utils.py:get_record_name(db, model, id)` resolves a related record's `name` for detail-response enrichment. 6 entities enriched (ScanJob → target/template/schedule; ScanSchedule → target/template; ScanTarget → infrastructure; Credential → infrastructure; ScanTemplate → credential; Report → target): `*Detail` schema gains a resolved-name field, GET/UPDATE endpoint populates it via the helper, frontend shows the name (fallback `#id`). Also: scan-type codes → readable labels via `getScanTypeLabel` on 6 surfaces (scan-jobs/scan-templates lists+details, scan-job details, dashboard); View Reports header spacing fix (gap/truncate/shrink-0).
 
 ---
 

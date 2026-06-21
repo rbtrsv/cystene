@@ -196,7 +196,7 @@ export default function CredentialDetailsPage() {
                 <div><p className="text-sm text-muted-foreground">Name</p><p className="font-medium">{item.name}</p></div>
                 <div><p className="text-sm text-muted-foreground">Type</p><p className="font-medium">{getCredentialTypeLabel(item.cred_type)}</p></div>
                 <div><p className="text-sm text-muted-foreground">Username</p><p className="font-medium">{item.username || '—'}</p></div>
-                <div><p className="text-sm text-muted-foreground">Infrastructure ID</p><p className="font-medium">{item.infrastructure_id ?? '—'}</p></div>
+                <div><p className="text-sm text-muted-foreground">Infrastructure</p><p className="font-medium">{item.infrastructure_name || (item.infrastructure_id ? `#${item.infrastructure_id}` : '—')}</p></div>
                 <div><p className="text-sm text-muted-foreground">Status</p><p className="font-medium">{item.is_active ? 'Active' : 'Inactive'}</p></div>
                 <div><p className="text-sm text-muted-foreground">Secret Value</p><p className="font-mono font-medium">••••••••</p></div>
               </div>

@@ -41,6 +41,8 @@ export const ReportFormatEnum = z.enum(['pdf', 'html', 'json']);
 export const ReportSchema = z.object({
   id: z.number(),
   target_id: z.number(),
+  // Resolved name (enriched by the detail endpoint; absent in list responses)
+  target_name: z.string().nullable().optional(),
   scan_job_id: z.number().nullable().optional(),
   name: z.string().min(1, 'Name is required').max(255, 'Name must be less than 255 characters'),
   report_type: ReportTypeEnum,

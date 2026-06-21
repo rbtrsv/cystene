@@ -20,6 +20,7 @@ import {
   CreditCard,
   Smartphone,
   MessageSquare,
+  History,
 } from "lucide-react"
 import { usePathname, useRouter } from "next/navigation"
 import Link from "next/link"
@@ -299,6 +300,14 @@ export function CybersecuritySidebar({ ...props }: React.ComponentProps<typeof S
                   <Link href="/feedback">
                     <MessageSquare className="h-4 w-4" />
                     <span>Feedback</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild isActive={isActive("/audit-trail")} tooltip="Audit Trail">
+                  <Link href="/audit-trail">
+                    <History className="h-4 w-4" />
+                    <span>Audit Trail</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>

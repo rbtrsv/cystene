@@ -15,16 +15,18 @@ import { immer } from 'zustand/middleware/immer';
 import {
   Feedback,
   CreateFeedback,
+  UpdateFeedbackContent,
   UpdateFeedback,
-} from '../schemas/feedback.schemas';
+} from '../../schemas/shared/feedback.schemas';
 import {
   getFeedbackList,
   getFeedback,
   createFeedback as apiCreateFeedback,
   updateFeedback as apiUpdateFeedback,
+  adminUpdateFeedback as apiAdminUpdateFeedback,
   deleteFeedback as apiDeleteFeedback,
   ListFeedbackParams,
-} from '../service/feedback.service';
+} from '../../service/shared/feedback.service';
 
 /**
  * Feedback store state interface
@@ -40,7 +42,8 @@ export interface FeedbackState {
   fetchFeedbackList: (params?: ListFeedbackParams) => Promise<boolean>;
   fetchFeedback: (id: number) => Promise<Feedback | null>;
   createFeedback: (data: CreateFeedback) => Promise<boolean>;
-  updateFeedback: (id: number, data: UpdateFeedback) => Promise<boolean>;
+  updateFeedback: (id: number, data: UpdateFeedbackContent) => Promise<boolean>;
+  adminUpdateFeedback: (id: number, data: UpdateFeedback) => Promise<boolean>;
   deleteFeedback: (id: number) => Promise<boolean>;
   setActiveFeedback: (id: number | null) => void;
   clearError: () => void;
@@ -158,9 +161,9 @@ export const useFeedbackStore = create<FeedbackState>()(
         },
 
         /**
-         * Admin triage update (status + admin_notes), then refresh the list
+         * Edit feedback content (category/title/description), then refresh the list
          * @param id Feedback ID
-         * @param data Update payload
+         * @param data Content update payload
          * @returns Success status
          */
         updateFeedback: async (id, data) => {
@@ -177,6 +180,38 @@ export const useFeedbackStore = create<FeedbackState>()(
               set({
                 isLoading: false,
                 error: response.error || 'Failed to update feedback',
+              });
+              return false;
+            }
+          } catch (error) {
+            set({
+              isLoading: false,
+              error: error instanceof Error ? error.message : 'An unexpected error occurred',
+            });
+            return false;
+          }
+        },
+
+        /**
+         * Admin triage update (status + admin_notes), then refresh the list
+         * @param id Feedback ID
+         * @param data Triage update payload
+         * @returns Success status
+         */
+        adminUpdateFeedback: async (id, data) => {
+          set({ isLoading: true, error: null });
+
+          try {
+            const response = await apiAdminUpdateFeedback(id, data);
+
+            if (response.success && response.data) {
+              await get().fetchFeedbackList();
+              set({ isLoading: false });
+              return true;
+            } else {
+              set({
+                isLoading: false,
+                error: response.error || 'Failed to triage feedback',
               });
               return false;
             }

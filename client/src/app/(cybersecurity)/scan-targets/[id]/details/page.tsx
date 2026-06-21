@@ -171,18 +171,18 @@ export default function ScanTargetDetailsPage() {
             Back to Scan Targets
           </Button>
         </Link>
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Crosshair className="h-8 w-8 text-muted-foreground" />
-            <div>
-              <h1 className="text-3xl font-bold tracking-tight">{item.name}</h1>
-              <p className="text-muted-foreground">
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3 min-w-0">
+            <Crosshair className="h-8 w-8 shrink-0 text-muted-foreground" />
+            <div className="min-w-0">
+              <h1 className="truncate text-3xl font-bold tracking-tight">{item.name}</h1>
+              <p className="truncate text-muted-foreground">
                 {getTargetTypeLabel(item.target_type)} &middot; {item.target_value}
               </p>
             </div>
           </div>
           {/* Target-level entry-point to the in-UI security reports. */}
-          <Link href="/reports">
+          <Link href="/reports" className="shrink-0">
             <Button variant="outline">
               <FileBarChart className="mr-2 h-4 w-4" />
               View Reports
@@ -223,7 +223,7 @@ export default function ScanTargetDetailsPage() {
                   </Badge>
                 </div>
                 <div><p className="text-sm text-muted-foreground">Verification Method</p><p className="font-medium">{item.verification_method ? getVerificationMethodLabel(item.verification_method) : '—'}</p></div>
-                <div><p className="text-sm text-muted-foreground">Infrastructure ID</p><p className="font-medium">{item.infrastructure_id ?? '—'}</p></div>
+                <div><p className="text-sm text-muted-foreground">Infrastructure</p><p className="font-medium">{item.infrastructure_name || (item.infrastructure_id ? `#${item.infrastructure_id}` : '—')}</p></div>
                 <div><p className="text-sm text-muted-foreground">Tags</p><p className="font-medium">{item.tags || '—'}</p></div>
                 <div>
                   <p className="text-sm text-muted-foreground">Active</p>

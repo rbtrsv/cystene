@@ -1,8 +1,8 @@
 'use client';
 
 import React, { createContext, useEffect, useMemo } from 'react';
-import { useFeedbackStore } from '../store/feedback.store';
-import { type Feedback } from '../schemas/feedback.schemas';
+import { useFeedbackStore } from '../../store/shared/feedback.store';
+import { type Feedback } from '../../schemas/shared/feedback.schemas';
 
 /**
  * Context type for the feedback provider

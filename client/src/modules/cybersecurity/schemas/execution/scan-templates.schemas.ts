@@ -68,6 +68,8 @@ export const ScanTemplateSchema = z.object({
   active_scan_consent: z.boolean().default(false),
   engine_params: z.string().nullable().optional(), // JSON string
   credential_id: z.number().nullable().optional(),
+  // Resolved name (enriched by the detail endpoint; absent in list responses)
+  credential_name: z.string().nullable().optional(),
   created_at: z.string(), // ISO datetime string from backend
   updated_at: z.string().nullable(),
 });

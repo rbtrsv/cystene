@@ -120,7 +120,7 @@ export default function AssetDetailsPage() {
             <div><p className="text-sm text-muted-foreground">Value</p><p className="font-mono">{item.value}</p></div>
             <div><p className="text-sm text-muted-foreground">Confidence</p><p className="font-medium">{getAssetConfidenceLabel(item.confidence)}</p></div>
             <div><p className="text-sm text-muted-foreground">First Seen</p><p className="font-medium">{new Date(item.first_seen_at).toLocaleString()}</p></div>
-            <div><p className="text-sm text-muted-foreground">Scan Job ID</p><p className="font-medium">{item.scan_job_id}</p></div>
+            <div><p className="text-sm text-muted-foreground">Scan Job</p><p className="font-medium">#{item.scan_job_id}</p></div>
           </div>
         </CardContent>
       </Card>

@@ -30,6 +30,9 @@ class ScanScheduleDetail(BaseModel):
     id: int
     target_id: int = Field(description="Scan target")
     template_id: int = Field(description="Scan template to use")
+    # Resolved names (JOINed in the detail endpoint; None in list responses)
+    target_name: str | None = None
+    template_name: str | None = None
     name: str = Field(description="Schedule name")
     frequency: ScheduleFrequency = Field(description="How often to scan")
     cron_expression: str | None = Field(None, description="Optional cron override")

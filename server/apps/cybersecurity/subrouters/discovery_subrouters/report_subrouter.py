@@ -15,6 +15,7 @@ from ...schemas.discovery_schemas.report_schemas import (
     ReportCreate, ReportDetail, ReportResponse, ReportsResponse,
 )
 from ...utils.dependency_utils import get_user_organization_id
+from ...utils.crud_utils import get_record_name
 from ...utils.audit_utils import log_audit, model_to_dict
 from ...utils.export_utils import ExportColumn, SummaryCard, ReportSection, generate_report_pdf
 from ...services.report_generation_service import generate_report_content
@@ -67,7 +68,9 @@ async def get_report(
         item = result.scalar_one_or_none()
         if not item:
             raise HTTPException(status_code=404, detail="Report not found")
-        return ReportResponse(success=True, data=ReportDetail.model_validate(item))
+        detail = ReportDetail.model_validate(item)
+        detail.target_name = await get_record_name(db, ScanTarget, item.target_id)
+        return ReportResponse(success=True, data=detail)
     except HTTPException:
         raise
     except Exception as e:
@@ -140,7 +143,9 @@ async def generate_report(
         await log_audit(db, "reports", item.id, "INSERT", new_data=model_to_dict(item), user_id=user.id, organization_id=org_id)
         await db.commit()
 
-        return ReportResponse(success=True, data=ReportDetail.model_validate(item))
+        detail = ReportDetail.model_validate(item)
+        detail.target_name = await get_record_name(db, ScanTarget, item.target_id)
+        return ReportResponse(success=True, data=detail)
     except HTTPException:
         raise
     except Exception as e:

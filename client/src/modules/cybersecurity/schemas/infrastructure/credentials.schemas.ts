@@ -41,6 +41,8 @@ export const CredentialSchema = z.object({
   id: z.number(),
   organization_id: z.number(),
   infrastructure_id: z.number().nullable(),
+  // Resolved name (enriched by the detail endpoint; absent in list responses)
+  infrastructure_name: z.string().nullable().optional(),
   name: z.string().min(1, 'Name is required').max(255, 'Name must be less than 255 characters'),
   cred_type: CredentialTypeEnum,
   username: z.string().nullable().optional(),

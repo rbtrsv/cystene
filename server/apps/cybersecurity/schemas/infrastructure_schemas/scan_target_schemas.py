@@ -38,6 +38,7 @@ class ScanTargetDetail(BaseModel):
     user_id: int = Field(description="User who created this target")
     organization_id: int = Field(description="Organization that owns this target")
     infrastructure_id: int | None = Field(None, description="Linked infrastructure item for business context")
+    infrastructure_name: str | None = Field(None, description="Resolved name (JOINed in the detail endpoint)")
     name: str = Field(description="Target name")
     target_type: TargetType = Field(description="Type of target")
     target_value: str = Field(description="Actual target value (domain, IP, URL)")

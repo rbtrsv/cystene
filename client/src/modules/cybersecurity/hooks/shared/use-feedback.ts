@@ -1,8 +1,8 @@
 'use client';
 
 import { useContext } from 'react';
-import { FeedbackContext, FeedbackContextType } from '../providers/feedback-provider';
-import { useFeedbackStore } from '../store/feedback.store';
+import { FeedbackContext, FeedbackContextType } from '../../providers/shared/feedback-provider';
+import { useFeedbackStore } from '../../store/shared/feedback.store';
 
 /**
  * Hook to use the feedback context
@@ -41,6 +41,7 @@ export function useFeedback() {
     fetchFeedback,
     createFeedback,
     updateFeedback,
+    adminUpdateFeedback,
     deleteFeedback,
   } = useFeedbackStore();
 
@@ -60,6 +61,7 @@ export function useFeedback() {
     fetchFeedback,
     createFeedback,
     updateFeedback,
+    adminUpdateFeedback,
     deleteFeedback,
     setActiveFeedback,
     clearError,

@@ -7,8 +7,9 @@ import { FileCode, Plus, Loader2, ChevronUp, ChevronDown, MoreHorizontal, Eye, P
 
 import { useScanTemplates } from '@/modules/cybersecurity/hooks/execution/use-scan-templates';
 import { useOrganizations } from '@/modules/accounts/hooks/use-organizations';
-import { getScanSpeedLabel } from '@/modules/cybersecurity/schemas/execution/scan-templates.schemas';
+import { getScanSpeedLabel, getScanTypeLabel } from '@/modules/cybersecurity/schemas/execution/scan-templates.schemas';
 import { Card, CardContent } from '@/modules/shadcnui/components/ui/card';
+import { Badge } from '@/modules/shadcnui/components/ui/badge';
 import { Button } from '@/modules/shadcnui/components/ui/button';
 import { Input } from '@/modules/shadcnui/components/ui/input';
 import { Label } from '@/modules/shadcnui/components/ui/label';
@@ -150,7 +151,14 @@ export default function ScanTemplatesPage() {
                     <TableCell className="font-medium">
                       <div className="flex items-center gap-2"><FileCode className="h-4 w-4 text-muted-foreground" />{tmpl.name}</div>
                     </TableCell>
-                    <TableCell className="text-sm max-w-[200px] truncate">{tmpl.scan_types}</TableCell>
+                    <TableCell className="max-w-[280px]">
+                      {/* Readable scanner labels instead of raw enum codes. */}
+                      <div className="flex flex-wrap gap-1">
+                        {tmpl.scan_types.split(',').map((t) => t.trim()).filter(Boolean).map((t) => (
+                          <Badge key={t} variant="secondary" className="text-xs font-normal">{getScanTypeLabel(t)}</Badge>
+                        ))}
+                      </div>
+                    </TableCell>
                     <TableCell>{getScanSpeedLabel(tmpl.scan_speed)}</TableCell>
                     <TableCell>{tmpl.active_scan_consent ? <span className="text-green-600">Yes</span> : <span className="text-muted-foreground">No</span>}</TableCell>
                     <TableCell>{new Date(tmpl.created_at).toLocaleDateString()}</TableCell>

@@ -16,6 +16,7 @@ import { useCredentials } from '@/modules/cybersecurity/hooks/infrastructure/use
 import { useOrganizations } from '@/modules/accounts/hooks/use-organizations';
 import {
   getScanSpeedLabel,
+  getScanTypeLabel,
   SCAN_TYPE_GROUPS,
   SCAN_TYPE_LABELS,
   SCAN_TYPE_DESCRIPTIONS,
@@ -176,7 +177,7 @@ export default function ScanTemplateDetailsPage() {
           <div>
             <h1 className="text-3xl font-bold tracking-tight">{item.name}</h1>
             <p className="text-muted-foreground">
-              {item.scan_types} &middot; {getScanSpeedLabel(item.scan_speed)}
+              {item.scan_types.split(',').map((t) => getScanTypeLabel(t.trim())).join(', ')} &middot; {getScanSpeedLabel(item.scan_speed)}
             </p>
           </div>
         </div>
@@ -205,13 +206,20 @@ export default function ScanTemplateDetailsPage() {
             <CardContent className="space-y-3">
               <div className="grid grid-cols-2 gap-4">
                 <div><p className="text-sm text-muted-foreground">Name</p><p className="font-medium">{item.name}</p></div>
-                <div><p className="text-sm text-muted-foreground">Scan Types</p><p className="font-mono">{item.scan_types}</p></div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Scan Types</p>
+                  <div className="mt-1 flex flex-wrap gap-1">
+                    {item.scan_types.split(',').map((t) => t.trim()).filter(Boolean).map((t) => (
+                      <Badge key={t} variant="secondary" className="text-xs font-normal">{getScanTypeLabel(t)}</Badge>
+                    ))}
+                  </div>
+                </div>
                 <div><p className="text-sm text-muted-foreground">Port Range</p><p className="font-medium">{item.port_range}</p></div>
                 <div><p className="text-sm text-muted-foreground">Scan Speed</p><p className="font-medium">{getScanSpeedLabel(item.scan_speed)}</p></div>
                 <div><p className="text-sm text-muted-foreground">Timeout</p><p className="font-medium">{item.timeout_seconds}s</p></div>
                 <div><p className="text-sm text-muted-foreground">Max Concurrent</p><p className="font-medium">{item.max_concurrent}</p></div>
                 <div><p className="text-sm text-muted-foreground">Created</p><p className="font-medium">{new Date(item.created_at).toLocaleString()}</p></div>
-                <div><p className="text-sm text-muted-foreground">Credential ID</p><p className="font-medium">{item.credential_id ?? '—'}</p></div>
+                <div><p className="text-sm text-muted-foreground">Credential</p><p className="font-medium">{item.credential_name || (item.credential_id ? `#${item.credential_id}` : '—')}</p></div>
               </div>
               {item.description && (
                 <div><p className="text-sm text-muted-foreground">Description</p><p>{item.description}</p></div>

@@ -36,6 +36,9 @@ export const ScanScheduleSchema = z.object({
   id: z.number(),
   target_id: z.number(),
   template_id: z.number(),
+  // Resolved names (enriched by the detail endpoint; absent in list responses)
+  target_name: z.string().nullable().optional(),
+  template_name: z.string().nullable().optional(),
   name: z.string().min(1, 'Name is required').max(255, 'Name must be less than 255 characters'),
   frequency: ScheduleFrequencyEnum,
   cron_expression: z.string().nullable().optional(),

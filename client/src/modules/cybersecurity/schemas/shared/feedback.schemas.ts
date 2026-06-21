@@ -42,7 +42,14 @@ export const CreateFeedbackSchema = z.object({
   page_url: z.string().nullable().optional(),
 });
 
-// Admin triage only — status + internal notes.
+// Owner/admin content edit — category/title/description (mirrors backend FeedbackContentUpdate).
+export const UpdateFeedbackContentSchema = z.object({
+  category: FeedbackCategorySchema.optional(),
+  title: z.string().min(3).max(200).optional(),
+  description: z.string().min(10).optional(),
+});
+
+// Admin triage only — status + internal notes (mirrors backend FeedbackUpdate).
 export const UpdateFeedbackSchema = z.object({
   status: FeedbackStatusSchema.optional(),
   admin_notes: z.string().nullable().optional(),
@@ -56,6 +63,7 @@ export type FeedbackCategory = z.infer<typeof FeedbackCategorySchema>;
 export type FeedbackStatus = z.infer<typeof FeedbackStatusSchema>;
 export type Feedback = z.infer<typeof FeedbackSchema>;
 export type CreateFeedback = z.infer<typeof CreateFeedbackSchema>;
+export type UpdateFeedbackContent = z.infer<typeof UpdateFeedbackContentSchema>;
 export type UpdateFeedback = z.infer<typeof UpdateFeedbackSchema>;
 
 // ==========================================

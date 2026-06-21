@@ -33,6 +33,10 @@ class ScanJobDetail(BaseModel):
     target_id: int = Field(description="What was scanned")
     template_id: int = Field(description="Which config was used")
     schedule_id: int | None = Field(None, description="Which schedule triggered it")
+    # Resolved names (JOINed in the detail endpoint; None in list responses)
+    target_name: str | None = None
+    template_name: str | None = None
+    schedule_name: str | None = None
     status: JobStatus = Field(description="Job lifecycle status")
     started_at: datetime | None = None
     completed_at: datetime | None = None

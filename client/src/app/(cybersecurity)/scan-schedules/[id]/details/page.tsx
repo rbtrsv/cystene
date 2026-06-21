@@ -194,8 +194,8 @@ export default function ScanScheduleDetailsPage() {
                     {item.is_active ? 'Active' : 'Inactive'}
                   </Badge>
                 </div>
-                <div><p className="text-sm text-muted-foreground">Target ID</p><p className="font-medium">{item.target_id}</p></div>
-                <div><p className="text-sm text-muted-foreground">Template ID</p><p className="font-medium">{item.template_id}</p></div>
+                <div><p className="text-sm text-muted-foreground">Target</p><p className="font-medium">{item.target_name || `#${item.target_id}`}</p></div>
+                <div><p className="text-sm text-muted-foreground">Template</p><p className="font-medium">{item.template_name || `#${item.template_id}`}</p></div>
               </div>
             </CardContent>
           </Card>

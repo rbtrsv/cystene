@@ -76,6 +76,7 @@ class ScanTemplateDetail(BaseModel):
     active_scan_consent: bool = False
     engine_params: str | None = None
     credential_id: int | None = Field(None, description="Credential for internal scanners")
+    credential_name: str | None = Field(None, description="Resolved name (JOINed in the detail endpoint)")
     created_at: datetime
     updated_at: datetime | None = None
 

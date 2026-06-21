@@ -9,7 +9,7 @@
  */
 
 import { useEffect, useState } from 'react';
-import { useFeedback } from '@/modules/cybersecurity/hooks/use-feedback';
+import { useFeedback } from '@/modules/cybersecurity/hooks/shared/use-feedback';
 // Use the auth STORE directly (not the use-auth-client context hook): the (cybersecurity)
 // route group is not wrapped in AuthProvider, so the context hook throws here.
 import { useAuthStore } from '@/modules/accounts/store/auth.client.store';
@@ -19,7 +19,7 @@ import {
   getFeedbackCategoryLabel,
   getFeedbackStatusLabel,
   type FeedbackStatus,
-} from '@/modules/cybersecurity/schemas/feedback.schemas';
+} from '@/modules/cybersecurity/schemas/shared/feedback.schemas';
 import { FeedbackForm } from '@/modules/cybersecurity/components/feedback/feedback-form';
 import { FeedbackDetail } from '@/modules/cybersecurity/components/feedback/feedback-detail';
 import { Card, CardContent } from '@/modules/shadcnui/components/ui/card';

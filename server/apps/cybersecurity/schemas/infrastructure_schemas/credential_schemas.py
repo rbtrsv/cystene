@@ -34,6 +34,7 @@ class CredentialDetail(BaseModel):
     id: int
     organization_id: int = Field(description="Organization that owns this credential")
     infrastructure_id: int | None = Field(None, description="Linked infrastructure item")
+    infrastructure_name: str | None = Field(None, description="Resolved name (JOINed in the detail endpoint)")
     name: str = Field(description="Credential name")
     cred_type: CredentialType = Field(description="Type of credential")
     username: str | None = Field(None, description="Username associated with this credential")

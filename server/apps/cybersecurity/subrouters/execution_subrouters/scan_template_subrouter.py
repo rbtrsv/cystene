@@ -10,12 +10,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
 from ...models.execution_models import ScanTemplate
-from ...models.infrastructure_models import ScanTarget
+from ...models.infrastructure_models import ScanTarget, Credential
 from ...schemas.execution_schemas.scan_template_schemas import (
     ScanTemplateCreate, ScanTemplateUpdate, ScanTemplateDetail,
     ScanTemplateResponse, ScanTemplatesResponse,
 )
 from ...utils.dependency_utils import get_user_organization_id
+from ...utils.crud_utils import get_record_name
 from ...utils.audit_utils import log_audit, model_to_dict
 from apps.accounts.models import User
 from apps.accounts.utils.auth_utils import get_current_user
@@ -72,7 +73,9 @@ async def get_scan_template(
         item = result.scalar_one_or_none()
         if not item:
             raise HTTPException(status_code=404, detail="Scan template not found")
-        return ScanTemplateResponse(success=True, data=ScanTemplateDetail.model_validate(item))
+        detail = ScanTemplateDetail.model_validate(item)
+        detail.credential_name = await get_record_name(db, Credential, item.credential_id)
+        return ScanTemplateResponse(success=True, data=detail)
     except HTTPException:
         raise
     except Exception as e:
@@ -99,7 +102,9 @@ async def create_scan_template(
         await log_audit(db, "scan_templates", item.id, "INSERT", new_data=model_to_dict(item), user_id=user.id, organization_id=org_id)
         await db.commit()
 
-        return ScanTemplateResponse(success=True, data=ScanTemplateDetail.model_validate(item))
+        detail = ScanTemplateDetail.model_validate(item)
+        detail.credential_name = await get_record_name(db, Credential, item.credential_id)
+        return ScanTemplateResponse(success=True, data=detail)
     except HTTPException:
         raise
     except Exception as e:
@@ -137,7 +142,9 @@ async def update_scan_template(
         await log_audit(db, "scan_templates", item.id, "UPDATE", old_data=old_data, new_data=model_to_dict(item), user_id=user.id, organization_id=org_id)
         await db.commit()
 
-        return ScanTemplateResponse(success=True, data=ScanTemplateDetail.model_validate(item))
+        detail = ScanTemplateDetail.model_validate(item)
+        detail.credential_name = await get_record_name(db, Credential, item.credential_id)
+        return ScanTemplateResponse(success=True, data=detail)
     except HTTPException:
         raise
     except Exception as e:

@@ -7,7 +7,9 @@ import { Play, Loader2, ChevronUp, ChevronDown, MoreHorizontal, Eye, XCircle, Ro
 import { useScanJobs } from '@/modules/cybersecurity/hooks/execution/use-scan-jobs';
 import { useOrganizations } from '@/modules/accounts/hooks/use-organizations';
 import { getJobStatusLabel, JOB_STATUS_COLORS } from '@/modules/cybersecurity/schemas/execution/scan-jobs.schemas';
+import { getScanTypeLabel } from '@/modules/cybersecurity/schemas/execution/scan-templates.schemas';
 import { Card, CardContent } from '@/modules/shadcnui/components/ui/card';
+import { Badge } from '@/modules/shadcnui/components/ui/badge';
 import { Button } from '@/modules/shadcnui/components/ui/button';
 import { Input } from '@/modules/shadcnui/components/ui/input';
 import { Label } from '@/modules/shadcnui/components/ui/label';
@@ -160,7 +162,16 @@ export default function ScanJobsPage() {
                         {getJobStatusLabel(job.status)}
                       </span>
                     </TableCell>
-                    <TableCell className="text-sm max-w-[200px] truncate">{job.scan_types_run || '—'}</TableCell>
+                    <TableCell className="max-w-[280px]">
+                      {/* Render the comma-separated scanner codes as readable labels, not raw enum values. */}
+                      {job.scan_types_run ? (
+                        <div className="flex flex-wrap gap-1">
+                          {job.scan_types_run.split(',').map((t) => t.trim()).filter(Boolean).map((t) => (
+                            <Badge key={t} variant="secondary" className="text-xs font-normal">{getScanTypeLabel(t)}</Badge>
+                          ))}
+                        </div>
+                      ) : '—'}
+                    </TableCell>
                     <TableCell>
                       <div className="flex gap-1 text-xs">
                         {job.critical_count > 0 && <span className="bg-red-600 text-white px-1.5 py-0.5 rounded">{job.critical_count}C</span>}

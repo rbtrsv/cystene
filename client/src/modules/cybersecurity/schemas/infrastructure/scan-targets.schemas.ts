@@ -43,6 +43,8 @@ export const ScanTargetSchema = z.object({
   user_id: z.number(),
   organization_id: z.number(),
   infrastructure_id: z.number().nullable(),
+  // Resolved name (enriched by the detail endpoint; absent in list responses)
+  infrastructure_name: z.string().nullable().optional(),
   name: z.string().min(1, 'Name is required').max(255, 'Name must be less than 255 characters'),
   target_type: TargetTypeEnum,
   target_value: z.string().min(1).max(500),

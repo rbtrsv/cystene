@@ -6,6 +6,7 @@ import { useScanJobs } from '@/modules/cybersecurity/hooks/execution/use-scan-jo
 import { useFindings } from '@/modules/cybersecurity/hooks/discovery/use-findings';
 import { useScanTargets } from '@/modules/cybersecurity/hooks/infrastructure/use-scan-targets';
 import { useAssets } from '@/modules/cybersecurity/hooks/discovery/use-assets';
+import { getScanTypeLabel } from '@/modules/cybersecurity/schemas/execution/scan-templates.schemas';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/modules/shadcnui/components/ui/card';
 import { Alert, AlertDescription } from '@/modules/shadcnui/components/ui/alert';
 import {
@@ -404,7 +405,9 @@ export default function CybersecurityPage() {
                             {job.low_count > 0 && <span className="bg-blue-400 text-white px-1.5 py-0.5 rounded">{job.low_count}L</span>}
                             {job.total_findings === 0 && <span className="text-muted-foreground text-sm">No findings</span>}
                           </div>
-                          <span className="text-sm text-muted-foreground">{job.scan_types_run}</span>
+                          <span className="text-sm text-muted-foreground">
+                            {job.scan_types_run ? job.scan_types_run.split(',').map((t) => getScanTypeLabel(t.trim())).join(', ') : ''}
+                          </span>
                         </div>
                         <div className="flex items-center gap-4">
                           {job.security_score !== null && job.security_score !== undefined && (

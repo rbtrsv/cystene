@@ -5,12 +5,12 @@ Cross-cutting (not a security entity): mounted on the gated cybersecurity router
 user with an active subscription (including FREE) can reach it. Access is owner-or-admin
 (NOT the org-scoped model), so the logic is explicit per endpoint — no shared owner filter.
 
-Pattern: cystene manual CRUD + explicit log_audit() (no crud_utils helpers); soft-delete via
-deleted_at/deleted_by.
+Pattern: CRUD via the crud_utils helpers (create_with_audit / update_with_audit /
+soft_delete_with_audit) — one call wraps the DB op + the explicit audit log.
+Soft-delete via deleted_at/deleted_by.
 """
 
 import logging
-from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select, func
@@ -26,6 +26,7 @@ from apps.accounts.utils.dependency_utils import require_user_role
 from ...models import CybersecurityFeedback as Feedback
 from ...schemas.shared.feedback_schemas import (
     FeedbackCreate,
+    FeedbackContentUpdate,
     FeedbackUpdate,
     FeedbackDetail,
     FeedbackListResponse,
@@ -33,7 +34,7 @@ from ...schemas.shared.feedback_schemas import (
     FeedbackMessageResponse,
 )
 from ...utils.dependency_utils import get_user_organization_id
-from ...utils.audit_utils import log_audit, model_to_dict
+from ...utils.crud_utils import create_with_audit, update_with_audit, soft_delete_with_audit
 
 router = APIRouter(tags=["Feedback"])
 logger = logging.getLogger(__name__)
@@ -51,7 +52,7 @@ def _is_admin(user: User) -> bool:
     return (user.role or "").upper() == UserRole.ADMIN.value
 
 
-async def _enrich(db: AsyncSession, item: Feedback) -> FeedbackDetail:
+async def _enrich_user(db: AsyncSession, item: Feedback) -> FeedbackDetail:
     """Resolve the submitter's email/name from accounts.User (created_by)."""
     detail = FeedbackDetail.model_validate(item, from_attributes=True)
     if item.created_by:
@@ -135,7 +136,7 @@ async def get_feedback(
         item = await _get_feedback_or_404(db, feedback_id)
         if item.created_by != user.id and not _is_admin(user):
             raise HTTPException(status_code=403, detail="Not allowed")
-        return FeedbackResponse(success=True, data=await _enrich(db, item))
+        return FeedbackResponse(success=True, data=await _enrich_user(db, item))
     except HTTPException:
         raise
     except Exception as e:
@@ -156,17 +157,13 @@ async def create_feedback(
     try:
         org_id = await get_user_organization_id(user.id, db)
         # mode="json" → the category enum serializes to its string value ("bug") for the String column.
-        item = Feedback(
-            **payload.model_dump(mode="json"),
-            organization_id=org_id,
-            created_by=user.id,
+        # create_with_audit stamps created_by + org, flushes, and writes the INSERT audit.
+        item = await create_with_audit(
+            db, Feedback, "cybersecurity_feedback",
+            payload.model_dump(mode="json"), user.id, org_id,
         )
-        db.add(item)
         await db.commit()
         await db.refresh(item)
-
-        await log_audit(db, "cybersecurity_feedback", item.id, "INSERT", new_data=model_to_dict(item), user_id=user.id, organization_id=org_id)
-        await db.commit()
 
         detail = FeedbackDetail.model_validate(item, from_attributes=True)
         detail.user_email, detail.user_name = user.email, user.name
@@ -182,6 +179,40 @@ async def create_feedback(
 @router.put("/{feedback_id}", response_model=FeedbackResponse)
 async def update_feedback(
     feedback_id: int,
+    payload: FeedbackContentUpdate,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_session),
+):
+    """
+    Edit feedback CONTENT (category/title/description) — the submitter or an admin.
+    Triage (status/admin_notes) is a separate admin-only endpoint (PUT /{id}/admin).
+    """
+    try:
+        item = await _get_feedback_or_404(db, feedback_id)
+        if item.created_by != user.id and not _is_admin(user):
+            raise HTTPException(status_code=403, detail="Not allowed")
+        org_id = await get_user_organization_id(user.id, db)
+
+        # exclude_unset → only the fields the user actually sent are touched.
+        item = await update_with_audit(
+            db, item, "cybersecurity_feedback",
+            payload.model_dump(exclude_unset=True, mode="json"), user.id, org_id,
+        )
+        await db.commit()
+        await db.refresh(item)
+
+        return FeedbackResponse(success=True, data=await _enrich_user(db, item))
+    except HTTPException:
+        raise
+    except Exception as e:
+        await db.rollback()
+        logger.exception(f"Failed to update feedback: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+
+@router.put("/{feedback_id}/admin", response_model=FeedbackResponse)
+async def admin_update_feedback(
+    feedback_id: int,
     payload: FeedbackUpdate,
     # Gate enforced by require_user_role("ADMIN") — non-admins get 403 before the body runs.
     user: User = Depends(require_user_role("ADMIN")),
@@ -194,22 +225,19 @@ async def update_feedback(
         item = await _get_feedback_or_404(db, feedback_id)
         org_id = await get_user_organization_id(user.id, db)
 
-        old_data = model_to_dict(item)
-        # exclude_unset → only the fields the admin actually sent are touched.
-        for field, value in payload.model_dump(exclude_unset=True, mode="json").items():
-            setattr(item, field, value)
+        item = await update_with_audit(
+            db, item, "cybersecurity_feedback",
+            payload.model_dump(exclude_unset=True, mode="json"), user.id, org_id,
+        )
         await db.commit()
         await db.refresh(item)
 
-        await log_audit(db, "cybersecurity_feedback", item.id, "UPDATE", old_data=old_data, new_data=model_to_dict(item), user_id=user.id, organization_id=org_id)
-        await db.commit()
-
-        return FeedbackResponse(success=True, data=await _enrich(db, item))
+        return FeedbackResponse(success=True, data=await _enrich_user(db, item))
     except HTTPException:
         raise
     except Exception as e:
         await db.rollback()
-        logger.exception(f"Failed to update feedback: {e}")
+        logger.exception(f"Failed to admin-update feedback: {e}")
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
@@ -230,12 +258,7 @@ async def delete_feedback(
             raise HTTPException(status_code=403, detail="Not allowed")
         org_id = await get_user_organization_id(user.id, db)
 
-        old_data = model_to_dict(item)
-        item.deleted_at = datetime.now(timezone.utc)
-        item.deleted_by = user.id
-        await db.commit()
-
-        await log_audit(db, "cybersecurity_feedback", item.id, "DELETE", old_data=old_data, user_id=user.id, organization_id=org_id)
+        await soft_delete_with_audit(db, item, "cybersecurity_feedback", user.id, org_id)
         await db.commit()
 
         return FeedbackMessageResponse(success=True, message=f"Feedback {feedback_id} has been deleted")

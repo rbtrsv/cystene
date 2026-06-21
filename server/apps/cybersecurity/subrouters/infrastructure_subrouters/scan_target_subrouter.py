@@ -9,12 +9,13 @@ from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
-from ...models.infrastructure_models import ScanTarget
+from ...models.infrastructure_models import ScanTarget, Infrastructure
 from ...schemas.infrastructure_schemas.scan_target_schemas import (
     ScanTargetCreate, ScanTargetUpdate, ScanTargetDetail,
     ScanTargetResponse, ScanTargetsResponse,
 )
 from ...utils.dependency_utils import get_user_organization_id
+from ...utils.crud_utils import get_record_name
 from ...utils.audit_utils import log_audit, model_to_dict
 from ...utils.verification_utils import (
     generate_verification_token,
@@ -82,7 +83,9 @@ async def get_scan_target(
         item = result.scalar_one_or_none()
         if not item:
             raise HTTPException(status_code=404, detail="Scan target not found")
-        return ScanTargetResponse(success=True, data=ScanTargetDetail.model_validate(item))
+        detail = ScanTargetDetail.model_validate(item)
+        detail.infrastructure_name = await get_record_name(db, Infrastructure, item.infrastructure_id)
+        return ScanTargetResponse(success=True, data=detail)
     except HTTPException:
         raise
     except Exception as e:
@@ -121,7 +124,9 @@ async def create_scan_target(
         await log_audit(db, "scan_targets", item.id, "INSERT", new_data=model_to_dict(item), user_id=user.id, organization_id=org_id)
         await db.commit()
 
-        return ScanTargetResponse(success=True, data=ScanTargetDetail.model_validate(item))
+        detail = ScanTargetDetail.model_validate(item)
+        detail.infrastructure_name = await get_record_name(db, Infrastructure, item.infrastructure_id)
+        return ScanTargetResponse(success=True, data=detail)
     except HTTPException:
         raise
     except Exception as e:
@@ -167,7 +172,9 @@ async def update_scan_target(
         await log_audit(db, "scan_targets", item.id, "UPDATE", old_data=old_data, new_data=model_to_dict(item), user_id=user.id, organization_id=org_id)
         await db.commit()
 
-        return ScanTargetResponse(success=True, data=ScanTargetDetail.model_validate(item))
+        detail = ScanTargetDetail.model_validate(item)
+        detail.infrastructure_name = await get_record_name(db, Infrastructure, item.infrastructure_id)
+        return ScanTargetResponse(success=True, data=detail)
     except HTTPException:
         raise
     except Exception as e:

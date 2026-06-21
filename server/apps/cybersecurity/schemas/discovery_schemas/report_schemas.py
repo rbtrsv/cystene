@@ -36,6 +36,7 @@ class ReportDetail(BaseModel):
     """Report schema - full representation"""
     id: int
     target_id: int = Field(description="Scan target this report covers")
+    target_name: str | None = Field(None, description="Resolved name (JOINed in the detail endpoint)")
     scan_job_id: int | None = Field(None, description="Source scan job")
     name: str = Field(description="Report name")
     report_type: ReportType = Field(description="Type of report")

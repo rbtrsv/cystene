@@ -8,12 +8,12 @@
  */
 
 import { useState } from 'react';
-import { useFeedback } from '../../hooks/use-feedback';
+import { useFeedback } from '../../hooks/shared/use-feedback';
 import {
   FeedbackCategorySchema,
   FEEDBACK_CATEGORY_LABELS,
   type FeedbackCategory,
-} from '../../schemas/feedback.schemas';
+} from '../../schemas/shared/feedback.schemas';
 import { Button } from '@/modules/shadcnui/components/ui/button';
 import { Input } from '@/modules/shadcnui/components/ui/input';
 import { Label } from '@/modules/shadcnui/components/ui/label';

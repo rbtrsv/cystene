@@ -27,7 +27,7 @@ from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, and_
 
-from ...models.execution_models import ScanJob, ScanTemplate
+from ...models.execution_models import ScanJob, ScanTemplate, ScanSchedule
 from ...models.infrastructure_models import ScanTarget, Credential
 from ...models.discovery_models import Finding, Asset
 from ...schemas.execution_schemas.scan_job_schemas import (
@@ -35,6 +35,7 @@ from ...schemas.execution_schemas.scan_job_schemas import (
 )
 from ...scanners import SCANNERS
 from ...utils.dependency_utils import get_user_organization_id
+from ...utils.crud_utils import get_record_name
 from ...utils.encryption_utils import decrypt_value
 from apps.accounts.models import User
 from apps.accounts.utils.auth_utils import get_current_user
@@ -601,7 +602,12 @@ async def get_scan_job(
         item = result.scalar_one_or_none()
         if not item:
             raise HTTPException(status_code=404, detail="Scan job not found")
-        return ScanJobResponse(success=True, data=ScanJobDetail.model_validate(item))
+        # Enrich with the related record names so the UI shows names, not raw FK IDs.
+        detail = ScanJobDetail.model_validate(item)
+        detail.target_name = await get_record_name(db, ScanTarget, item.target_id)
+        detail.template_name = await get_record_name(db, ScanTemplate, item.template_id)
+        detail.schedule_name = await get_record_name(db, ScanSchedule, item.schedule_id)
+        return ScanJobResponse(success=True, data=detail)
     except HTTPException:
         raise
     except Exception as e:

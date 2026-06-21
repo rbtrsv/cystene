@@ -20,6 +20,7 @@ import {
   type ScanJob,
   type JobStatus,
 } from '@/modules/cybersecurity/schemas/execution/scan-jobs.schemas';
+import { getScanTypeLabel } from '@/modules/cybersecurity/schemas/execution/scan-templates.schemas';
 import { Card, CardContent, CardHeader, CardTitle } from '@/modules/shadcnui/components/ui/card';
 import { Button } from '@/modules/shadcnui/components/ui/button';
 import { Alert, AlertDescription } from '@/modules/shadcnui/components/ui/alert';
@@ -153,9 +154,9 @@ export default function ScanJobDetailsPage() {
                 </span>
               </p>
             </div>
-            <div><p className="text-sm text-muted-foreground">Target ID</p><p className="font-medium">{item.target_id}</p></div>
-            <div><p className="text-sm text-muted-foreground">Template ID</p><p className="font-medium">{item.template_id}</p></div>
-            <div><p className="text-sm text-muted-foreground">Schedule ID</p><p className="font-medium">{item.schedule_id ?? '—'}</p></div>
+            <div><p className="text-sm text-muted-foreground">Target</p><p className="font-medium">{item.target_name || `#${item.target_id}`}</p></div>
+            <div><p className="text-sm text-muted-foreground">Template</p><p className="font-medium">{item.template_name || `#${item.template_id}`}</p></div>
+            <div><p className="text-sm text-muted-foreground">Schedule</p><p className="font-medium">{item.schedule_name || (item.schedule_id ? `#${item.schedule_id}` : '—')}</p></div>
             <div><p className="text-sm text-muted-foreground">Execution Point</p><p className="font-medium">{item.execution_point}</p></div>
             <div><p className="text-sm text-muted-foreground">Created</p><p className="font-medium">{new Date(item.created_at).toLocaleString()}</p></div>
             <div><p className="text-sm text-muted-foreground">Started</p><p className="font-medium">{item.started_at ? new Date(item.started_at).toLocaleString() : '—'}</p></div>
@@ -206,7 +207,7 @@ export default function ScanJobDetailsPage() {
             <div className="flex flex-wrap gap-2">
               {item.scan_types_run.split(',').map((type) => (
                 <span key={type.trim()} className="inline-block px-2 py-0.5 rounded text-xs font-medium bg-muted text-muted-foreground">
-                  {type.trim()}
+                  {getScanTypeLabel(type.trim())}
                 </span>
               ))}
             </div>

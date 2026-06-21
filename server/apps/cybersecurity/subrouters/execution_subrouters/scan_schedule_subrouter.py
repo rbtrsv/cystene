@@ -9,13 +9,14 @@ from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
-from ...models.execution_models import ScanSchedule
+from ...models.execution_models import ScanSchedule, ScanTemplate
 from ...models.infrastructure_models import ScanTarget
 from ...schemas.execution_schemas.scan_schedule_schemas import (
     ScanScheduleCreate, ScanScheduleUpdate, ScanScheduleDetail,
     ScanScheduleResponse, ScanSchedulesResponse,
 )
 from ...utils.dependency_utils import get_user_organization_id
+from ...utils.crud_utils import get_record_name
 from ...utils.audit_utils import log_audit, model_to_dict
 from apps.accounts.models import User
 from apps.accounts.utils.auth_utils import get_current_user
@@ -66,7 +67,11 @@ async def get_scan_schedule(
         item = result.scalar_one_or_none()
         if not item:
             raise HTTPException(status_code=404, detail="Scan schedule not found")
-        return ScanScheduleResponse(success=True, data=ScanScheduleDetail.model_validate(item))
+        # Enrich with related record names so the UI shows names, not raw FK IDs.
+        detail = ScanScheduleDetail.model_validate(item)
+        detail.target_name = await get_record_name(db, ScanTarget, item.target_id)
+        detail.template_name = await get_record_name(db, ScanTemplate, item.template_id)
+        return ScanScheduleResponse(success=True, data=detail)
     except HTTPException:
         raise
     except Exception as e:

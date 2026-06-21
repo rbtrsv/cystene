@@ -10,12 +10,13 @@ from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
-from ...models.infrastructure_models import Credential
+from ...models.infrastructure_models import Credential, Infrastructure
 from ...schemas.infrastructure_schemas.credential_schemas import (
     CredentialCreate, CredentialUpdate, CredentialDetail,
     CredentialResponse, CredentialsResponse,
 )
 from ...utils.dependency_utils import get_user_organization_id
+from ...utils.crud_utils import get_record_name
 from ...utils.encryption_utils import encrypt_value
 from ...utils.audit_utils import log_audit, model_to_dict
 from apps.accounts.models import User
@@ -78,7 +79,9 @@ async def get_credential(
         item = result.scalar_one_or_none()
         if not item:
             raise HTTPException(status_code=404, detail="Credential not found")
-        return CredentialResponse(success=True, data=CredentialDetail.model_validate(item))
+        detail = CredentialDetail.model_validate(item)
+        detail.infrastructure_name = await get_record_name(db, Infrastructure, item.infrastructure_id)
+        return CredentialResponse(success=True, data=detail)
     except HTTPException:
         raise
     except Exception as e:
@@ -118,7 +121,9 @@ async def create_credential(
         await log_audit(db, "credentials", item.id, "INSERT", new_data=model_to_dict(item), user_id=user.id, organization_id=org_id)
         await db.commit()
 
-        return CredentialResponse(success=True, data=CredentialDetail.model_validate(item))
+        detail = CredentialDetail.model_validate(item)
+        detail.infrastructure_name = await get_record_name(db, Infrastructure, item.infrastructure_id)
+        return CredentialResponse(success=True, data=detail)
     except HTTPException:
         raise
     except Exception as e:
@@ -169,7 +174,9 @@ async def update_credential(
         await log_audit(db, "credentials", item.id, "UPDATE", old_data=old_data, new_data=model_to_dict(item), user_id=user.id, organization_id=org_id)
         await db.commit()
 
-        return CredentialResponse(success=True, data=CredentialDetail.model_validate(item))
+        detail = CredentialDetail.model_validate(item)
+        detail.infrastructure_name = await get_record_name(db, Infrastructure, item.infrastructure_id)
+        return CredentialResponse(success=True, data=detail)
     except HTTPException:
         raise
     except Exception as e:

@@ -10,7 +10,7 @@ import { ScanJobProvider } from './execution/scan-job-provider';
 import { FindingProvider } from './discovery/finding-provider';
 import { AssetProvider } from './discovery/asset-provider';
 import { ReportProvider } from './discovery/report-provider';
-import { FeedbackProvider } from './feedback-provider';
+import { FeedbackProvider } from './shared/feedback-provider';
 
 /**
  * CybersecurityProviders props

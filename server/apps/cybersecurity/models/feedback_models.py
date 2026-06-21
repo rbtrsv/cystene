@@ -45,7 +45,9 @@ class CybersecurityFeedback(Base, BaseMixin):
     # created_by (submitter) + soft-delete (deleted_at/deleted_by) + audit timestamps come from BaseMixin
 
     # created_by → "my feedback" list; status → admin triage filter.
+    # Index names prefixed with the table name (ix_cybersecurity_feedback_*) to avoid
+    # cross-table name collisions in the shared database.
     __table_args__ = (
-        Index("ix_feedback_created_by", "created_by"),
-        Index("ix_feedback_status", "status"),
+        Index("ix_cybersecurity_feedback_created_by", "created_by"),
+        Index("ix_cybersecurity_feedback_status", "status"),
     )
