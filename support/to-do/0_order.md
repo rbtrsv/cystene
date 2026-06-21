@@ -57,6 +57,9 @@ Next in line after the Next Up slice. Cystene stays a general ESPM platform.
 - 🟡 **B1 — "Vibe-Coded App" `ScanTemplate` preset (seed)** — the one-click "scan my vibe-coded app" funnel entry. Bundles A1/A2 (+ A3 when ready) + headers/ssl. Ship once A1/A2 land. See `market-vibe-scanners.md` §5.
 - 🟡 **OWASP-Top-10-for-Vibe mapping** — tag vibe findings via existing `Finding.owasp_category` (A01 broken access, A02 secrets, A03 injection, A05 misconfig, A07 auth). Zero schema change — reports speak the vibe-coder's language. See `market-vibe-scanners.md` §6.
 - 🟡 **B3 — Verifiable trust badge** — embeddable badge after a clean scan (zero critical/high). Ties to `security_score` + existing target verification. Marketing funnel. See `market-vibe-scanners.md` §3.4.
+- 🟡 **Letter-grade security score + trend** *(inspiration: Intrudify)* — map the existing 0-100 `security_score` (`compute_security_score`) to A–F + "+N pts this week" on the dashboard. Presentation over data we already compute. See `market-vibe-scanners.md` §3 (item 8).
+- 🟡 **Dashboard depth** *(inspiration: Intrudify)* — Vulnerability Trend chart + Top Findings (by CVSS) widget + Open-by-severity bars, beside the existing stat cards. §3 (item 9).
+- 🟡 **Finding triage filters + human ID** *(inspiration: Intrudify)* — widespread / recurring / stale (from fingerprint dedup + `first_found_job_id` + `is_new`) + a human-friendly `CYS-XXXX` finding ID. §3 (item 10).
 
 ## Backlog
 
@@ -73,6 +76,9 @@ Next in line after the Next Up slice. Cystene stays a general ESPM platform.
 - 🔵 **A8 — Info disclosure / debug mode** — OWASP A05; extend `web_scan`: stack traces, DB schema, verbose errors, debug endpoints. See `market-vibe-scanners.md` §6.
 - 🔵 **A9 — Client-side dependency exposure** — OWASP A06; extend `web_scan`: exposed `package.json`/lock, outdated front-end JS libs (retire.js-style), missing SRI, untrusted CDNs. See `market-vibe-scanners.md` §6.
 - 🔵 **B5 — Breach checker util (HaveIBeenPwned)** — optional, low priority. Email exposure check, funnel free-tool.
+- 🔵 **Trust & Compliance page** *(inspiration: Intrudify)* — surface what already exists (immutable audit log + CSV/SIEM export, Fernet credential encryption, SOC2/ISO27001/NIS2 compliance mapping) as one trust-posture view. `market-vibe-scanners.md` §3 (item 11).
+- 🔵 **GraphQL introspection + CSRF/cookie-flag checks** *(inspiration: Intrudify)* — detection-only; extend `web_scan`/`active_web_scan`. Net-new vs the IDOR/SSRF/auth/info-disclosure items (A5–A9) already listed. §3 (item 12).
+- 🔵 **Website funnel copy — SAST vs DAST** *(inspiration: Intrudify blog)* — "AI writes your code, then test the running app" landing section (the `/invoice/4912→4913` IDOR framing). Copy only. §3 (item 13).
 
 ## Long Term
 

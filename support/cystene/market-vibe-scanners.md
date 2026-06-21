@@ -56,6 +56,15 @@ Integration: **MCP-native** (Cursor, Claude Code, VS Code, Windsurf), CLI (`npx 
 
 **Key differentiator (from the 2026 comparison):** no single scanner catches everything. The split that matters is **static (source/SAST)** vs **dynamic (live URL/DAST)**. Logic errors — inverted auth middleware, IDOR — are invisible to URL scanners that only see successful responses; none of the reviewed tools do genuine request-based auth-flow validation. **Cystene's edge:** it already runs both external (DAST-style) and internal (credentialed) scans — the two halves these tools sell separately.
 
+### Intrudify — autonomous AI pentester (EU, intrudify.com)
+
+A different category from the vibe-scanners above: not a checklist scanner but an **AI-agent pentester** — it authenticates into the app, reasons about each parameter individually, generates targeted test cases, and runs **real exploits with a reproducible proof-of-concept** before a finding ships. Continuous on every deploy (3–6h vs 2–4 weeks manual). Pitch: "the quality of a $30k pentest without the price tag."
+
+- **Coverage:** 80+ vuln classes with a dedicated detection engine per class — full CWE list incl. SSTI (CWE-1336), SSRF (918), BOLA/IDOR (639), Mass Assignment (915), Prototype Pollution (1321), JWT Forgery (347), OAuth misconfig (1390), GraphQL introspection (200), HTTP smuggling (444), NoSQL/LDAP/XPath injection. 100% endpoint+parameter coverage every run; reconnaissance maps SPA crawling + MFA/OAuth/SAML auth flows.
+- **UX worth stealing:** letter-grade security score ("B+", **+12 pts this week** trend); dashboard with Vulnerability Trend, Open-by-severity, Top Findings (by CVSS); every finding tagged **INT-ID + CWE + CVSS**; filter by widespread / recurring / stale; "Trudi" AI remediation chat (ask why a finding matters / how to test the fix, in context); a **Trust posture page** (SOC2 Type II, ISO27001, NIS2-ready, AES-256 per-tenant KMS, append-only audit log + SIEM export + 7-yr retention, production-safe read-only validation).
+- **Business model:** platform + **human-led services** (vCISO, custom pentest, compliance/audit readiness, security-architecture review) — a revenue layer above the software.
+- **Their blog = our funnel thesis verbatim:** "Use Claude Fable 5 / Mythos 5 to write safer code, **then test your live app**" — SAST reads the code, DAST attacks the running app; the canonical IDOR demo (`/invoice/4912` → change one digit → `/invoice/4913`, not yours) is invisible to a code reviewer. This is exactly Cystene's "scan from the outside AND inside" pitch.
+
 ---
 
 ## 3. What Cystene should adopt (inspiration → roadmap)
@@ -70,7 +79,16 @@ Cystene already has the heavy machinery (12 scanners, fingerprint dedup, `Findin
 6. **Platform-specific finding category** — tag findings as Lovable/Bolt/v0/Cursor/Replit patterns (`Finding.finding_type`). Lets reports speak the vibe-coder's language.
 7. **Free instant URL scan, no signup** — top-of-funnel. The FREE tier + external scanners already cover this; needs a frictionless single-URL entry path.
 
-**What NOT to copy:** these tools are single-app point solutions. Cystene's value is the platform (infrastructure context, internal/credentialed audit, compliance reports, multi-target, scheduling). Adopt the checks and the funnel UX; do not narrow the product down to "another vibe scanner."
+**From Intrudify (UX/packaging — adopt the presentation, not the AI-exploitation engine):**
+
+8. **Letter-grade security score + week-over-week trend** — map the existing 0-100 `security_score` (`scan_job_subrouter.py:compute_security_score`) to A–F and show "+N pts this week" on the dashboard. Presentation over data we already compute.
+9. **Dashboard depth** — Vulnerability Trend chart + Top Findings (by CVSS) widget + Open-by-severity bars, beside the existing stat cards.
+10. **Finding triage filters + human ID** — widespread / recurring / stale, derived from the fingerprint dedup + `first_found_job_id` + `is_new` we already store; plus a human-friendly `CYS-XXXX` finding ID.
+11. **Trust & Compliance page** — surface what already exists (immutable audit log + CSV/SIEM export, Fernet credential encryption, SOC2/ISO27001/NIS2 compliance mapping) as a single trust-posture view.
+12. **A few detection-only checks toward the 80+ classes** — GraphQL introspection enabled, CSRF / cookie-flag (`Secure`/`HttpOnly`/`SameSite`) checks; extend `web_scan` / `active_web_scan` (detection-only, no exploitation).
+13. **Website funnel copy** — the SAST-vs-DAST "AI writes your code, then test the running app" framing (Intrudify's blog thesis = ours) for the landing page.
+
+**What NOT to copy:** these tools are single-app point solutions. Cystene's value is the platform (infrastructure context, internal/credentialed audit, compliance reports, multi-target, scheduling). Adopt the checks and the funnel UX; do not narrow the product down to "another vibe scanner." From **Intrudify** specifically, do NOT chase the autonomous-exploitation agent, the reproducible-PoC engine, or the "Trudi" AI chat — Cystene is scanner-based **detection** (safe, consent-gated), not an AI pentester that runs live exploits. Take the score/dashboard/trust UX and the SAST-vs-DAST funnel framing; keep the detection-only architecture.
 
 ---
 
@@ -163,3 +181,7 @@ Three more checklists cross-referenced. Cystene **already covers** a lot: SQLi/X
 - https://vibeappscanner.com/owasp-top-10-vibe-coding (OWASP Top 10 for Vibe Coding)
 - https://serenitiesai.com/articles/vibe-coding-security-checklist-2026 (Serenities — 25 checks before launch)
 - Google "scan your vibe coded app" — Level Up Coding (7-point check), VibeEval, Wagtail, StackHawk (natural-language DAST)
+- https://intrudify.com/ (Intrudify — EU autonomous AI pentester; landing + dashboard preview + 80+ vuln classes)
+- https://intrudify.com/platform (4-move pipeline: reconnaissance → exploitation → validation → continuous coverage)
+- https://intrudify.com/services (human-led layer: vCISO, custom pentest, compliance readiness, architecture review)
+- https://intrudify.com/blog/ (vibe-coded funnel content — SAST-vs-DAST: "write safer code with Fable 5 / Mythos 5, then test the running app")
