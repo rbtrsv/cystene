@@ -13,6 +13,7 @@
  */
 
 import { z } from 'zod';
+import { humanizeToken } from '../../utils/label.utils';
 
 // ==========================================
 // Enums
@@ -165,6 +166,49 @@ export const FINDING_STATUS_LABELS: Record<FindingStatus, string> = {
 
 export const getFindingStatusLabel = (status: string): string => {
   return FINDING_STATUS_LABELS[status as FindingStatus] || status;
+};
+
+/**
+ * Human labels for FindingCategory — correct acronym casing (API/DNS/SSL/CORS/IAM/AD)
+ * that a naive title-case can't produce. Mirrors the SEVERITY_LABELS pattern above.
+ */
+export const FINDING_CATEGORY_LABELS: Record<FindingCategory, string> = {
+  open_port: 'Open Port',
+  service_exposure: 'Service Exposure',
+  outdated_service: 'Outdated Service',
+  default_credentials: 'Default Credentials',
+  dns_exposure: 'DNS Exposure',
+  subdomain_discovery: 'Subdomain Discovery',
+  dns_misconfiguration: 'DNS Misconfiguration',
+  ssl_weakness: 'SSL Weakness',
+  certificate_issue: 'Certificate Issue',
+  protocol_vulnerability: 'Protocol Vulnerability',
+  missing_header: 'Missing Security Header',
+  web_misconfiguration: 'Web Misconfiguration',
+  information_disclosure: 'Information Disclosure',
+  known_vulnerability: 'Known Vulnerability',
+  api_vulnerability: 'API Vulnerability',
+  injection_detected: 'Injection Detected',
+  file_exposure: 'File Exposure',
+  directory_listing: 'Directory Listing',
+  cors_misconfiguration: 'CORS Misconfiguration',
+  open_redirect: 'Open Redirect',
+  privilege_escalation: 'Privilege Escalation',
+  weak_file_permissions: 'Weak File Permissions',
+  exposed_credentials: 'Exposed Credentials',
+  insecure_service_config: 'Insecure Service Config',
+  cloud_misconfiguration: 'Cloud Misconfiguration',
+  iam_issue: 'IAM Issue',
+  ad_weakness: 'AD Weakness',
+  weak_password: 'Weak Password',
+  mobile_vulnerability: 'Mobile Vulnerability',
+  weak_authentication: 'Weak Authentication',
+  configuration_error: 'Configuration Error',
+};
+
+// Falls back to humanizeToken (not the raw value) so an unmapped/new category still reads cleanly.
+export const getFindingCategoryLabel = (category: string): string => {
+  return FINDING_CATEGORY_LABELS[category as FindingCategory] || humanizeToken(category);
 };
 
 // ==========================================

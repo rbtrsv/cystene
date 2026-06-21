@@ -18,10 +18,12 @@ import {
   getSeverityLabel,
   SEVERITY_COLORS,
   getFindingStatusLabel,
+  getFindingCategoryLabel,
   type Finding,
   type Severity,
   type FindingStatus,
 } from '@/modules/cybersecurity/schemas/discovery/findings.schemas';
+import { humanizeToken } from '@/modules/cybersecurity/utils/label.utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/modules/shadcnui/components/ui/card';
 import { Button } from '@/modules/shadcnui/components/ui/button';
 import { Alert, AlertDescription } from '@/modules/shadcnui/components/ui/alert';
@@ -155,8 +157,8 @@ export default function FindingDetailsPage() {
               </p>
             </div>
             <div><p className="text-sm text-muted-foreground">Title</p><p className="font-medium">{item.title}</p></div>
-            <div><p className="text-sm text-muted-foreground">Category</p><p className="font-medium">{item.category}</p></div>
-            <div><p className="text-sm text-muted-foreground">Finding Type</p><p className="font-medium">{item.finding_type}</p></div>
+            <div><p className="text-sm text-muted-foreground">Category</p><p className="font-medium">{getFindingCategoryLabel(item.category)}</p></div>
+            <div><p className="text-sm text-muted-foreground">Finding Type</p><p className="font-medium">{humanizeToken(item.finding_type)}</p></div>
             <div>
               <p className="text-sm text-muted-foreground">Is New</p>
               <p>

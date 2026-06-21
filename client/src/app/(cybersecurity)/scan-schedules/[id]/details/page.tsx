@@ -18,6 +18,7 @@ import {
   getScheduleFrequencyLabel,
   type ScanSchedule,
 } from '@/modules/cybersecurity/schemas/execution/scan-schedules.schemas';
+import { humanizeToken } from '@/modules/cybersecurity/utils/label.utils';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/modules/shadcnui/components/ui/card';
 import { Button } from '@/modules/shadcnui/components/ui/button';
 import { Input } from '@/modules/shadcnui/components/ui/input';
@@ -208,7 +209,7 @@ export default function ScanScheduleDetailsPage() {
               <div className="grid grid-cols-2 gap-4">
                 <div><p className="text-sm text-muted-foreground">Last Run At</p><p className="font-medium">{item.last_run_at ? new Date(item.last_run_at).toLocaleString() : '—'}</p></div>
                 <div><p className="text-sm text-muted-foreground">Next Run At</p><p className="font-medium">{item.next_run_at ? new Date(item.next_run_at).toLocaleString() : '—'}</p></div>
-                <div><p className="text-sm text-muted-foreground">Last Run Status</p><p className="font-medium">{item.last_run_status || '—'}</p></div>
+                <div><p className="text-sm text-muted-foreground">Last Run Status</p><p className="font-medium">{item.last_run_status ? humanizeToken(item.last_run_status) : '—'}</p></div>
                 <div><p className="text-sm text-muted-foreground">Created</p><p className="font-medium">{new Date(item.created_at).toLocaleString()}</p></div>
               </div>
             </CardContent>
