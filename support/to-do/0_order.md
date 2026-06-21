@@ -127,6 +127,8 @@ Removed ecommerce from boot path (main.py, env.py, config.py). Kept `server/apps
 - ✅ Rate limiting fix: removed from router level, applied inline on POST /start and POST /generate only
 - ✅ Subscription page sort by price ascending (matching nexotype pattern)
 - ✅ Stripe env vars fixed in Coolify (was pointing to Nudgio account)
+- ✅ Adversarial self-review prompt (`support/prompts/adversarial-self-review-prompt.md`) — UX/orphaned-flow + raw-IDs/raw-enums review checklist; drove the FK-names + label-polish passes
+- ✅ Dashboard org-name removed + sidebar grouped (Account: Subscription/Feedback/Audit Trail) — solo-user workspace stays invisible
 
 ## A2 — `baas_scan` scanner (Backend-as-a-Service data exposure) ✅ COMPLETE (verified locally; awaiting deploy/commit)
 
@@ -147,6 +149,18 @@ Second vibe-coded check. NEW external scanner `scanners/external/secret_scan.py`
 The signature VAS UX ("a fix list, formatted for your AI tool"). NEW util `utils/remediation_utils.py:build_ai_fix_prompt(finding)` — composes a copy-paste prompt from a finding's existing fields (title/severity/location/description/remediation/remediation_script/evidence), so it works for **every scanner automatically** (no per-scanner change). Single source of truth used by both the finding-detail endpoint and JSON reports. **Not `@computed_field`** (no precedent + would compute for every list row) — populated explicitly in `get_finding` detail endpoint (`utils/small-composable` "orchestration explicit in routes").
 - Wiring (full-stack): `FindingDetail.ai_fix_prompt` field + populated on detail; `report_generation_service._finding_to_dict` includes it (JSON); client Zod `ai_fix_prompt` + **"Copy AI Fix" button** on finding detail page (inline `navigator.clipboard.writeText`, assetmanager pattern).
 - Verified: `compileall` ✅; unit test util (full + sparse — empty lines omitted) ✅; schema field + report import ✅; app boots ✅; `tsc --noEmit` ✅.
+
+## Subscription flow — end-to-end fix ✅ COMPLETE (shipped — commit 42ee2b0)
+
+`get_current_subscription` now returns ALL Stripe fields (`stripe_customer_id`/`stripe_subscription_id`/`stripe_product_id`) — the multi-tier subscription page matches the active plan via `stripe_product_id === price.product_id`, so omitting them rendered "Free" despite an active sub. Stripe billing-portal Configuration enabled `subscription_update` + `proration_behavior=always_invoice` (charge the difference now) on test + live. Cookie renamed `nudgio_*` → `cystene_access_token`/`refresh_token`/`token_expiry` (`proxy.ts` + token client/server utils). Org auto-created at registration (verified). 3 webhook tests (create / update-in-place / all-fields). Verified live (reset → Pro → upgrade Enterprise, $150 proration, DB = ENTERPRISE).
+
+## In-UI security report view ✅ COMPLETE (shipped)
+
+vibeappscanner-style report page (`reports/[id]/details/page.tsx`): severity summary tiles + findings grouped by severity (Evidence / Remediation / Fix command blocks) + report-wide **"Export for AI"** (`utils/report-ai-export.utils.ts:buildAiFixExport` — markdown, prefers `ai_fix_prompt` else builds from remediation). "View Reports" entry-point on scan-target details. Complements B2's per-finding AI-fix prompt. ("Security Strengths" reference section deliberately deferred → Backlog: needs scanners to emit passed-checks.)
+
+## Mobile Scan — standalone APK upload page ✅ COMPLETE (shipped)
+
+Fixes the orphaned `mobile_scan` option (was selectable with no upload UI — the canonical adversarial-review finding). Dedicated `app/(cybersecurity)/mobile-scan/page.tsx` + `subrouters/execution_subrouters/mobile_scan_subrouter.py` — ephemeral upload (file or URL) → scan → delete immediately (no persistence). Multipart via raw fetch + bearer token (fetchClient is JSON-only). Sidebar: Scanning → Mobile Scan.
 
 ## Feedback module — in-app bug reports / feature requests / questions ✅ COMPLETE (shipped — commit 0cc5501)
 
