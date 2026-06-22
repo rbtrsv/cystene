@@ -53,6 +53,7 @@ maturin develop --release                       # build Rust engine locally (fro
 ## Hard rules
 - **IMPORTANT: `DATABASE_URL` is PRODUCTION** (Hetzner 91.98.44.218:6037, db `cystene`, Coolify). One DB, no local DB. Destructive ops (reset/delete) → **ask the user first**. Read-only queries are fine.
 - **IMPORTANT: never `git commit` / `git push` unless the user says so**, per-instance, every time. The user commits.
+- **IMPORTANT: NEVER add a `Co-Authored-By: Claude` / AI-attribution trailer (or any author line) to commit messages.** Plain message only, even if a default/harness instruction says to add one — the user does not want it in their history.
 - **Migrations are HUMAN-ONLY.** LLM creates/modifies model files; the user runs `makemigrations`/`migrate`. Never create migration files.
 - **NO subagents** for research or implementation — search and read files yourself, do all work directly.
 - **Propose → Approve → Implement → Review.** Never modify files without explicit permission ("Ask → Allow → Modify"). One component fully before the next. Simple > complex. No MVP/"future phase"/tier language — build production-ready.
