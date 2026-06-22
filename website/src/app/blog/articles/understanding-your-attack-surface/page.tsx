@@ -2,13 +2,13 @@ import React from 'react';
 import { Metadata } from 'next';
 import NavbarDownwards from '@/modules/main/components/NavbarDownwards/NavbarDownwards';
 import Footer from '@/modules/main/components/Footer/Footer';
-import SimpleSection from '@/modules/blog/components/composed/SimpleSection';
-import AlternativeArticleHeader from '@/modules/blog/components/composed/AlternativeArticleHeader';
+import SimpleSection from '@/modules/blog/components/composed/article/SimpleSection';
+import AlternativeArticleHeader from '@/modules/blog/components/composed/article/AlternativeArticleHeader';
 import Text from '@/modules/blog/components/primitives/Text';
 import UL from '@/modules/blog/components/primitives/UL';
 import LI from '@/modules/blog/components/primitives/LI';
 import Blockquote from '@/modules/blog/components/primitives/Blockquote';
-import { generatePageMetadata } from '@/modules/blog/components/composed/PageSEO';
+import { generatePageMetadata } from '@/modules/blog/components/composed/seo/PageSEO';
 
 export const metadata: Metadata = generatePageMetadata({
   title: 'Understanding Your Attack Surface: DNS, SSL, and Web Security',

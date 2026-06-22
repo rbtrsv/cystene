@@ -1,6 +1,6 @@
 import React from 'react';
 import Image from 'next/image';
-import { Category } from '@/modules/blog/components/composed/ImageLeftSection';
+import { Category } from '@/modules/blog/components/composed/article/ImageLeftSection';
 
 interface AlternativeArticleHeaderProps {
   title: string;

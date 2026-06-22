@@ -2,11 +2,11 @@ import React from 'react';
 import { Metadata } from 'next';
 import NavbarDownwards from '@/modules/main/components/NavbarDownwards/NavbarDownwards';
 import Footer from '@/modules/main/components/Footer/Footer';
-import BlogHeroHeader from '@/modules/blog/components/composed/BlogHeroHeader';
-import BlogCategoryTabs from '@/modules/blog/components/composed/BlogCategoryTabs';
-import BlogPostsGrid from '@/modules/blog/components/composed/BlogPostsGrid';
-import BlogSearchBar from '@/modules/blog/components/composed/BlogSearchBar';
-import { generatePageMetadata } from '@/modules/blog/components/composed/PageSEO';
+import BlogHeroHeader from '@/modules/blog/components/composed/index/BlogHeroHeader';
+import BlogCategoryTabs from '@/modules/blog/components/composed/index/BlogCategoryTabs';
+import BlogPostsGrid from '@/modules/blog/components/composed/index/BlogPostsGrid';
+import BlogSearchBar from '@/modules/blog/components/composed/index/BlogSearchBar';
+import { generatePageMetadata } from '@/modules/blog/components/composed/seo/PageSEO';
 
 export const metadata: Metadata = generatePageMetadata({
   title: 'Cystene Blog',
@@ -26,6 +26,14 @@ interface BlogPost {
 }
 
 const blogPosts: BlogPost[] = [
+  {
+    title: "Scan Your Vibe-Coded App: The Security Guide AI Skips",
+    slug: "vibe-coded-app-security-guide",
+    summary: "AI ships your app in a weekend and skips the invisible parts — database rules, leaked keys, access checks. The six holes AI-built apps ship with most often, how attackers find them, and how to close every one.",
+    publishDate: "2026-06-22",
+    categories: ["Vibe-Coded Security", "Application Security"],
+    href: "/blog/articles/vibe-coded-app-security-guide"
+  },
   {
     title: "Why Continuous Vulnerability Scanning Matters for Infrastructure Security",
     slug: "why-vulnerability-scanning-matters",
@@ -51,7 +59,7 @@ export default async function BlogPage({
 }) {
   const resolvedSearchParams = await searchParams;
   const selectedCategories = resolvedSearchParams.categories ? resolvedSearchParams.categories.split(',') : [];
-  const allCategories = ['Cybersecurity', 'Vulnerability Scanning', 'Attack Surface'];
+  const allCategories = ['Cybersecurity', 'Vibe-Coded Security', 'Application Security', 'Vulnerability Scanning', 'Attack Surface'];
 
   return (
     <div className="flex flex-col min-h-screen">
