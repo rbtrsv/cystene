@@ -203,7 +203,7 @@ const NavbarDownwards: React.FC = () => {
 
         {/* Mobile Menu */}
         <ul
-          className={`absolute left-0 w-full pl-9 transition-all duration-0 ease-in md:hidden ${open ? 'top-[55px] h-screen bg-white dark:bg-black' : 'top-[-490px]'}`}
+          className={`absolute left-0 w-full pl-9 transition-all duration-0 ease-in md:hidden ${open ? 'top-full h-screen bg-white dark:bg-black' : 'top-[-490px]'}`}
         >
           {navItems.map((item) => (
             <li key={item.name} className='my-7 text-xl font-normal'>
