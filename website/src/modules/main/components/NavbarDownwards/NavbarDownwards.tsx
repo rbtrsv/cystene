@@ -43,8 +43,7 @@ const Logo: React.FC = () => (
         alt='Cystene'
         width={110}
         height={75}
-        style={{ height: 'auto' }}
-        className='block w-[100px] cursor-pointer sm:w-[105px] md:w-[110px] lg:w-[110px] xl:w-[110px] 2xl:w-[115px] dark:hidden'
+        className='block h-auto w-[100px] cursor-pointer sm:w-[105px] md:w-[110px] lg:w-[110px] xl:w-[110px] 2xl:w-[115px] dark:hidden'
         priority
       />
       <Image
@@ -52,8 +51,7 @@ const Logo: React.FC = () => (
         alt='Cystene'
         width={110}
         height={75}
-        style={{ height: 'auto' }}
-        className='hidden w-[100px] cursor-pointer sm:w-[105px] md:w-[110px] lg:w-[110px] xl:w-[110px] 2xl:w-[115px] dark:block'
+        className='hidden h-auto w-[100px] cursor-pointer sm:w-[105px] md:w-[110px] lg:w-[110px] xl:w-[110px] 2xl:w-[115px] dark:block'
         priority
       />
     </Link>
