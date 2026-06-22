@@ -41,16 +41,16 @@ const Logo: React.FC = () => (
       <Image
         src={logoCysteneDark}
         alt='Cystene'
-        width={110}
-        height={75}
+        width={362}
+        height={97}
         className='block h-auto w-[100px] cursor-pointer sm:w-[105px] md:w-[110px] lg:w-[110px] xl:w-[110px] 2xl:w-[115px] dark:hidden'
         priority
       />
       <Image
         src={logoCysteneLight}
         alt='Cystene'
-        width={110}
-        height={75}
+        width={362}
+        height={97}
         className='hidden h-auto w-[100px] cursor-pointer sm:w-[105px] md:w-[110px] lg:w-[110px] xl:w-[110px] 2xl:w-[115px] dark:block'
         priority
       />
