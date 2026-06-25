@@ -7,6 +7,13 @@
 //! Why tokio: HTTP requests are I/O-bound. Tokio handles hundreds of concurrent
 //! requests efficiently with bounded concurrency via Semaphore.
 //!
+//! Why not wired into web_scan.py yet: that scanner probes its ~15-path list with
+//! httpx async instead. For a list that small the bottleneck is network latency, not
+//! CPU/scheduling, so async Python is as fast as tokio here — the Rust engine buys
+//! nothing. This impl is the path forward only when web_scan grows into a real
+//! dir-buster (thousands of paths from a wordlist), where tokio's bounded concurrency
+//! over many requests actually wins.
+//!
 //! Pattern: BHR Ch4 — modular HTTP checks with trait objects
 //! Source: black-hat-rust-code/ch_04/tricoder/src/ (modules pattern)
 

@@ -11,6 +11,14 @@
 //! Why rayon: Hash computation is CPU-bound. Rayon distributes wordlist entries
 //! across all CPU cores. Each core computes hashes independently.
 //!
+//! Why not wired into any scanner yet: Cystene is detection-only by design (same posture as
+//! ad_audit_scan). host_audit_scan reports /etc/shadow as readable but stops there — it does
+//! not extract and crack the hashes; password_audit_scan is default-credential detection, not
+//! cracking. Actually cracking a password is an offensive action in a different authorization
+//! class, so turning this on would need an explicit consent gate (like active_web_scan's
+//! active_scan_consent) plus a supplied wordlist. The capability is ready; enabling it is a
+//! product decision, not a missing piece.
+//!
 //! Pattern: BHR Ch1 — sha1_cracker with rayon parallelism added
 //! Source: black-hat-rust-code/ch_01/sha1_cracker/src/main.rs
 

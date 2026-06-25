@@ -11,6 +11,3 @@ pip install ./apps/cybersecurity/engine
 
 # Install Python dependencies
 pip install -r requirements.txt
-
-# Apply any outstanding database migrations
-alembic upgrade head

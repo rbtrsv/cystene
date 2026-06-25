@@ -4,7 +4,9 @@
 nixPkgs = ["python313", "rustc", "cargo", "gcc"]
 
 [phases.build]
-cmd = "./build.sh"
+# Why cmds (array) not cmd: nixpacks recognizes `cmds` for non-start phases; a singular
+# `cmd` here is silently ignored, turning the build phase into a no-op (engine never built).
+cmds = ["./build.sh"]
 
 [start]
 cmd = "gunicorn main:app -k uvicorn.workers.UvicornWorker --forwarded-allow-ips='*' --bind 0.0.0.0:8000"
