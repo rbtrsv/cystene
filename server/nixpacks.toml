@@ -2,6 +2,9 @@
 # Why explicit nixPkgs: Adding Rust toolchain for PyO3 engine compilation.
 # Must include python313 because specifying nixPkgs overrides nixpacks' auto-detected packages.
 nixPkgs = ["python313", "rustc", "cargo", "gcc"]
+# Why pin a newer archive: nixpacks' default ships Cargo 1.82, too old for modern Rust deps
+# (edition 2024). This nixos-25.05 commit ships rustc 1.86+, keeping the toolchain coherent.
+nixpkgsArchive = "ac62194c3917d5f474c1a844b6fd6da2db95077d"
 
 [phases.build]
 # Why cmds (array) not cmd: nixpacks recognizes `cmds` for non-start phases; a singular
