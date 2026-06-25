@@ -1,7 +1,11 @@
 [package]
 name = "engine"
 version = "0.1.0"
-edition = "2024"
+# Why edition 2021 not 2024: the Cargo bundled in the Coolify nixpkgs image is 1.82,
+# which predates edition-2024 stabilization (Rust 1.85). The engine uses no 2024-only
+# features, so 2021 builds identically everywhere. Bump back to 2024 only if the deploy
+# toolchain is upgraded past 1.85.
+edition = "2021"
 description = "High-performance Rust engine for Cystene cybersecurity scanners"
 
 [lib]
